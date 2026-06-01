@@ -16,12 +16,14 @@ APlayerCharacterBase::APlayerCharacterBase()
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("Arm"));
 
 	// SpringArm의 부모 컴포넌트로 Mesh를 지정한다.
-	SpringArm->SetupAttachment(GetMesh());
+	SpringArm->SetupAttachment(RootComponent);
 
-	SpringArm->TargetArmLength = 200.f;
+	SpringArm->TargetArmLength = 150.f;
 	//mSpringArm->SocketOffset.Y = 20.0;
-	SpringArm->SetRelativeLocation(FVector(0.0, 0.0, 150.0));
+	SpringArm->SetRelativeLocation(FVector(0.0, 0.0, 200.f));
 	SpringArm->SetRelativeRotation(FRotator(-10.0, 90.0, 0.0));
+
+	SpringArm->bUsePawnControlRotation = true;
 
 	// CameraComponent를 생성하고 SpringArm에 붙여준다.
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
@@ -40,8 +42,50 @@ APlayerCharacterBase::APlayerCharacterBase()
 void APlayerCharacterBase::MoveKey(const FInputActionValue& Value)
 {
 
-	GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red,	TEXT("hhhhhh"));
+	FVector2D MovementVector = Value.Get<FVector2D>();
 
+	AddMovementInput(GetActorForwardVector(), MovementVector.X);
+
+	AddMovementInput(GetActorRightVector(), MovementVector.Y);
+}
+
+void APlayerCharacterBase::DashKey(const FInputActionValue& Value)
+{
+	bool Dash = Value.Get<bool>();
+
+	if (Dash)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("DashKey"));
+	}
+}
+
+void APlayerCharacterBase::AttackKey(const FInputActionValue& Value)
+{
+	bool Attack = Value.Get<bool>();
+
+	if (Attack)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("AttackKey"));
+	}
+
+
+}
+
+void APlayerCharacterBase::SitKey(const FInputActionValue& Value)
+{
+	bool Sit = Value.Get<bool>();
+
+	if (Sit)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("SitKey"));
+	}
+}
+
+void APlayerCharacterBase::RotationMouse(const FInputActionValue& Value)
+{
+	FVector	Axis = Value.Get<FVector>();
+	AddControllerYawInput(Axis.X * MouseXSensitivity);
+	AddControllerPitchInput(Axis.Y * MouseYSensitivity);
 }
 
 // Called when the game starts or when spawned
@@ -65,8 +109,20 @@ void APlayerCharacterBase::BeginPlay()
 				SubSystem->AddMappingContext(InputData->Context, 0);
 			}
 		}
+		FInputModeGameOnly InputModeData;
+
+		InputModeData.SetConsumeCaptureMouseDown(true);
+		PlayerController->SetInputMode(InputModeData);
+		PlayerController->bShowMouseCursor = false; // 마우스 커서 안 보이게 끄기
+
+		if (PlayerController->PlayerCameraManager)
+		{
+			PlayerController->PlayerCameraManager->ViewPitchMin = -60.f;
+			PlayerController->PlayerCameraManager->ViewPitchMax = 60.f;
+		}
 	}
 
+	SetMouseSensitivity(0.85f, 0.85f);
 }
 void APlayerCharacterBase::OnConstruction(const FTransform& Transform)
 {
@@ -75,6 +131,8 @@ void APlayerCharacterBase::OnConstruction(const FTransform& Transform)
 	{
 		GetMesh()->SetSkeletalMeshAsset(SkeletalMeshAsset);
 	}
+
+	
 }
 
 // Called every frame
@@ -108,11 +166,39 @@ void APlayerCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 	}
 
 	// FName으로 등록된 InputAction을 반환해 등록한다.
-	UInputAction* MoveAction = InputData->FindAction(TEXT("Move"));
+	UInputAction* Action = InputData->FindAction(TEXT("Move"));
 
-	if (MoveAction)
+	if (Action)
 	{
-		EnhancedInput->BindAction(MoveAction, ETriggerEvent::Triggered, this, &APlayerCharacterBase::MoveKey);
+		EnhancedInput->BindAction(Action, ETriggerEvent::Triggered, this, &APlayerCharacterBase::MoveKey);
+	}
+
+	Action = InputData->FindAction(TEXT("Dash"));
+
+	if (Action)
+	{
+		EnhancedInput->BindAction(Action, ETriggerEvent::Triggered, this, &APlayerCharacterBase::DashKey);
+	}
+
+	Action = InputData->FindAction(TEXT("Attack"));
+
+	if (Action)
+	{
+		EnhancedInput->BindAction(Action, ETriggerEvent::Triggered, this, &APlayerCharacterBase::AttackKey);
+	}
+
+	Action = InputData->FindAction(TEXT("Sit"));
+
+	if (Action)
+	{
+		EnhancedInput->BindAction(Action, ETriggerEvent::Triggered, this, &APlayerCharacterBase::SitKey);
+	}
+
+	Action = InputData->FindAction(TEXT("Rotation"));
+
+	if (Action)
+	{
+		EnhancedInput->BindAction(Action, ETriggerEvent::Triggered, this, &APlayerCharacterBase::RotationMouse);
 	}
 
 }

@@ -35,8 +35,32 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSubclassOf<class UInputData> InputDataClass;
 
+	// 기본 감도 값
+	float MouseXSensitivity = 1.0f;
+	float MouseYSensitivity = 1.0f;
+
+public:
+	// 🌟 미래의 UI나 State 클래스가 접근할 수 있도록 Getter / Setter 함수를 뚫어놓습니다.
+	void SetMouseSensitivity(float NewX, float NewY)
+	{
+		MouseXSensitivity = NewX;
+		MouseYSensitivity = NewY;
+	}
+	float GetMouseXSensitivity() const
+	{
+		return MouseXSensitivity;
+	}
+	float GetMouseYSensitivity() const
+	{
+		return MouseYSensitivity;
+	}
 private:
 	void MoveKey(const FInputActionValue& Value);
+	void DashKey(const FInputActionValue& Value);
+	void AttackKey(const FInputActionValue& Value);
+	void SitKey(const FInputActionValue& Value);
+
+	void RotationMouse(const FInputActionValue& Value);
 
 protected:
 	// Called when the game starts or when spawned
