@@ -7,7 +7,13 @@
 		{
 			"Name": "RS",
 			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"GameplayAbilities",
+				"Engine",
+				"UMG",
+				"CoreUObject"
+			]
 		}
 	],
 	"Plugins": [
@@ -17,6 +23,10 @@
 			"TargetAllowList": [
 				"Editor"
 			]
+		},
+		{
+			"Name": "GameplayAbilities",
+			"Enabled": true
 		}
 	]
 }
