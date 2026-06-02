@@ -108,8 +108,5 @@ public:
 	void Attack_Execution();	
 	void Attack_Execution_Implementation();
 
-public:
-	UFUNCTION(Server, Reliable)
-	virtual void NormalAttack_Server();
-	virtual void NormalAttack_Server_Implementation();
+	void ShootAttackRay();
 };

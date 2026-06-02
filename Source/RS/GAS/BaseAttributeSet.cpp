@@ -4,6 +4,7 @@
 #include "BaseAttributeSet.h"
 #include "GameplayEffectExtension.h"
 #include "GameplayEffect.h"
+#include "RS/LogCategory.h"
 
 void UBaseAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
 {
@@ -16,16 +17,18 @@ void UBaseAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 	if (Context.IsValid())
 	{
 		Instigator = Context.GetOriginalInstigator();
-
-		if (!Instigator)
+		if (!IsValid(Instigator))
+		{
 			Instigator = Context.GetInstigator();
+		}
 	}
 
 	if (Data.EvaluatedData.Attribute == GetHPAttribute())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("HP가 변경됨! 현재 HP: %f"), GetHP());
-	}
+		RS_LOG_DEBUG(LogRSBattle, Log, TEXT("%s: HP가 변경됨! 현재 HP: %.2f"), *LOG_LINE_INFO, GetHP());
 
+		OnHpChanged(Instigator);
+	}
 }
 
 void UBaseAttributeSet::OnHpChanged(AActor* Instigator)

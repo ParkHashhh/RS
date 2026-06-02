@@ -27,6 +27,7 @@ public class RS : ModuleRules
 			"Niagara",
 			"UMG",
 			"Networking",
+			"NetCore",
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });

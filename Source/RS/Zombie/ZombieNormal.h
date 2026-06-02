@@ -1,0 +1,27 @@
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "ZombieBase.h"
+#include "ZombieNormal.generated.h"
+
+/**
+ * 
+ */
+UCLASS()
+class RS_API AZombieNormal : public AZombieBase
+{
+	GENERATED_BODY()
+
+public:
+	AZombieNormal();
+
+protected:
+	//일반 좀비 프리셋 메쉬를 넣어둘 배열이다.
+	//이 클래스를 상속받아 블루프린트를 만든 뒤 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
+	TArray<TObjectPtr<class USkeletalMesh>> MeshArray;
+
+protected:
+	virtual void BeginPlay() override;
+};

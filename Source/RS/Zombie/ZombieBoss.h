@@ -1,19 +1,19 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
 #include "CoreMinimal.h"
-#include "RS/RSPawn.h"
-#include "CreatureBase.generated.h"
+#include "ZombieBase.h"
+#include "ZombieBoss.generated.h"
 
 UCLASS()
-class RS_API ACreatureBase : public ARSPawn
+class RS_API AZombieBoss : public AZombieBase
 {
 	GENERATED_BODY()
 
 public:
 	// Sets default values for this pawn's properties
-	ACreatureBase();
+	AZombieBoss();
 
 protected:
 	// Called when the game starts or when spawned

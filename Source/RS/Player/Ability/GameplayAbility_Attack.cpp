@@ -30,15 +30,15 @@ void UGameplayAbility_Attack::ActivateAbility(const FGameplayAbilitySpecHandle H
 		return;
 	}
 
-	// 🟢 [쿨타임 통과 완료] 이제 여기서 진짜 공격 연출을 합니다!
 	APlayerCharacterBase* PlayerChar = Cast<APlayerCharacterBase>(GetAvatarActorFromActorInfo());
 	if (PlayerChar)
 	{
+		PlayerChar->ShootAttackRay();
 		// 예: 캐릭터의 공격 애니메이션 몽타주 재생 함수 호출
 		// PlayerChar->PlayAttackMontage();
 	}
 
-	GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, TEXT("🟢 공격 스킬 진짜 발동 성공!!!"));
+	GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, TEXT("Attack Ability Successed"));
 
 	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 

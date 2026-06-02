@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "AttributeSet.h"
-#include "RS/RSDefines.h"
+#include "AbilitySystemComponent.h"
 #include "BaseAttributeSet.generated.h"
 
 /**
@@ -16,36 +16,37 @@ class RS_API UBaseAttributeSet : public UAttributeSet
 	GENERATED_BODY()
 
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute", meta = (AllowPrivateAccess = true))
 	FGameplayAttributeData	Attack;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute", meta = (AllowPrivateAccess = true))
 	FGameplayAttributeData	Defense;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute", meta = (AllowPrivateAccess = true))
 	FGameplayAttributeData	HP;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute", meta = (AllowPrivateAccess = true))
 	FGameplayAttributeData	HPMax;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute", meta = (AllowPrivateAccess = true))
 	FGameplayAttributeData	WalkSpeed;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute", meta = (AllowPrivateAccess = true))
 	FGameplayAttributeData	RunSpeed;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute", meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute", meta = (AllowPrivateAccess = true))
 	FGameplayAttributeData	AttackDistance;
 
 
 public:
-	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, Attack)
-	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, Defense)
-	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, HP)
-	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, HPMax)
-	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, WalkSpeed)
-	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, RunSpeed)
-	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, AttackDistance)
+	ATTRIBUTE_ACCESSORS_BASIC(UBaseAttributeSet, Attack)
+	ATTRIBUTE_ACCESSORS_BASIC(UBaseAttributeSet, Defense)
+	ATTRIBUTE_ACCESSORS_BASIC(UBaseAttributeSet, HP)
+	ATTRIBUTE_ACCESSORS_BASIC(UBaseAttributeSet, HPMax)
+	ATTRIBUTE_ACCESSORS_BASIC(UBaseAttributeSet, WalkSpeed)
+	ATTRIBUTE_ACCESSORS_BASIC(UBaseAttributeSet, RunSpeed)
+	ATTRIBUTE_ACCESSORS_BASIC(UBaseAttributeSet, AttackDistance)
+
 
 	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
 

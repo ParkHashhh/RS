@@ -7,6 +7,7 @@
 #include "Camera/CameraComponent.h"
 #include "RS/Input/InputData.h"
 #include "Attribute/PlayerAttributeSet.h"
+#include "DrawDebugHelpers.h"
 
 // Sets default values
 APlayerCharacterBase::APlayerCharacterBase()
@@ -258,17 +259,27 @@ void APlayerCharacterBase::Attack_Server_Implementation()
 
 void APlayerCharacterBase::Attack_Execution_Implementation()
 {
-	// 여기선 애니메이션 처리 후
-	NormalAttack_Server();
 	GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("Attack_Execution"));
 
-
 }
 
-void APlayerCharacterBase::NormalAttack_Server_Implementation()
+void APlayerCharacterBase::ShootAttackRay()
 {
-	// 애니메이션에서 이 함수를 호출
-	GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("NormalAttack_Server"));
+	// 1. Raycast 구현 (LineTrace)
+	FHitResult Hit;
+	FVector Start = GetActorLocation(); // 포켓이 들어가야함
 
+	float Dist = AttributeSet->GetAttackDistance();
+	FVector End = Start + (GetActorForwardVector() * Dist);
+
+	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_GameTraceChannel1);
+
+	// 🟢 디버그 라인 그리기
+	DrawDebugLine(GetWorld(), Start, End, bHit ? FColor::Red : FColor::Green, false, 2.0f, 0, 2.0f);
+
+	// 🟢 결과 판단도 bHit 변수로 수행
+	if (bHit)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Yellow, TEXT("🎯 적중!"));
+	}
 }
-
