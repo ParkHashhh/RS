@@ -6,11 +6,15 @@
 #include "RS/RSCharacter.h"
 #include "GenericTeamAgentInterface.h"
 #include "InputActionValue.h"
+#include "AbilitySystemInterface.h"
+#include "PlayerAbilitySystemComponent.h"
 #include "PlayerCharacterBase.generated.h"
+
 
 UCLASS()
 class RS_API APlayerCharacterBase : public ARSCharacter,
-	public IGenericTeamAgentInterface
+	public IGenericTeamAgentInterface,
+	public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
@@ -39,8 +43,28 @@ protected:
 	float MouseXSensitivity = 1.0f;
 	float MouseYSensitivity = 1.0f;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
+	TObjectPtr<UPlayerAbilitySystemComponent> ASC;
+
+	TObjectPtr<class UPlayerAttributeSet> AttributeSet;
+
+	UPROPERTY(EditDefaultsOnly, Category = "GAS")
+	TSubclassOf<UGameplayEffect> DefaultAttributeEffect;
+
+
+	UPROPERTY(EditDefaultsOnly, Category = "GAS")
+	TArray<TSubclassOf<UGameplayAbility>> Abilitys;
+
+	UPROPERTY(EditDefaultsOnly, Category = "GAS")
+	TSubclassOf<UGameplayEffect> AttackCooldownEffectClass;
 public:
-	// 🌟 미래의 UI나 State 클래스가 접근할 수 있도록 Getter / Setter 함수를 뚫어놓습니다.
+	// IAbilitySystemInterface를 구현하기 위한 필수 함수
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const
+	{
+		return Cast<UAbilitySystemComponent>(ASC);
+	}
+
+public:
 	void SetMouseSensitivity(float NewX, float NewY)
 	{
 		MouseXSensitivity = NewX;
@@ -74,4 +98,19 @@ public:
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+protected:
+
+	UFUNCTION(Server, Reliable)
+	void Attack_Server();
+	void Attack_Server_Implementation();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Attack_Execution();	
+	void Attack_Execution_Implementation();
+
+public:
+	UFUNCTION(Server, Reliable)
+	virtual void NormalAttack_Server();
+	virtual void NormalAttack_Server_Implementation();
 };

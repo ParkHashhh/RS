@@ -4,8 +4,9 @@
 #include "PlayerCharacterBase.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "Camera/CameraComponent.h"           
+#include "Camera/CameraComponent.h"
 #include "RS/Input/InputData.h"
+#include "Attribute/PlayerAttributeSet.h"
 
 // Sets default values
 APlayerCharacterBase::APlayerCharacterBase()
@@ -24,7 +25,7 @@ APlayerCharacterBase::APlayerCharacterBase()
 	SpringArm->SetRelativeRotation(FRotator(-10.0, 90.0, 0.0));
 
 	SpringArm->bUsePawnControlRotation = true;
-
+	
 	// CameraComponent를 생성하고 SpringArm에 붙여준다.
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 
@@ -32,11 +33,24 @@ APlayerCharacterBase::APlayerCharacterBase()
 
 	bUseControllerRotationYaw = true;
 
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+
+	ASC = CreateDefaultSubobject<UPlayerAbilitySystemComponent>(TEXT("ASC"));
+
+	AttributeSet = CreateDefaultSubobject<UPlayerAttributeSet>(TEXT("AttributeSet"));
+	// Attribute를 가지고있는다.
+	ASC->AddAttributeSetSubobject<UPlayerAttributeSet>(AttributeSet);
+
+	ASC->SetIsReplicated(true);
+
 	if (IsValid(SkeletalMeshAsset))
 	{
 		GetMesh()->SetSkeletalMeshAsset(SkeletalMeshAsset);
 	}
 
+	SetReplicates(true);
+	SetReplicateMovement(true);
 }
 
 void APlayerCharacterBase::MoveKey(const FInputActionValue& Value)
@@ -68,6 +82,8 @@ void APlayerCharacterBase::AttackKey(const FInputActionValue& Value)
 		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("AttackKey"));
 	}
 
+
+	Attack_Server();
 
 }
 
@@ -119,6 +135,31 @@ void APlayerCharacterBase::BeginPlay()
 		{
 			PlayerController->PlayerCameraManager->ViewPitchMin = -60.f;
 			PlayerController->PlayerCameraManager->ViewPitchMax = 60.f;
+		}
+	}
+	if (ASC)
+	{
+		// 💡 중요: 서버/클라이언트 모두 본인의 액터 정보를 ASC에 등록해야 타이머가 정상 작동합니다.
+		ASC->InitAbilityActorInfo(this, this);
+
+		if (HasAuthority())
+		{
+			if (DefaultAttributeEffect)
+			{
+				FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
+				FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(DefaultAttributeEffect, 1.0f, Context);
+				if (SpecHandle.IsValid())
+				{
+					ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+				}
+			}
+			for (TSubclassOf<UGameplayAbility> AbilityClass : Abilitys)
+			{
+				if (AbilityClass)
+				{
+					ASC->GiveAbility(FGameplayAbilitySpec(AbilityClass, 1, -1));
+				}
+			}
 		}
 	}
 
@@ -201,5 +242,29 @@ void APlayerCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		EnhancedInput->BindAction(Action, ETriggerEvent::Triggered, this, &APlayerCharacterBase::RotationMouse);
 	}
 
+}
+
+void APlayerCharacterBase::Attack_Server_Implementation()
+{
+
+	FGameplayEventData EventData;
+	EventData.Instigator = this;
+	EventData.Target = this;
+
+	// 이 함수가 실행되면 이미 켜져 있는 BP_GameplayAbility_Attack 내부의 'Event 액티베이트'가 발동합니다.
+	ASC->HandleGameplayEvent(FGameplayTag::RequestGameplayTag(TEXT("Player.Battle.Attack")), &EventData);
+	
+}
+
+void APlayerCharacterBase::Attack_Execution_Implementation()
+{
+	// 여기선 애니메이션 처리 후
+	NormalAttack_Server();
+
+}
+
+void APlayerCharacterBase::NormalAttack_Server_Implementation()
+{
+	// 애니메이션에서 이 함수를 호출
 }
 
