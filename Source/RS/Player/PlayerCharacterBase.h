@@ -55,8 +55,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "GAS")
 	TArray<TSubclassOf<UGameplayAbility>> Abilitys;
 
-	UPROPERTY(EditDefaultsOnly, Category = "GAS")
-	TSubclassOf<UGameplayEffect> AttackCooldownEffectClass;
 public:
 	// IAbilitySystemInterface를 구현하기 위한 필수 함수
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const
@@ -103,8 +101,9 @@ protected:
 
 	UFUNCTION(Server, Reliable)
 	void Attack_Server();
-	void Attack_Server_Implementation();
+	void Attack_Server_Implementation();	
 
+public:
 	UFUNCTION(NetMulticast, Reliable)
 	void Attack_Execution();	
 	void Attack_Execution_Implementation();

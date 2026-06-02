@@ -53,56 +53,7 @@ APlayerCharacterBase::APlayerCharacterBase()
 	SetReplicateMovement(true);
 }
 
-void APlayerCharacterBase::MoveKey(const FInputActionValue& Value)
-{
 
-	FVector2D MovementVector = Value.Get<FVector2D>();
-
-	AddMovementInput(GetActorForwardVector(), MovementVector.X);
-
-	AddMovementInput(GetActorRightVector(), MovementVector.Y);
-}
-
-void APlayerCharacterBase::DashKey(const FInputActionValue& Value)
-{
-	bool Dash = Value.Get<bool>();
-
-	if (Dash)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("DashKey"));
-	}
-}
-
-void APlayerCharacterBase::AttackKey(const FInputActionValue& Value)
-{
-	bool Attack = Value.Get<bool>();
-
-	if (Attack)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("AttackKey"));
-	}
-
-
-	Attack_Server();
-
-}
-
-void APlayerCharacterBase::SitKey(const FInputActionValue& Value)
-{
-	bool Sit = Value.Get<bool>();
-
-	if (Sit)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("SitKey"));
-	}
-}
-
-void APlayerCharacterBase::RotationMouse(const FInputActionValue& Value)
-{
-	FVector	Axis = Value.Get<FVector>();
-	AddControllerYawInput(Axis.X * MouseXSensitivity);
-	AddControllerPitchInput(Axis.Y * MouseYSensitivity);
-}
 
 // Called when the game starts or when spawned
 void APlayerCharacterBase::BeginPlay()
@@ -142,29 +93,82 @@ void APlayerCharacterBase::BeginPlay()
 		// 💡 중요: 서버/클라이언트 모두 본인의 액터 정보를 ASC에 등록해야 타이머가 정상 작동합니다.
 		ASC->InitAbilityActorInfo(this, this);
 
-		if (HasAuthority())
+		if (DefaultAttributeEffect)
 		{
-			if (DefaultAttributeEffect)
+			FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
+			FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(DefaultAttributeEffect, 1.0f, Context);
+			if (SpecHandle.IsValid())
 			{
-				FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
-				FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(DefaultAttributeEffect, 1.0f, Context);
-				if (SpecHandle.IsValid())
-				{
-					ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-				}
+				ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 			}
-			for (TSubclassOf<UGameplayAbility> AbilityClass : Abilitys)
+		}
+		for (TSubclassOf<UGameplayAbility> AbilityClass : Abilitys)
+		{
+			if (AbilityClass)
 			{
-				if (AbilityClass)
-				{
-					ASC->GiveAbility(FGameplayAbilitySpec(AbilityClass, 1, -1));
-				}
+				ASC->GiveAbility(FGameplayAbilitySpec(AbilityClass, 1, -1));
 			}
 		}
 	}
 
 	SetMouseSensitivity(0.85f, 0.85f);
 }
+void APlayerCharacterBase::MoveKey(const FInputActionValue& Value)
+{
+
+	FVector2D MovementVector = Value.Get<FVector2D>();
+
+	AddMovementInput(GetActorForwardVector(), MovementVector.X);
+
+	AddMovementInput(GetActorRightVector(), MovementVector.Y);
+}
+
+void APlayerCharacterBase::DashKey(const FInputActionValue& Value)
+{
+	bool Dash = Value.Get<bool>();
+
+	if (Dash)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("DashKey"));
+	}
+}
+
+void APlayerCharacterBase::AttackKey(const FInputActionValue& Value)
+{
+	bool Attack = Value.Get<bool>();
+
+	if (Attack)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("AttackKey"));
+	}
+
+	if (ASC)
+	{
+		FGameplayEventData EventData;
+		EventData.Instigator = this; // 이 스킬을 발동한 주체 (나)
+		EventData.Target = this;     // 이 스킬이 꽂히는 대상 (우선 나 자신으로 세팅)
+
+		ASC->HandleGameplayEvent(FGameplayTag::RequestGameplayTag(TEXT("Player.Battle.Attack")), &EventData);
+	}
+}
+
+void APlayerCharacterBase::SitKey(const FInputActionValue& Value)
+{
+	bool Sit = Value.Get<bool>();
+
+	if (Sit)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("SitKey"));
+	}
+}
+
+void APlayerCharacterBase::RotationMouse(const FInputActionValue& Value)
+{
+	FVector	Axis = Value.Get<FVector>();
+	AddControllerYawInput(Axis.X * MouseXSensitivity);
+	AddControllerPitchInput(Axis.Y * MouseYSensitivity);
+}
+
 void APlayerCharacterBase::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
@@ -247,24 +251,24 @@ void APlayerCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 void APlayerCharacterBase::Attack_Server_Implementation()
 {
 
-	FGameplayEventData EventData;
-	EventData.Instigator = this;
-	EventData.Target = this;
+	GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("Attack_Server"));
+	Attack_Execution();
 
-	// 이 함수가 실행되면 이미 켜져 있는 BP_GameplayAbility_Attack 내부의 'Event 액티베이트'가 발동합니다.
-	ASC->HandleGameplayEvent(FGameplayTag::RequestGameplayTag(TEXT("Player.Battle.Attack")), &EventData);
-	
 }
 
 void APlayerCharacterBase::Attack_Execution_Implementation()
 {
 	// 여기선 애니메이션 처리 후
 	NormalAttack_Server();
+	GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("Attack_Execution"));
+
 
 }
 
 void APlayerCharacterBase::NormalAttack_Server_Implementation()
 {
 	// 애니메이션에서 이 함수를 호출
+	GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("NormalAttack_Server"));
+
 }
 
