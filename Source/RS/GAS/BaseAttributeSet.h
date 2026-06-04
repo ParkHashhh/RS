@@ -5,7 +5,10 @@
 #include "CoreMinimal.h"
 #include "AttributeSet.h"
 #include "AbilitySystemComponent.h"
+#include "Net/UnrealNetwork.h"
+
 #include "BaseAttributeSet.generated.h"
+
 
 /**
  *

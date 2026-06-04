@@ -12,8 +12,7 @@ UGameplayAbility_Attack::UGameplayAbility_Attack()
 	TriggerData.TriggerSource = EGameplayAbilityTriggerSource::GameplayEvent;
 	AbilityTriggers.Add(TriggerData);
 
-	mCoolDown = 0.2f;
-	mCoolDownTag = FGameplayTag::RequestGameplayTag(TEXT("Player.Battle.Attack.CoolDown"));
+
 }
 
 
@@ -25,10 +24,12 @@ void UGameplayAbility_Attack::ActivateAbility(const FGameplayAbilitySpecHandle H
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
 	// 부모 검사에서 쿨타임 때문에 걸러졌다면 즉시 종료
-	if (!mAbilityActive)
+	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
 	{
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 		return;
 	}
+
 
 	APlayerCharacterBase* PlayerChar = Cast<APlayerCharacterBase>(GetAvatarActorFromActorInfo());
 	if (PlayerChar)
@@ -38,7 +39,7 @@ void UGameplayAbility_Attack::ActivateAbility(const FGameplayAbilitySpecHandle H
 			PlayerChar->ShootAttackRay();
 		}
 
-		// 예: 캐릭터의 공격 애니메이션 몽타주 재생 함수 호출
+		// 캐릭터의 공격 애니메이션 몽타주 재생 함수 호출
 		// PlayerChar->PlayAttackMontage();
 	}
 

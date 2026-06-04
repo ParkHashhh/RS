@@ -56,6 +56,14 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "GAS")
 	TArray<TSubclassOf<UGameplayAbility>> Abilitys;
 
+protected:
+	// 연사 제어용 변수 및 타이머
+	bool CanAttack = true;
+	FTimerHandle AttackTimerHandle;
+
+protected:
+	void ResetAttackCooldown();
+
 public:
 	// IAbilitySystemInterface를 구현하기 위한 필수 함수
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const

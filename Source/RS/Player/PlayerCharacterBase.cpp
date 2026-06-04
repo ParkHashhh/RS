@@ -140,19 +140,36 @@ void APlayerCharacterBase::AttackKey(const FInputActionValue& Value)
 {
 	bool Attack = Value.Get<bool>();
 
-	if (Attack)
+	if (Attack && IsLocallyControlled() && CanAttack)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("AttackKey"));
+		if (ASC)
+		{
+			FGameplayEventData EventData;
+			EventData.Instigator = this; // 이 스킬을 발동한 주체
+			EventData.Target = this;     // 이 스킬이 꽂히는 대상
+
+			ASC->HandleGameplayEvent(FGameplayTag::RequestGameplayTag(TEXT("Player.Battle.Attack")), &EventData);
+		}
+		CanAttack = false;
+		float AttackSpeed = AttributeSet->GetAttackSpeed();
+
+		RS_PRINT_SCREEN(0.2, FColor::Yellow, TEXT("Attack Speed : %.2f"), AttackSpeed);
+		float BaseDelay = 0.2f;
+		float FinalDelay = BaseDelay / FMath::Max(AttackSpeed, 0.01f);
+
+		GetWorldTimerManager().SetTimer( AttackTimerHandle,
+			this, &APlayerCharacterBase::ResetAttackCooldown,
+			FinalDelay, false
+		);
 	}
 
-	if (ASC)
-	{
-		FGameplayEventData EventData;
-		EventData.Instigator = this; // 이 스킬을 발동한 주체 (나)
-		EventData.Target = this;     // 이 스킬이 꽂히는 대상 (우선 나 자신으로 세팅)
+	
+}
 
-		ASC->HandleGameplayEvent(FGameplayTag::RequestGameplayTag(TEXT("Player.Battle.Attack")), &EventData);
-	}
+void APlayerCharacterBase::ResetAttackCooldown()
+{
+	CanAttack = true;
 }
 
 void APlayerCharacterBase::SitKey(const FInputActionValue& Value)
@@ -271,7 +288,7 @@ void APlayerCharacterBase::Attack_Execution_Implementation()
 
 void APlayerCharacterBase::ShootAttackRay()
 {
-	// 1. Raycast 구현 (LineTrace)
+
 	FHitResult Hit;
 	FVector Start = GetActorLocation(); // 포켓이 들어가야함
 	Start.Z += 100.f;
@@ -286,14 +303,12 @@ void APlayerCharacterBase::ShootAttackRay()
 		bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_GameTraceChannel1);
 		if (bHit)
 		{
-			// 실제 데미지 적용 로직은 서버에서만!
+			// 실제 데미지 적용 로직은 서버에서만
 			// ApplyDamage();
 		}
 	}
-	FString DebugMsg2 = FString::Printf(TEXT("Dist : %.2f"), Dist);
-	GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, DebugMsg2);
-	// 2. 디버그 라인은 '누구나' 그려야 내 화면에 보입니다!
-	// bHit은 서버에서만 결과가 나오므로, 클라이언트에서는 bHit을 확신할 수 없습니다.
-	// 하지만 일단 이펙트용 선을 그리는 것이므로 로컬에서 항상 실행되게 합니다.
-	DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 2.0f, 0, 2.0f);
+	if (IsLocallyControlled())
+	{
+		DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 2.0f, 0, 2.0f);
+	}
 }

@@ -3,11 +3,25 @@
 #define LOG_LINE_INFO (FString::Printf(TEXT("[%s:%d]"), TEXT(__FUNCTION__), __LINE__))
 
 #if !UE_BUILD_SHIPPING
+
 #define RS_LOG_DEBUG(CategoryName, Verbosity, Format, ...) UE_LOG(CategoryName, Verbosity, Format, ##__VA_ARGS__)
 #define RS_LOGFMT_DEBUG(CategoryName, Verbosity, Format, ...) UE_LOGFMT(CategoryName, Verbosity, Format, ##__VA_ARGS__)
+
+#define RS_PRINT_SCREEN(Time, Color, Format, ...) \
+do { \
+if (GEngine) \
+{ \
+GEngine->AddOnScreenDebugMessage(-1, Time, Color, FString::Printf(Format, ##__VA_ARGS__)); \
+} \
+} while(false, false)
+
 #else
+
 #define RS_LOG_DEBUG(CategoryName, Verbosity, Format, ...)
 #define RS_LOGFMT_DEBUG(CategoryName, Verbosity, Format, ...)
+
+#define RS_PRINT_SCREEN(Time, Color, Format, ...)
+
 #endif
 
 

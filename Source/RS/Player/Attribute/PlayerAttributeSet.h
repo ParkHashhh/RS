@@ -13,5 +13,18 @@ UCLASS()
 class RS_API UPlayerAttributeSet : public UBaseAttributeSet
 {
 	GENERATED_BODY()
-	
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing = OnRep_AttackSpeed, Category = "Attribute", meta = (AllowPrivateAccess = true))
+	FGameplayAttributeData	AttackSpeed;
+
+public:
+	ATTRIBUTE_ACCESSORS_BASIC(UPlayerAttributeSet, AttackSpeed)
+
+
+public:
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
+
+protected:
+	UFUNCTION()
+	virtual void OnRep_AttackSpeed(const FGameplayAttributeData& OldValue);
 };

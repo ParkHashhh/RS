@@ -5,7 +5,6 @@
 #include "GameplayEffectExtension.h"
 #include "GameplayEffect.h"
 #include "RS/LogCategory.h"
-#include "Net/UnrealNetwork.h"
 
 void UBaseAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
 {
@@ -43,11 +42,11 @@ void UBaseAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(UBaseAttributeSet, Attack)
-		DOREPLIFETIME(UBaseAttributeSet, Defense)
-		DOREPLIFETIME(UBaseAttributeSet, HP)
-		DOREPLIFETIME(UBaseAttributeSet, WalkSpeed)
-		DOREPLIFETIME(UBaseAttributeSet, RunSpeed)
-		DOREPLIFETIME(UBaseAttributeSet, AttackDistance)
+	DOREPLIFETIME(UBaseAttributeSet, Defense)
+	DOREPLIFETIME(UBaseAttributeSet, HP)
+	DOREPLIFETIME(UBaseAttributeSet, WalkSpeed)
+	DOREPLIFETIME(UBaseAttributeSet, RunSpeed)
+	DOREPLIFETIME(UBaseAttributeSet, AttackDistance)
 }
 void UBaseAttributeSet::OnRep_Attack(const FGameplayAttributeData& OldValue)
 {
