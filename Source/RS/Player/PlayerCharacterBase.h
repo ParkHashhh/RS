@@ -6,6 +6,7 @@
 #include "RS/RSCharacter.h"
 #include "GenericTeamAgentInterface.h"
 #include "InputActionValue.h"
+#include "../RSConstants.h"
 #include "AbilitySystemInterface.h"
 #include "PlayerAbilitySystemComponent.h"
 #include "PlayerCharacterBase.generated.h"

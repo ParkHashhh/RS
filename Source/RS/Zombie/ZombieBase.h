@@ -4,17 +4,16 @@
 
 #include "CoreMinimal.h"
 #include "RS/RSPawn.h"
+#include "../RSConstants.h"
 #include "GenericTeamAgentInterface.h"
+#include "AbilitySystemInterface.h"
 #include "ZombieBase.generated.h"
-
-//임시로 사용할 팀 아이디 : 나중에 상위 클래스에 선언되면 제거할 예정이다.
-#define	TeamNeutral	2
-#define	TeamZombie	1
-#define	TeamPlayer	0
 
 UCLASS()
 class RS_API AZombieBase : public ARSPawn,
-	public IGenericTeamAgentInterface
+	public IGenericTeamAgentInterface,
+	public IAbilitySystemInterface
+
 {
 	GENERATED_BODY()
 
@@ -33,8 +32,8 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UFloatingPawnMovement> Movement;
 
-	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	//TObjectPtr<class UAbilitySystemComponent> ASC;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<class UAbilitySystemComponent> ASC;
 		
 	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	//TObjectPtr<class UZombieAttributeSet> AttributeSet;
@@ -42,12 +41,16 @@ protected:
 	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	//TObjectPtr<class UZombieAnimInstance> AnimInstance;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta =(AllowPrivateAccess = "true"))
+	TSubclassOf<class AZombieAIController> AICtrl;
+
 	FGenericTeamId TeamID;
 
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	virtual void PostInitProperties() override;
 
 public:
 	// Called every frame
@@ -55,6 +58,14 @@ public:
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+	virtual void PossessedBy(AController* NewController);
+
+public:
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const
+	{
+		return ASC;
+	}
 
 public:
 	virtual void SetGenericTeamId(const FGenericTeamId& ID);

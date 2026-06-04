@@ -11,6 +11,8 @@
 void UDataSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
+
+	LoadItemInfoTable();
 }
 
 const FItemTableInfo* UDataSubsystem::GetItemTableInfo(const FName Name) const

@@ -54,6 +54,7 @@ APlayerCharacterBase::APlayerCharacterBase()
 
 	SetReplicates(true);
 	SetReplicateMovement(true);
+
 }
 
 
@@ -93,7 +94,6 @@ void APlayerCharacterBase::BeginPlay()
 	}
 	if (ASC)
 	{
-		// 💡 중요: 서버/클라이언트 모두 본인의 액터 정보를 ASC에 등록해야 타이머가 정상 작동합니다.
 		ASC->InitAbilityActorInfo(this, this);
 
 		if (DefaultAttributeEffect)
@@ -274,8 +274,10 @@ void APlayerCharacterBase::ShootAttackRay()
 	// 1. Raycast 구현 (LineTrace)
 	FHitResult Hit;
 	FVector Start = GetActorLocation(); // 포켓이 들어가야함
-
+	Start.Z += 100.f;
 	float Dist = AttributeSet->GetAttackDistance();
+	float HP = AttributeSet->GetHP();
+
 	FVector End = Start + (GetActorForwardVector() * Dist);
 
 	bool bHit = false;
@@ -288,6 +290,8 @@ void APlayerCharacterBase::ShootAttackRay()
 			// ApplyDamage();
 		}
 	}
+	FString DebugMsg2 = FString::Printf(TEXT("Dist : %.2f"), Dist);
+	GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, DebugMsg2);
 	// 2. 디버그 라인은 '누구나' 그려야 내 화면에 보입니다!
 	// bHit은 서버에서만 결과가 나오므로, 클라이언트에서는 bHit을 확신할 수 없습니다.
 	// 하지만 일단 이펙트용 선을 그리는 것이므로 로컬에서 항상 실행되게 합니다.

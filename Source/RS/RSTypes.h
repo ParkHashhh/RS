@@ -5,6 +5,13 @@ class UGameplayEffect;
 
 #include "RSTypes.generated.h"
 
+UENUM(BlueprintType)
+enum class EItemUseType : uint8
+{
+	Equipment,
+	Consumable,
+};
+
 // 기획자가 에디터/엑셀에서 입력할 동적 옵션 구조체
 USTRUCT(BlueprintType)
 struct FItemOption
@@ -53,6 +60,9 @@ struct FItemTableInfo : public FTableRowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bIsStackable{true};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item")
+	EItemUseType UseType{EItemUseType::Equipment};
 
 	// 모든 아이템 스탯 처리를 일괄 담당할 마스터 GE 클래스 레퍼런스
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item|GAS")

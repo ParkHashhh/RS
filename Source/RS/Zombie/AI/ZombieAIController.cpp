@@ -4,6 +4,10 @@
 #include "ZombieAIController.h"
 #include "Perception/AISenseConfig_Sight.h"
 #include "Perception/AIPerceptionComponent.h"
+#include "BehaviorTree/BehaviorTree.h"
+#include "../ZombieBase.h"
+#include "BehaviorTree/BlackboardData.h"
+#include "BehaviorTree/BlackboardComponent.h"
 
 AZombieAIController::AZombieAIController()
 {
@@ -14,6 +18,11 @@ AZombieAIController::AZombieAIController()
 	//시각을 사용하도록 생성한다.
 	SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("Sight"));
 
+	//테스트용 임시 코드
+	SightConfig->SightRadius = 600.f;
+	SightConfig->LoseSightRadius = 600.f;
+	SightConfig->PeripheralVisionAngleDegrees = 160.f;
+
 	//탐지 대상을 지정한다
 	SightConfig->DetectionByAffiliation.bDetectEnemies = true;
 	SightConfig->DetectionByAffiliation.bDetectNeutrals = true;
@@ -23,14 +32,15 @@ AZombieAIController::AZombieAIController()
 	AIPerception->ConfigureSense(*SightConfig);
 	AIPerception->SetDominantSense(SightConfig->GetSenseImplementation());
 
-	SetGenericTeamId(FGenericTeamId(TeamZombie));
-}
+	SetGenericTeamId(FGenericTeamId(TeamMonster));
 
-void AZombieAIController::SetBT(UBehaviorTree* BehaviorTree)
+	AIPerception->OnTargetPerceptionUpdated.AddDynamic(this, &AZombieAIController::OnTarget);
+}
+void AZombieAIController::BeginPlay()
 {
-	BT = BehaviorTree;
+	Super::BeginPlay();
+	AIPerception->RequestStimuliListenerUpdate();
 }
-
 void AZombieAIController::SetDetectRange_Sight(float Range)
 {
 	//어차피 탐지에 실패했을 때, 타겟을 제거하는 기능을 없애버릴 예정이므로 상실 거리는 설정할 필요가 없다.
@@ -38,6 +48,26 @@ void AZombieAIController::SetDetectRange_Sight(float Range)
 	SightConfig->SightRadius = Range;
 	SightConfig->LoseSightRadius = Range;
 	AIPerception->ConfigureSense(*SightConfig);
+}
+
+void AZombieAIController::OnTarget(AActor* Actor, FAIStimulus Stimulus)
+{
+	if (!IsValid(BT) || !Blackboard)
+		return;
+
+	AZombieBase* Zombie = Cast<AZombieBase>(GetPawn());
+	if (!IsValid(Zombie))
+		return;
+
+	if (Stimulus.WasSuccessfullySensed())
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("Target Detected!"));
+		Blackboard->SetValueAsObject(TEXT("Target"), Actor);
+	}
+	else
+	{
+		//이후 추적 해제 기능이 필요하다면 이곳에서 타겟을 해제해준다.
+	}
 }
 
 ETeamAttitude::Type AZombieAIController::GetTeamAttitudeTowards(const AActor& Other) const
@@ -52,4 +82,21 @@ ETeamAttitude::Type AZombieAIController::GetTeamAttitudeTowards(const AActor& Ot
 
 	return GetGenericTeamId() == OtherTeamAgent->GetGenericTeamId() ?
 		ETeamAttitude::Friendly : ETeamAttitude::Hostile;
+}
+
+void AZombieAIController::ActivateBT()
+{
+	if (!IsValid(BT))
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 30.f, FColor::Red, TEXT("NO BT!"));
+		return;
+	}
+
+	if (!RunBehaviorTree(BT))
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 30.f, FColor::Red, TEXT("BT Run Failed!"));
+		return;
+	}
+
+	GEngine->AddOnScreenDebugMessage(-1, 30.f, FColor::Red, TEXT("BT Run Success!"));
 }

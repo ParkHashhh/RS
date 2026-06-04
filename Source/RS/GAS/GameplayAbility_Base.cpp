@@ -49,7 +49,6 @@ void UGameplayAbility_Base::ApplyCooldown(const FGameplayAbilitySpecHandle Handl
 	if (!SpecHandle.IsValid())
 		return;
 
-	// ⏱️ C++에서 정한 쿨타임 수치를 SetByCaller로 GE에 강제 주입!
 	SpecHandle.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(TEXT("Data.CoolDown")), mCoolDown);
 
 	// 이 쿨타임이 도는 동안 내 몸에 붙어있을 고유 태그 부여
@@ -80,7 +79,6 @@ void UGameplayAbility_Base::ActivateAbility(const FGameplayAbilitySpecHandle Han
 	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
 	{
 		mAbilityActive = false;
-		// ❌ 쿨타임 중이면 여기서 걸러져서 아랫줄 로직이 아예 실행 안 됩니다!
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 		return;
 	}

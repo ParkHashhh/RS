@@ -3,13 +3,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "../../RSConstants.h"
 #include "AIController.h"
+#include "Perception/AIPerceptionTypes.h"
 #include "ZombieAIController.generated.h"
-
-//임시로 사용할 팀 아이디 : 나중에 상위 클래스에 선언되면 제거할 예정이다.
-#define	TeamNeutral	2
-#define	TeamZombie	1
-#define	TeamPlayer	0
 
 UCLASS()
 class RS_API AZombieAIController : public AAIController
@@ -26,17 +23,24 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class UAISenseConfig_Sight> SightConfig;
 
-	UPROPERTY()
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta =(AllowPrivateAccess = "true"))
 	TObjectPtr<UBehaviorTree> BT;
 
-public:
-	void SetBT(UBehaviorTree* BehaviorTree);
+protected:
+	virtual void BeginPlay() override;
 
 public:
 	//각각의 감각에 대한 설정이 필요한 경우 함수를 이곳에 추가한다.
 	void SetDetectRange_Sight(float Range);
 
 public:
+	UFUNCTION()
+	void OnTarget(AActor* Actor, FAIStimulus Stimulus);
+
+public:
 	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const;
+
+public:
+	void ActivateBT();
 	
 };

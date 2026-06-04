@@ -5,6 +5,7 @@
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/FloatingPawnMovement.h"
 #include "AbilitySystemComponent.h"
+#include "AI/ZombieAIController.h"
 
 
 // Sets default values
@@ -23,12 +24,16 @@ AZombieBase::AZombieBase()
 	Movement = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("Movement"));
 	Movement->SetUpdatedComponent(Body);
 
+	bUseControllerRotationYaw = true;
+
 	//ASC = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("ASC"));
 
 	//AttributeSet = CreateDefaultSubobject<UZombieAttributeSet>(TEXT("AttributeSet"));
 	//ASC->AddAttributeSetSubobject<UZombieAttributeSet>(AttributeSet);
 
-	SetGenericTeamId(FGenericTeamId(TeamZombie));
+	SetGenericTeamId(FGenericTeamId(TeamMonster));
+		
+	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 }
 
 // Called when the game starts or when spawned
@@ -43,6 +48,18 @@ void AZombieBase::BeginPlay()
 	
 }
 
+void AZombieBase::PostInitProperties()
+{
+	Super::PostInitProperties();
+
+	//디테일에서 지정한 값은 이 타이밍에 들어가게 된다.
+	//이곳에서 지정한 ai컨트롤러를 사용하도록 설정해야 한다.
+	if (IsValid(AICtrl))
+	{
+		AIControllerClass = AICtrl;
+	}
+}
+
 // Called every frame
 void AZombieBase::Tick(float DeltaTime)
 {
@@ -53,6 +70,18 @@ void AZombieBase::Tick(float DeltaTime)
 void AZombieBase::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
+}
+
+void AZombieBase::PossessedBy(AController* NewController)
+{
+	//컨트롤러 빙의가 성공했을 때 비헤이비어 트리를 바로 활성화 시켜줘야 한다.
+	AZombieAIController* Ctrl = Cast<AZombieAIController>(NewController);
+	GEngine->AddOnScreenDebugMessage(-1, 30.f, FColor::Red, TEXT("Test"));
+	if (IsValid(Ctrl))
+	{
+		Ctrl->ActivateBT();
+	}
+	Super::PossessedBy(NewController);
 }
 
 void AZombieBase::SetGenericTeamId(const FGenericTeamId& ID)

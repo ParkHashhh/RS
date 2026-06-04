@@ -13,5 +13,11 @@ UCLASS()
 class RS_API AZombieSpecial : public AZombieBase
 {
 	GENERATED_BODY()
+
+public:
+	AZombieSpecial();
+
+protected:
+	virtual void BeginPlay() override;
 	
 };

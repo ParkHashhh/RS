@@ -3,3 +3,11 @@
 
 #include "ZombieSpecial.h"
 
+AZombieSpecial::AZombieSpecial()
+{
+}
+
+void AZombieSpecial::BeginPlay()
+{
+	Super::BeginPlay();
+}
