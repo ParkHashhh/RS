@@ -8,6 +8,8 @@
 #include "RS/Input/InputData.h"
 #include "Attribute/PlayerAttributeSet.h"
 #include "DrawDebugHelpers.h"
+#include "RS/LogCategory.h"
+#include "RS/Input/InputData.h"
 
 // Sets default values
 APlayerCharacterBase::APlayerCharacterBase()
@@ -212,35 +214,39 @@ void APlayerCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 	}
 
 	// FName으로 등록된 InputAction을 반환해 등록한다.
-	UInputAction* Action = InputData->FindAction(TEXT("Move"));
+	UInputAction* Action = InputData->FindAction(FInputKeyNames::Move);
 
 	if (Action)
 	{
 		EnhancedInput->BindAction(Action, ETriggerEvent::Triggered, this, &APlayerCharacterBase::MoveKey);
 	}
+	else
+	{
+		RS_LOG_DEBUG(LogRSProperties, Error, TEXT("%s: MoveIAKey is not connected"), *LOG_LINE_INFO)
+	}
 
-	Action = InputData->FindAction(TEXT("Dash"));
+	Action = InputData->FindAction(FInputKeyNames::Dash);
 
 	if (Action)
 	{
 		EnhancedInput->BindAction(Action, ETriggerEvent::Triggered, this, &APlayerCharacterBase::DashKey);
 	}
 
-	Action = InputData->FindAction(TEXT("Attack"));
+	Action = InputData->FindAction(FInputKeyNames::Attack);
 
 	if (Action)
 	{
 		EnhancedInput->BindAction(Action, ETriggerEvent::Triggered, this, &APlayerCharacterBase::AttackKey);
 	}
 
-	Action = InputData->FindAction(TEXT("Sit"));
+	Action = InputData->FindAction(FInputKeyNames::Sit);
 
 	if (Action)
 	{
 		EnhancedInput->BindAction(Action, ETriggerEvent::Triggered, this, &APlayerCharacterBase::SitKey);
 	}
 
-	Action = InputData->FindAction(TEXT("Rotation"));
+	Action = InputData->FindAction(FInputKeyNames::Rotation);
 
 	if (Action)
 	{
@@ -272,14 +278,18 @@ void APlayerCharacterBase::ShootAttackRay()
 	float Dist = AttributeSet->GetAttackDistance();
 	FVector End = Start + (GetActorForwardVector() * Dist);
 
-	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_GameTraceChannel1);
-
-	// 🟢 디버그 라인 그리기
-	DrawDebugLine(GetWorld(), Start, End, bHit ? FColor::Red : FColor::Green, false, 2.0f, 0, 2.0f);
-
-	// 🟢 결과 판단도 bHit 변수로 수행
-	if (bHit)
+	bool bHit = false;
+	if (HasAuthority())
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Yellow, TEXT("🎯 적중!"));
+		bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_GameTraceChannel1);
+		if (bHit)
+		{
+			// 실제 데미지 적용 로직은 서버에서만!
+			// ApplyDamage();
+		}
 	}
+	// 2. 디버그 라인은 '누구나' 그려야 내 화면에 보입니다!
+	// bHit은 서버에서만 결과가 나오므로, 클라이언트에서는 bHit을 확신할 수 없습니다.
+	// 하지만 일단 이펙트용 선을 그리는 것이므로 로컬에서 항상 실행되게 합니다.
+	DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 2.0f, 0, 2.0f);
 }

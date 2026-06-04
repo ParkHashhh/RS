@@ -14,6 +14,19 @@
 /**
  * 
  */
+
+USTRUCT(BlueprintType)
+struct FInputKeyNames
+{
+	GENERATED_BODY()
+
+	inline static const FName Move = FName(TEXT("Move"));
+	inline static const FName Dash = FName(TEXT("Dash"));
+	inline static const FName Attack = FName(TEXT("Attack"));
+	inline static const FName Sit = FName(TEXT("Sit"));
+	inline static const FName Rotation = FName(TEXT("Rotation"));
+};
+
 UCLASS(Blueprintable, BlueprintType, EditInlineNew)
 class RS_API UInputData : public UObject
 {
