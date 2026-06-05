@@ -11,8 +11,6 @@ UGameplayAbility_Attack::UGameplayAbility_Attack()
 	TriggerData.TriggerTag = FGameplayTag::RequestGameplayTag(TEXT("Player.Battle.Attack"));
 	TriggerData.TriggerSource = EGameplayAbilityTriggerSource::GameplayEvent;
 	AbilityTriggers.Add(TriggerData);
-
-
 }
 
 
@@ -42,9 +40,6 @@ void UGameplayAbility_Attack::ActivateAbility(const FGameplayAbilitySpecHandle H
 		// 캐릭터의 공격 애니메이션 몽타주 재생 함수 호출
 		// PlayerChar->PlayAttackMontage();
 	}
-
-	GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, TEXT("Attack Ability Successed"));
-
 	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 
 }

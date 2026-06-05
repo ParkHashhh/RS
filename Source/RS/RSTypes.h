@@ -72,3 +72,15 @@ struct FItemTableInfo : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item|GAS")
 	TArray<FItemOption> ItemOptions;
 };
+
+USTRUCT(BlueprintType)
+struct FMiscTableInfo : public FTableRowBase
+{
+	GENERATED_BODY()
+};
+
+USTRUCT(BlueprintType)
+struct FPlayerDefaultInfo : public FTableRowBase
+{
+	GENERATED_BODY()
+};

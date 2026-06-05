@@ -5,9 +5,9 @@
 #include "ZombieBase.h"
 #include "ZombieNormal.generated.h"
 
-/**
- * 
- */
+class USkeletalMesh;
+class UZombieStandardAttributeSet;
+
 UCLASS()
 class RS_API AZombieNormal : public AZombieBase
 {
@@ -20,7 +20,11 @@ protected:
 	//일반 좀비 프리셋 메쉬를 넣어둘 배열이다.
 	//이 클래스를 상속받아 블루프린트를 만든 뒤 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
-	TArray<TObjectPtr<class USkeletalMesh>> MeshArray;
+	TArray<TObjectPtr<USkeletalMesh>> MeshArray;
+
+	//부모는 관리의 편의성을 위해 Base로 들고 있으므로 사용 편의성을 위해 캐스팅을 미리 수행한다.
+	UPROPERTY()
+	TObjectPtr<UZombieStandardAttributeSet> NormalAttributeSet;
 
 protected:
 	virtual void BeginPlay() override;

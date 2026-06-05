@@ -2,9 +2,16 @@
 
 
 #include "ZombieNormal.h"
+#include "GAS/ZombieStandardAttributeSet.h"
 
 AZombieNormal::AZombieNormal()
 {
+	AttributeSet = CreateDefaultSubobject<UZombieStandardAttributeSet>(TEXT("Attribute"));
+	UZombieStandardAttributeSet* StandardAttri = Cast<UZombieStandardAttributeSet>(AttributeSet);
+	if (IsValid(StandardAttri))
+	{
+		ASC->AddAttributeSetSubobject<UZombieStandardAttributeSet>(StandardAttri);
+	}
 }
 
 void AZombieNormal::BeginPlay()
@@ -20,4 +27,6 @@ void AZombieNormal::BeginPlay()
 			Mesh->SetSkeletalMesh(MeshArray[Index]);
 		}
 	}
+
+	NormalAttributeSet = Cast<UZombieStandardAttributeSet>(AttributeSet);
 }

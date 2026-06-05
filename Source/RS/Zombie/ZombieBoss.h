@@ -2,9 +2,10 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
 #include "ZombieBase.h"
 #include "ZombieBoss.generated.h"
+
+class UZombieBossAttributeSet;
 
 UCLASS()
 class RS_API AZombieBoss : public AZombieBase
@@ -14,6 +15,10 @@ class RS_API AZombieBoss : public AZombieBase
 public:
 	// Sets default values for this pawn's properties
 	AZombieBoss();
+
+protected:
+	UPROPERTY()
+	TObjectPtr<UZombieBossAttributeSet> BossAttributeSet;
 
 protected:
 	// Called when the game starts or when spawned

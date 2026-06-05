@@ -18,27 +18,35 @@ APlayerCharacterBase::APlayerCharacterBase()
 	PrimaryActorTick.bCanEverTick = true;
 
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("Arm"));
-
-	// SpringArm의 부모 컴포넌트로 Mesh를 지정한다.
-	SpringArm->SetupAttachment(RootComponent);
+	// SpringArm의 부모 컴포넌트로 Capsule을 지정한다.
+	SpringArm->SetupAttachment(GetMesh());
 
 	SpringArm->TargetArmLength = 150.f;
-	//mSpringArm->SocketOffset.Y = 20.0;
-	SpringArm->SetRelativeLocation(FVector(0.0, 0.0, 200.f));
+	SpringArm->SetRelativeLocation(FVector(0.0, 0.0, 150.f));
 	SpringArm->SetRelativeRotation(FRotator(-10.0, 90.0, 0.0));
 
 	SpringArm->bUsePawnControlRotation = true;
 	
 	// CameraComponent를 생성하고 SpringArm에 붙여준다.
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
-
 	Camera->SetupAttachment(SpringArm);
+	Camera->bUsePawnControlRotation = false;
 
 	bUseControllerRotationYaw = true;
 
-	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	USkeletalMeshComponent* PlayerMesh = GetMesh();
 
+	if (IsValid(PlayerMesh))
+	{
+		PlayerMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
 
+	UCapsuleComponent* PlayerBody = GetCapsuleComponent();
+
+	if (IsValid(PlayerBody))
+	{
+		PlayerBody->SetCollisionProfileName(CollisionProfileName);
+	}
 	ASC = CreateDefaultSubobject<UPlayerAbilitySystemComponent>(TEXT("ASC"));
 
 	AttributeSet = CreateDefaultSubobject<UPlayerAttributeSet>(TEXT("AttributeSet"));
@@ -55,6 +63,7 @@ APlayerCharacterBase::APlayerCharacterBase()
 	SetReplicates(true);
 	SetReplicateMovement(true);
 
+	SetGenericTeamId(FGenericTeamId(TeamPlayer));
 }
 
 
@@ -138,6 +147,8 @@ void APlayerCharacterBase::DashKey(const FInputActionValue& Value)
 
 void APlayerCharacterBase::AttackKey(const FInputActionValue& Value)
 {
+
+	// TODO : Bool 변수로 누르고 있는지 땠는지를 판단 한 후 공격속도마다 공격 함수를 호출하게 하고(이펙트 파티클 등등), 서버에서는 충돌처리 및 데미지 체크하기
 	bool Attack = Value.Get<bool>();
 
 	if (Attack && IsLocallyControlled() && CanAttack)
@@ -154,22 +165,21 @@ void APlayerCharacterBase::AttackKey(const FInputActionValue& Value)
 		CanAttack = false;
 		float AttackSpeed = AttributeSet->GetAttackSpeed();
 
-		RS_PRINT_SCREEN(0.2, FColor::Yellow, TEXT("Attack Speed : %.2f"), AttackSpeed);
 		float BaseDelay = 0.2f;
 		float FinalDelay = BaseDelay / FMath::Max(AttackSpeed, 0.01f);
 
-		GetWorldTimerManager().SetTimer( AttackTimerHandle,
+		// 타이머 끝날때 함수 호출 및 초기화
+		GetWorldTimerManager().SetTimer(AttackTimerHandle,
 			this, &APlayerCharacterBase::ResetAttackCooldown,
 			FinalDelay, false
 		);
 	}
-
-	
 }
 
 void APlayerCharacterBase::ResetAttackCooldown()
 {
 	CanAttack = true;
+
 }
 
 void APlayerCharacterBase::SitKey(const FInputActionValue& Value)
@@ -291,24 +301,71 @@ void APlayerCharacterBase::ShootAttackRay()
 
 	FHitResult Hit;
 	FVector Start = GetActorLocation(); // 포켓이 들어가야함
-	Start.Z += 100.f;
 	float Dist = AttributeSet->GetAttackDistance();
 	float HP = AttributeSet->GetHP();
 
 	FVector End = Start + (GetActorForwardVector() * Dist);
 
-	bool bHit = false;
-	if (HasAuthority())
+	FCollisionQueryParams Params(NAME_None, false, this);
+
+	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_GameTraceChannel1, Params);
+
+	if (bHit)
 	{
-		bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_GameTraceChannel1);
-		if (bHit)
+		if (IsLocallyControlled())
 		{
-			// 실제 데미지 적용 로직은 서버에서만
-			// ApplyDamage();
+			DrawDebugLine(GetWorld(), Start, Hit.Location, FColor::Red, false, 2.0f, 0, 2.0f);
+		}
+		AActor* TargetActor = Hit.GetActor();
+		
+		ETeamAttitude::Type Attitude = GetTeamAttitudeTowards(*TargetActor);
+		RS_PRINT_SCREEN(0.2, FColor::Red, TEXT("Hit Actor Name : %s"),*TargetActor->GetName());
+
+		if (Attitude == ETeamAttitude::Hostile)
+		{
+			UAbilitySystemComponent* TargetASC = TargetActor->FindComponentByClass<UAbilitySystemComponent>();
+
+			if (TargetASC && ASC)
+			{
+				// Attribute 데미지 감소 처리
+			}
 		}
 	}
-	if (IsLocallyControlled())
+	else
 	{
-		DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 2.0f, 0, 2.0f);
+
+		if (IsLocallyControlled())
+		{
+			DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 2.0f, 0, 2.0f);
+		}
+		RS_PRINT_SCREEN(0.2, FColor::Black, TEXT("No Hit"));
 	}
+
+	
 }
+
+
+void APlayerCharacterBase::SetGenericTeamId(const FGenericTeamId& ID)
+{
+	TeamID = ID;
+}
+
+FGenericTeamId APlayerCharacterBase::GetGenericTeamId() const
+{
+	return TeamID;
+}
+
+ETeamAttitude::Type APlayerCharacterBase::GetTeamAttitudeTowards(const AActor& Other) const
+{
+	const IGenericTeamAgentInterface* OtherTeamAgent = Cast<const IGenericTeamAgentInterface>(&Other);
+
+	if (!OtherTeamAgent)
+		return ETeamAttitude::Neutral;
+
+	else if (OtherTeamAgent->GetGenericTeamId().GetId() == TeamNeutral)
+		return ETeamAttitude::Neutral;
+
+	return GetGenericTeamId() == OtherTeamAgent->GetGenericTeamId() ?
+		ETeamAttitude::Friendly : ETeamAttitude::Hostile;
+}
+

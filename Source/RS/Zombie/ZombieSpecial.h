@@ -6,9 +6,8 @@
 #include "ZombieBase.h"
 #include "ZombieSpecial.generated.h"
 
-/**
- * 
- */
+class UZombieStandardAttributeSet;
+
 UCLASS()
 class RS_API AZombieSpecial : public AZombieBase
 {
@@ -16,6 +15,10 @@ class RS_API AZombieSpecial : public AZombieBase
 
 public:
 	AZombieSpecial();
+
+protected:
+	UPROPERTY()
+	TObjectPtr<UZombieStandardAttributeSet> SpecialAttributeSet;
 
 protected:
 	virtual void BeginPlay() override;

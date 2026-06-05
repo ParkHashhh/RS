@@ -2,6 +2,7 @@
 
 
 #include "ZombieBoss.h"
+#include "GAS/ZombieBossAttributeSet.h"
 
 
 // Sets default values
@@ -9,12 +10,21 @@ AZombieBoss::AZombieBoss()
 {
 	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+
+	AttributeSet = CreateDefaultSubobject<UZombieBossAttributeSet>(TEXT("Attribute"));
+	UZombieBossAttributeSet* BossAttri = Cast<UZombieBossAttributeSet>(AttributeSet);
+	if (IsValid(BossAttri))
+	{
+		ASC->AddAttributeSetSubobject<UZombieBossAttributeSet>(BossAttri);
+	}
 }
 
 // Called when the game starts or when spawned
 void AZombieBoss::BeginPlay()
 {
 	Super::BeginPlay();
+
+	BossAttributeSet = Cast<UZombieBossAttributeSet>(AttributeSet);
 	
 }
 

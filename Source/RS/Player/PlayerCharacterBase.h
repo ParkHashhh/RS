@@ -24,13 +24,15 @@ public:
 	APlayerCharacterBase();
 
 	static inline FName CapsuleComponentName = TEXT("CapsuleComponent");
+	static inline FName CollisionProfileName = TEXT("Player");
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USkeletalMesh> SkeletalMeshAsset;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UCapsuleComponent> Body;
 
-protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<class USpringArmComponent> SpringArm;
 
@@ -55,6 +57,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "GAS")
 	TArray<TSubclassOf<UGameplayAbility>> Abilitys;
+
+
+	FGenericTeamId TeamID;
 
 protected:
 	// 연사 제어용 변수 및 타이머
@@ -118,4 +123,11 @@ public:
 	void Attack_Execution_Implementation();
 
 	void ShootAttackRay();
+
+
+public:
+	virtual void SetGenericTeamId(const FGenericTeamId& ID);
+	virtual FGenericTeamId GetGenericTeamId() const;
+	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const;
+
 };

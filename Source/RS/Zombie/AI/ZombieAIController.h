@@ -8,6 +8,8 @@
 #include "Perception/AIPerceptionTypes.h"
 #include "ZombieAIController.generated.h"
 
+class UAISenseConfig_Sight;
+
 UCLASS()
 class RS_API AZombieAIController : public AAIController
 {
@@ -21,7 +23,7 @@ protected:
 	TObjectPtr<UAIPerceptionComponent> AIPerception;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UAISenseConfig_Sight> SightConfig;
+	TObjectPtr<UAISenseConfig_Sight> SightConfig;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta =(AllowPrivateAccess = "true"))
 	TObjectPtr<UBehaviorTree> BT;

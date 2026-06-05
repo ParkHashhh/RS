@@ -18,7 +18,15 @@ class RS_API URSDataSettings : public UDeveloperSettings
 public:
 	URSDataSettings();
 
-	// 아이템 정보가 담긴 데이터 테이블 애셋 ID
+	// 플레이어 캐릭터의 기본 정보가 담긴 테이블 애셋
 	UPROPERTY(Config, EditAnywhere, Category="Data")
-	FPrimaryAssetId ItemInfoTableAssetId;
+	FPrimaryAssetId PlayerDefaultInfoTableAsset;
+
+	// 아이템 정보가 담긴 데이터 테이블 애셋
+	UPROPERTY(Config, EditAnywhere, Category="Data")
+	FPrimaryAssetId ItemInfoTableAsset;
+
+	// 기타 데이터 테이블 애셋
+	UPROPERTY(Config, EditAnywhere, Category="Data")
+	FPrimaryAssetId MiscInfoTableAsset;
 };

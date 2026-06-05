@@ -9,6 +9,12 @@
 #include "AbilitySystemInterface.h"
 #include "ZombieBase.generated.h"
 
+class UCapsuleComponent;
+class UFloatingPawnMovement;
+class UAbilitySystemComponent;
+class AZombieAIController;
+class UBaseAttributeSet;
+
 UCLASS()
 class RS_API AZombieBase : public ARSPawn,
 	public IGenericTeamAgentInterface,
@@ -18,31 +24,33 @@ class RS_API AZombieBase : public ARSPawn,
 	GENERATED_BODY()
 
 public:
+	inline static const FName ZombieCollisionName = TEXT("Zombie");
+
 	// Sets default values for this pawn's properties
 	AZombieBase();
 
 protected:
 	//필요한 부품 : 충돌체, 메쉬, 무브먼트, GAS, 어트리뷰트셋, 애님 인스턴스
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta =(AllowPrivateAccess = "true"))
-	TObjectPtr<class UCapsuleComponent> Body;
+	TObjectPtr<UCapsuleComponent> Body;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USkeletalMeshComponent> Mesh;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UFloatingPawnMovement> Movement;
+	TObjectPtr<UFloatingPawnMovement> Movement;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UAbilitySystemComponent> ASC;
+	TObjectPtr<UAbilitySystemComponent> ASC;
 		
-	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	//TObjectPtr<class UZombieAttributeSet> AttributeSet;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UBaseAttributeSet> AttributeSet;
 
 	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	//TObjectPtr<class UZombieAnimInstance> AnimInstance;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta =(AllowPrivateAccess = "true"))
-	TSubclassOf<class AZombieAIController> AICtrl;
+	TSubclassOf<AZombieAIController> AICtrl;
 
 	FGenericTeamId TeamID;
 

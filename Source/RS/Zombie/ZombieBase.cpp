@@ -16,20 +16,26 @@ AZombieBase::AZombieBase()
 
 	//필요한 부품들을 생성한다.
 	Body = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Body"));
+	Body->SetCollisionProfileName(ZombieCollisionName);
+	Body->AddRelativeLocation(FVector(0, 0, 50));
+
 	SetRootComponent(Body);
 
 	Mesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Mesh"));
 	Mesh->SetupAttachment(Body);
+	Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	Movement = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("Movement"));
 	Movement->SetUpdatedComponent(Body);
 
 	bUseControllerRotationYaw = true;
 
-	//ASC = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("ASC"));
+	//객체별 AttributeSet의 타입이 다르므로 AttributeSet의 생성, 연결은 자식 객체에서 진행해야 한다.
+	ASC = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("ASC"));
 
-	//AttributeSet = CreateDefaultSubobject<UZombieAttributeSet>(TEXT("AttributeSet"));
-	//ASC->AddAttributeSetSubobject<UZombieAttributeSet>(AttributeSet);
+	ASC->SetIsReplicated(true);
+	SetReplicates(true);
+	SetReplicateMovement(true);
 
 	SetGenericTeamId(FGenericTeamId(TeamMonster));
 		
