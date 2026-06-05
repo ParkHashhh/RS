@@ -14,6 +14,7 @@ class UFloatingPawnMovement;
 class UAbilitySystemComponent;
 class AZombieAIController;
 class UBaseAttributeSet;
+class UGameplayAbility;
 
 UCLASS()
 class RS_API AZombieBase : public ARSPawn,
@@ -54,6 +55,9 @@ protected:
 
 	FGenericTeamId TeamID;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS", meta = (AllowPrivateAccess = "true"));
+	TSubclassOf<UGameplayAbility> AttackAbility;
+
 
 protected:
 	// Called when the game starts or when spawned
@@ -79,4 +83,13 @@ public:
 	virtual void SetGenericTeamId(const FGenericTeamId& ID);
 	virtual FGenericTeamId GetGenericTeamId() const;
 	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const;
+
+public:
+	UBaseAttributeSet* GetAttributeSet() const
+	{
+		return AttributeSet;
+	}
+
+public:
+	virtual void Attack();
 };

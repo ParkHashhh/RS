@@ -7,6 +7,7 @@
 #include "Navigation/PathFollowingComponent.h"
 #include "../ZombieBase.h"
 #include "Components/CapsuleComponent.h"
+#include "RS/GAS/BaseAttributeSet.h"
 
 UBTTask_TraceNoneBoss::UBTTask_TraceNoneBoss()
 {
@@ -132,12 +133,10 @@ void UBTTask_TraceNoneBoss::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* N
 	//몬스터의 어트리뷰트 셋으로부터 몬스터의 사거리를 얻어와야 한다.
 	//테스트용으로 100.f을 임시로 사용한다.
 
-	/*
+	UBaseAttributeSet* ZombieAttri = Zombie->GetAttributeSet();
+	float AttackRange = ZombieAttri->GetAttackDistance();
 
-	*/
-
-
-	if (Distance <= 100.f)
+	if (Distance <= AttackRange)
 	{
 		//추적을 통해 사거리 내로 접근했으므로 다음 전투 태스크를 진행한다.
 		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);

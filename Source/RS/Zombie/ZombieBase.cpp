@@ -6,6 +6,7 @@
 #include "GameFramework/FloatingPawnMovement.h"
 #include "AbilitySystemComponent.h"
 #include "AI/ZombieAIController.h"
+#include "GAS/Ability/GameplayAbility_ZombieAttack.h"
 
 
 // Sets default values
@@ -47,11 +48,24 @@ void AZombieBase::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (IsValid(AICtrl))
+	{
+		AIControllerClass = AICtrl;
+	}
+
+	if (GetController() == nullptr)
+	{
+		SpawnDefaultController();
+	}
+
 	//AnimInstance = Cast<UZombieAnimInstance>(Mesh->GetAnimInstance());
 
-	//ASC->InitAbilityActorInfo(this, this);
-	//ASC->GiveAbility(FGameplayAbilitySpec(UGameplayAbility_NormalAttack::StaticClass(), 1, 0));
-	
+	ASC->InitAbilityActorInfo(this, this);
+	if (AttackAbility)
+	{
+		ASC->GiveAbility(FGameplayAbilitySpec(AttackAbility, 1));
+	}
+	//ASC->GiveAbility(FGameplayAbilitySpec(UGameplayAbility_ZombieAttack::StaticClass(), 1));
 }
 
 void AZombieBase::PostInitProperties()
@@ -59,11 +73,6 @@ void AZombieBase::PostInitProperties()
 	Super::PostInitProperties();
 
 	//디테일에서 지정한 값은 이 타이밍에 들어가게 된다.
-	//이곳에서 지정한 ai컨트롤러를 사용하도록 설정해야 한다.
-	if (IsValid(AICtrl))
-	{
-		AIControllerClass = AICtrl;
-	}
 }
 
 // Called every frame
@@ -112,5 +121,10 @@ ETeamAttitude::Type AZombieBase::GetTeamAttitudeTowards(const AActor& Other) con
 
 	return GetGenericTeamId() == OtherTeamAgent->GetGenericTeamId() ?
 		ETeamAttitude::Friendly : ETeamAttitude::Hostile;
+}
+
+void AZombieBase::Attack()
+{
+
 }
 

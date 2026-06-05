@@ -28,4 +28,7 @@ protected:
 
 protected:
 	virtual void BeginPlay() override;
+
+public:
+	virtual void Attack();
 };

@@ -20,3 +20,8 @@ void AZombieSpecial::BeginPlay()
 
 	SpecialAttributeSet = Cast<UZombieStandardAttributeSet>(AttributeSet);
 }
+
+void AZombieSpecial::Attack()
+{
+	Super::Attack();
+}

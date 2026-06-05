@@ -40,3 +40,7 @@ void AZombieBoss::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 }
 
+void AZombieBoss::Attack()
+{
+
+}

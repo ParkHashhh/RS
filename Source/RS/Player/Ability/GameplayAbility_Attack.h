@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "RS/GAS/GamePlayAbility_Base.h"
+#include "RS/GAS/GamePlayAbility_PlayerBase.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "GameplayAbility_Attack.generated.h"
 
@@ -11,7 +11,7 @@
  * 
  */
 UCLASS()
-class RS_API UGameplayAbility_Attack : public UGameplayAbility_Base
+class RS_API UGameplayAbility_Attack : public UGameplayAbility_PlayerBase
 {
 	GENERATED_BODY()public:
 		UGameplayAbility_Attack();
