@@ -125,89 +125,12 @@ void APlayerCharacterBase::BeginPlay()
 
 	SetMouseSensitivity(0.85f, 0.85f);
 }
-void APlayerCharacterBase::MoveKey(const FInputActionValue& Value)
+
+void APlayerCharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	FVector2D MovementVector = Value.Get<FVector2D>();
-
-	AddMovementInput(GetActorForwardVector(), MovementVector.X);
-
-	AddMovementInput(GetActorRightVector(), MovementVector.Y);
-}
-
-void APlayerCharacterBase::DashKey(const FInputActionValue& Value)
-{
-	bool Dash = Value.Get<bool>();
-
-	if (Dash)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("DashKey"));
-	}
-}
-
-void APlayerCharacterBase::AttackKey(const FInputActionValue& Value)
-{
-
-	// TODO : Bool 변수로 누르고 있는지 땠는지를 판단 한 후 공격속도마다 공격 함수를 호출하게 하고(이펙트 파티클 등등), 서버에서는 충돌처리 및 데미지 체크하기
-	bool Attack = Value.Get<bool>();
-
-	if (Attack && IsLocallyControlled() && CanAttack)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("AttackKey"));
-		if (ASC)
-		{
-			FGameplayEventData EventData;
-			EventData.Instigator = this; // 이 스킬을 발동한 주체
-			EventData.Target = this;     // 이 스킬이 꽂히는 대상
-
-			ASC->HandleGameplayEvent(FGameplayTag::RequestGameplayTag(TEXT("Player.Battle.Attack")), &EventData);
-		}
-		CanAttack = false;
-		float AttackSpeed = AttributeSet->GetAttackSpeed();
-
-		float BaseDelay = 0.2f;
-		float FinalDelay = BaseDelay / FMath::Max(AttackSpeed, 0.01f);
-
-		// 타이머 끝날때 함수 호출 및 초기화
-		GetWorldTimerManager().SetTimer(AttackTimerHandle,
-			this, &APlayerCharacterBase::ResetAttackCooldown,
-			FinalDelay, false
-		);
-	}
-}
-
-void APlayerCharacterBase::ResetAttackCooldown()
-{
-	CanAttack = true;
-
-}
-
-void APlayerCharacterBase::SitKey(const FInputActionValue& Value)
-{
-	bool Sit = Value.Get<bool>();
-
-	if (Sit)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("SitKey"));
-	}
-}
-
-void APlayerCharacterBase::RotationMouse(const FInputActionValue& Value)
-{
-	FVector	Axis = Value.Get<FVector>();
-	AddControllerYawInput(Axis.X * MouseXSensitivity);
-	AddControllerPitchInput(Axis.Y * MouseYSensitivity);
-}
-
-void APlayerCharacterBase::OnConstruction(const FTransform& Transform)
-{
-	Super::OnConstruction(Transform);
-	if (SkeletalMeshAsset)
-	{
-		GetMesh()->SetSkeletalMeshAsset(SkeletalMeshAsset);
-	}
-
-	
+	DOREPLIFETIME(APlayerCharacterBase, IsAttacking); // 🎯 동기화 대상 등록
 }
 
 // Called every frame
@@ -263,7 +186,9 @@ void APlayerCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 
 	if (Action)
 	{
-		EnhancedInput->BindAction(Action, ETriggerEvent::Triggered, this, &APlayerCharacterBase::AttackKey);
+		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::AttackKey);
+		EnhancedInput->BindAction(Action, ETriggerEvent::Completed, this, &APlayerCharacterBase::AttackReleaseKey);
+		EnhancedInput->BindAction(Action, ETriggerEvent::Canceled, this, &APlayerCharacterBase::AttackReleaseKey);
 	}
 
 	Action = InputData->FindAction(FInputKeyNames::Sit);
@@ -281,6 +206,90 @@ void APlayerCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 	}
 
 }
+
+void APlayerCharacterBase::MoveKey(const FInputActionValue& Value)
+{
+
+	FVector2D MovementVector = Value.Get<FVector2D>();
+
+	AddMovementInput(GetActorForwardVector(), MovementVector.X);
+
+	AddMovementInput(GetActorRightVector(), MovementVector.Y);
+}
+
+void APlayerCharacterBase::DashKey(const FInputActionValue& Value)
+{
+	bool Dash = Value.Get<bool>();
+
+	if (Dash)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("DashKey"));
+	}
+}
+
+void APlayerCharacterBase::AttackKey(const FInputActionValue& Value)
+{
+
+	// TODO : Bool 변수로 누르고 있는지 땠는지를 판단 한 후 공격속도마다 공격 함수를 호출하게 하고(이펙트 파티클 등등), 서버에서는 충돌처리 및 데미지 체크하기
+	IsAttacking = true;
+
+	SetIsAttacking(true); // Server RPC 함수 필요
+
+	if (IsLocallyControlled() && IsAttacking)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("AttackKey"));
+		if (ASC)
+		{
+			FGameplayEventData EventData;
+			EventData.Instigator = this; // 이 스킬을 발동한 주체
+			EventData.Target = this;     // 이 스킬이 꽂히는 대상
+
+			ASC->HandleGameplayEvent(FGameplayTag::RequestGameplayTag(TEXT("Player.Battle.Attack")), &EventData);
+		}
+	}
+}
+
+void APlayerCharacterBase::AttackReleaseKey(const FInputActionValue& Value)
+{
+	IsAttacking = false;
+	SetIsAttacking(false);
+	RS_PRINT_SCREEN(2, FColor::Red, TEXT("Release Attack Key"));
+}
+
+void APlayerCharacterBase::SetIsAttacking_Implementation(bool Attacking)
+{
+	IsAttacking = Attacking;
+}
+
+
+void APlayerCharacterBase::SitKey(const FInputActionValue& Value)
+{
+	bool Sit = Value.Get<bool>();
+
+	if (Sit)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("SitKey"));
+	}
+}
+
+void APlayerCharacterBase::RotationMouse(const FInputActionValue& Value)
+{
+	FVector	Axis = Value.Get<FVector>();
+	AddControllerYawInput(Axis.X * MouseXSensitivity);
+	AddControllerPitchInput(Axis.Y * MouseYSensitivity);
+}
+
+void APlayerCharacterBase::OnConstruction(const FTransform& Transform)
+{
+	Super::OnConstruction(Transform);
+	if (SkeletalMeshAsset)
+	{
+		GetMesh()->SetSkeletalMeshAsset(SkeletalMeshAsset);
+	}
+
+	
+}
+
 
 void APlayerCharacterBase::Attack_Server_Implementation()
 {

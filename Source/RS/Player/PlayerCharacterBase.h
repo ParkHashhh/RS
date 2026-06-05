@@ -61,22 +61,27 @@ protected:
 
 	FGenericTeamId TeamID;
 
-protected:
-	// 연사 제어용 변수 및 타이머
-	bool CanAttack = true;
-	FTimerHandle AttackTimerHandle;
-
-protected:
-	void ResetAttackCooldown();
+	UPROPERTY(Replicated)
+	bool IsAttacking = false;
 
 public:
-	// IAbilitySystemInterface를 구현하기 위한 필수 함수
+	// Setter / Getter
+	bool GetIsAttacking()
+	{
+		return IsAttacking;
+	}
+
+	UFUNCTION(Server, Reliable)
+	void SetIsAttacking(bool Attacking);
+
+	UPlayerAttributeSet* GetAttributeSet()
+	{
+		return AttributeSet;
+	}
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const
 	{
 		return Cast<UAbilitySystemComponent>(ASC);
 	}
-
-public:
 	void SetMouseSensitivity(float NewX, float NewY)
 	{
 		MouseXSensitivity = NewX;
@@ -90,10 +95,14 @@ public:
 	{
 		return MouseYSensitivity;
 	}
+
+
 private:
+	// Input Function
 	void MoveKey(const FInputActionValue& Value);
 	void DashKey(const FInputActionValue& Value);
 	void AttackKey(const FInputActionValue& Value);
+	void AttackReleaseKey(const FInputActionValue& Value);
 	void SitKey(const FInputActionValue& Value);
 
 	void RotationMouse(const FInputActionValue& Value);
@@ -111,7 +120,9 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
 protected:
+
 
 	UFUNCTION(Server, Reliable)
 	void Attack_Server();
@@ -121,9 +132,7 @@ public:
 	UFUNCTION(NetMulticast, Reliable)
 	void Attack_Execution();	
 	void Attack_Execution_Implementation();
-
 	void ShootAttackRay();
-
 
 public:
 	virtual void SetGenericTeamId(const FGenericTeamId& ID);

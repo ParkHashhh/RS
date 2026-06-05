@@ -22,4 +22,8 @@ class RS_API UGameplayAbility_Attack : public UGameplayAbility_Base
 			const FGameplayAbilityActivationInfo ActivationInfo,
 			const FGameplayEventData* TriggerEventData) override;
 
+protected:
+	FTimerHandle AttackTimerHandle;
+
+	void LoopAttackSequence();
 };
