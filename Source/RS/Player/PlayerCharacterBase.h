@@ -56,6 +56,11 @@ protected:
 
 
 	UPROPERTY(EditDefaultsOnly, Category = "GAS")
+	TMap<FName,TSubclassOf<UGameplayEffect>> Effects;
+
+
+
+	UPROPERTY(EditDefaultsOnly, Category = "GAS")
 	TArray<TSubclassOf<UGameplayAbility>> Abilitys;
 
 
@@ -121,22 +126,18 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
-protected:
-
-
-	UFUNCTION(Server, Reliable)
-	void Attack_Server();
-	void Attack_Server_Implementation();	
 
 public:
-	UFUNCTION(NetMulticast, Reliable)
-	void Attack_Execution();	
-	void Attack_Execution_Implementation();
 	void ShootAttackRay();
+
+	TSubclassOf<UGameplayEffect> GetEffect(const FName TagName) const;
 
 public:
 	virtual void SetGenericTeamId(const FGenericTeamId& ID);
 	virtual FGenericTeamId GetGenericTeamId() const;
 	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const;
 
+protected:
+	UFUNCTION(Server, Reliable)
+	void Apply_Damage_Server(AActor* TargetActor, FHitResult Hit);
 };

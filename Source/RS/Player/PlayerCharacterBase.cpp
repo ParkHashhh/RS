@@ -10,6 +10,7 @@
 #include "DrawDebugHelpers.h"
 #include "RS/LogCategory.h"
 #include "RS/Input/InputData.h"
+#include "RS/Zombie/ZombieBase.h"
 
 // Sets default values
 APlayerCharacterBase::APlayerCharacterBase()
@@ -291,25 +292,11 @@ void APlayerCharacterBase::OnConstruction(const FTransform& Transform)
 }
 
 
-void APlayerCharacterBase::Attack_Server_Implementation()
-{
-
-	GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("Attack_Server"));
-	Attack_Execution();
-
-}
-
-void APlayerCharacterBase::Attack_Execution_Implementation()
-{
-	GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("Attack_Execution"));
-
-}
-
+// 공격함수
 void APlayerCharacterBase::ShootAttackRay()
 {
-
 	FHitResult Hit;
-	FVector Start = GetActorLocation(); // 포켓이 들어가야함
+	FVector Start = GetActorLocation(); // 소켓이 들어가야함
 	float Dist = AttributeSet->GetAttackDistance();
 	float HP = AttributeSet->GetHP();
 
@@ -326,8 +313,11 @@ void APlayerCharacterBase::ShootAttackRay()
 			DrawDebugLine(GetWorld(), Start, Hit.Location, FColor::Red, false, 2.0f, 0, 2.0f);
 		}
 		AActor* TargetActor = Hit.GetActor();
-		
+		if (!TargetActor)
+			return;
+
 		ETeamAttitude::Type Attitude = GetTeamAttitudeTowards(*TargetActor);
+
 		RS_PRINT_SCREEN(0.2, FColor::Red, TEXT("Hit Actor Name : %s"),*TargetActor->GetName());
 
 		if (Attitude == ETeamAttitude::Hostile)
@@ -336,7 +326,7 @@ void APlayerCharacterBase::ShootAttackRay()
 
 			if (TargetASC && ASC)
 			{
-				// Attribute 데미지 감소 처리
+				Apply_Damage_Server(TargetActor,Hit);
 			}
 		}
 	}
@@ -349,8 +339,14 @@ void APlayerCharacterBase::ShootAttackRay()
 		}
 		RS_PRINT_SCREEN(0.2, FColor::Black, TEXT("No Hit"));
 	}
+}
 
-	
+TSubclassOf<UGameplayEffect> APlayerCharacterBase::GetEffect(const FName TagName) const
+{
+	const TSubclassOf<UGameplayEffect>* FindTag = Effects.Find(TagName);
+	if(FindTag)
+		return *FindTag;
+	return nullptr;
 }
 
 
@@ -376,5 +372,45 @@ ETeamAttitude::Type APlayerCharacterBase::GetTeamAttitudeTowards(const AActor& O
 
 	return GetGenericTeamId() == OtherTeamAgent->GetGenericTeamId() ?
 		ETeamAttitude::Friendly : ETeamAttitude::Hostile;
+}
+
+void APlayerCharacterBase::Apply_Damage_Server_Implementation(AActor* TargetActor, FHitResult Hit)
+{
+
+	AZombieBase* TargetChar = Cast<AZombieBase>(TargetActor);
+
+	UAbilitySystemComponent* TargetASC = TargetActor->FindComponentByClass<UAbilitySystemComponent>();
+
+	if (HasAuthority())
+	{
+		// Attribute 데미지 감소 처리 => 서버에서만 해야함
+
+		// 상대방 액터를 좀비로 형변환
+
+		float Damage = AttributeSet->GetAttack();
+
+		FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
+		EffectContext.AddHitResult(Hit);
+
+		TSubclassOf<UGameplayEffect> Effect = GetEffect(TEXT("Damage"));
+
+		FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(Effect, 1.0f, EffectContext);
+
+
+		SpecHandle.Data.Get()->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(TEXT("SetByCaller.State.HP")), -Damage);
+
+		ASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
+		float CurrentHP = TargetChar->GetAttributeSet()->GetHP();
+		RS_PRINT_SCREEN(1.0f, FColor::Cyan, TEXT("💥 좀비 잔여 체력: %f"), CurrentHP);
+	}
+	FGameplayCueParameters CueParams;
+	CueParams.Location = Hit.Location;
+	CueParams.Normal = Hit.ImpactNormal;
+
+	// 호출하고 싶은 게임플레이 큐 태그를 정확하게 적어줍니다.
+	FGameplayTag CueTag = FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Damage")); // 주석님의 큐 태그 이름으로!
+
+	// ⚡ 상대방(좀비)의 ASC에게 직접 이 태그의 큐 연출을 터트리라고 명령합니다!
+	TargetASC->ExecuteGameplayCue(CueTag, CueParams);
 }
 
