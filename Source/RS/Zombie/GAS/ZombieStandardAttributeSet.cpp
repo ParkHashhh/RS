@@ -2,6 +2,9 @@
 
 
 #include "ZombieStandardAttributeSet.h"
+#include "GameplayEffectExtension.h"
+#include "GameplayEffect.h"
+#include "RS/LogCategory.h"
 
 void UZombieStandardAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
 {

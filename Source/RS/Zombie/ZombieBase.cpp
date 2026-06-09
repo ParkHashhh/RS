@@ -7,6 +7,8 @@
 #include "AbilitySystemComponent.h"
 #include "AI/ZombieAIController.h"
 #include "GAS/Ability/GameplayAbility_ZombieAttack.h"
+#include "GameplayEffectExtension.h"
+
 
 
 // Sets default values
@@ -126,5 +128,15 @@ ETeamAttitude::Type AZombieBase::GetTeamAttitudeTowards(const AActor& Other) con
 void AZombieBase::Attack()
 {
 
+}
+
+TSubclassOf<UGameplayEffect> AZombieBase::GetEffect(const FName& Name)
+{
+	TSubclassOf<UGameplayEffect>* FindResult = EffectMap.Find(Name);
+	if (!FindResult)
+	{
+		return nullptr;
+	}
+	return *FindResult;
 }
 

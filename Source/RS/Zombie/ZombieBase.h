@@ -15,6 +15,7 @@ class UAbilitySystemComponent;
 class AZombieAIController;
 class UBaseAttributeSet;
 class UGameplayAbility;
+class UGameplayEffect;
 
 UCLASS()
 class RS_API AZombieBase : public ARSPawn,
@@ -58,6 +59,8 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS", meta = (AllowPrivateAccess = "true"));
 	TSubclassOf<UGameplayAbility> AttackAbility;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TMap<FName, TSubclassOf<UGameplayEffect>> EffectMap;
 
 protected:
 	// Called when the game starts or when spawned
@@ -92,4 +95,5 @@ public:
 
 public:
 	virtual void Attack();
+	TSubclassOf<UGameplayEffect> GetEffect(const FName& Name);
 };

@@ -2,15 +2,14 @@
 
 
 #include "PlayerCharacterBase.h"
-#include "Components/CapsuleComponent.h"
+#include "RS/Input/InputData.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
 #include "RS/Input/InputData.h"
+#include "Components/CapsuleComponent.h"
 #include "Attribute/PlayerAttributeSet.h"
-#include "DrawDebugHelpers.h"
-#include "RS/LogCategory.h"
-#include "RS/Input/InputData.h"
 #include "RS/Zombie/ZombieBase.h"
+#include "RS/LogCategory.h"
 
 // Sets default values
 APlayerCharacterBase::APlayerCharacterBase()
@@ -231,7 +230,7 @@ void APlayerCharacterBase::DashKey(const FInputActionValue& Value)
 void APlayerCharacterBase::AttackKey(const FInputActionValue& Value)
 {
 
-	// TODO : Bool 변수로 누르고 있는지 땠는지를 판단 한 후 공격속도마다 공격 함수를 호출하게 하고(이펙트 파티클 등등), 서버에서는 충돌처리 및 데미지 체크하기
+	// Bool 변수로 누르고 있는지 땠는지를 판단 한 후 공격속도마다 공격 함수를 호출하게 하고(이펙트 파티클 등등), 서버에서는 충돌처리 및 데미지 체크하기
 	IsAttacking = true;
 
 	SetIsAttacking(true); // Server RPC 함수 필요
@@ -401,16 +400,14 @@ void APlayerCharacterBase::Apply_Damage_Server_Implementation(AActor* TargetActo
 
 		ASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
 		float CurrentHP = TargetChar->GetAttributeSet()->GetHP();
-		RS_PRINT_SCREEN(1.0f, FColor::Cyan, TEXT("💥 좀비 잔여 체력: %f"), CurrentHP);
+		RS_PRINT_SCREEN(1.0f, FColor::Cyan, TEXT("Current HP : %f"), CurrentHP);
 	}
 	FGameplayCueParameters CueParams;
 	CueParams.Location = Hit.Location;
 	CueParams.Normal = Hit.ImpactNormal;
 
-	// 호출하고 싶은 게임플레이 큐 태그를 정확하게 적어줍니다.
-	FGameplayTag CueTag = FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Damage")); // 주석님의 큐 태그 이름으로!
+	FGameplayTag CueTag = FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Damage"));
 
-	// ⚡ 상대방(좀비)의 ASC에게 직접 이 태그의 큐 연출을 터트리라고 명령합니다!
 	TargetASC->ExecuteGameplayCue(CueTag, CueParams);
 }
 

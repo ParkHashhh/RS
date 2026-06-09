@@ -9,6 +9,7 @@
 #include "../RSConstants.h"
 #include "AbilitySystemInterface.h"
 #include "PlayerAbilitySystemComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "PlayerCharacterBase.generated.h"
 
 

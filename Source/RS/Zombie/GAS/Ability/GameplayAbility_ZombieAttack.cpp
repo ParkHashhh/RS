@@ -4,6 +4,7 @@
 #include "GameplayAbility_ZombieAttack.h"
 #include "../../../GAS/BaseAttributeSet.h"
 #include "AbilitySystemBlueprintLibrary.h"
+#include "RS/Zombie/ZombieBase.h"
 
 UGameplayAbility_ZombieAttack::UGameplayAbility_ZombieAttack()
 {
@@ -53,16 +54,46 @@ void UGameplayAbility_ZombieAttack::ActivateAbility(const FGameplayAbilitySpecHa
 		return;
 	}
 
+	//FString DebugMessage = FString::Printf(TEXT("Zombie Attack! Damage = %.2f"), Attack);
+	//GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Blue, DebugMessage);
+
+	//Damage Effect를 발동시키기 위해 Spec Handle을 만든다.
 	FGameplayEffectContextHandle Context = MakeEffectContext(Handle, ActorInfo);
 	Context.AddHitResult(HitData->HitResult);
 
+	AZombieBase* ZombieActor = Cast<AZombieBase>(SourceActor);
+	TSubclassOf<UGameplayEffect> DamageEffect = ZombieActor->GetEffect(TEXT("Damage"));
+
+	if (!IsValid(DamageEffect))
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("Damage Effect를 지정하지 않았습니다."));
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+		return;
+	}
+	
+	FGameplayEffectSpecHandle DamageSpec = MakeOutgoingGameplayEffectSpec(DamageEffect, GetAbilityLevel());
+	DamageSpec.Data->SetContext(Context);
+
+	//데미지를 계산한다
+	//최솟값 1 보정이 들어간다.
 	float Attack = SourceAttri->GetAttack();
+	float Defense = TargetAttri->GetDefense();
+	float Damage = Attack - Defense;
+	Damage = FMath::Max(1.f, Damage);
 
-	FString DebugMessage = FString::Printf(TEXT("Zombie Attack! Damage = %.2f"), Attack);
-	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Blue, DebugMessage);
+	//변화시킬 값을 가리키는 태그, 변화시킬 값을 이펙트 SpecHandle에 세팅한다.
+	DamageSpec.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(TEXT("SetByCaller.Stat.CurrentHP")), -Damage);
 
-	//Damage 이펙트를 실행한다.
+	//타겟 전송을 위해 타겟 데이터, 타겟 배열을 생성
+	FGameplayAbilityTargetDataHandle TargetData;
+	FGameplayAbilityTargetData_ActorArray* TargetArray = new FGameplayAbilityTargetData_ActorArray;
 
+	//타겟 배열에 타겟을 넣은 후 타겟 데이터에 타겟 배열 추가
+	TargetArray->TargetActorArray.Add(TargetActor);
+	TargetData.Add(TargetArray);
+
+	//생성한 이펙트 SpecHandle을 이용해 이펙트를 발동시킨다.
+	ApplyGameplayEffectSpecToTarget(Handle, ActorInfo, ActivationInfo, DamageSpec, TargetData);
 
 	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 }
