@@ -10,6 +10,7 @@
 #include "Attribute/PlayerAttributeSet.h"
 #include "RS/Zombie/ZombieBase.h"
 #include "RS/LogCategory.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 // Sets default values
 APlayerCharacterBase::APlayerCharacterBase()
@@ -19,11 +20,13 @@ APlayerCharacterBase::APlayerCharacterBase()
 
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("Arm"));
 	// SpringArm의 부모 컴포넌트로 Capsule을 지정한다.
-	SpringArm->SetupAttachment(GetMesh());
+	SpringArm->SetupAttachment(GetCapsuleComponent());
 
-	SpringArm->TargetArmLength = 150.f;
-	SpringArm->SetRelativeLocation(FVector(0.0, 0.0, 150.f));
-	SpringArm->SetRelativeRotation(FRotator(-10.0, 90.0, 0.0));
+	GetMesh()->AddRelativeLocation(FVector(0,0, -GetCapsuleComponent()->GetScaledCapsuleHalfHeight()));
+
+	SpringArm->TargetArmLength = 250.f;
+	SpringArm->SetRelativeLocation(FVector(0.0, 0.0, 60.f));
+	SpringArm->SetRelativeRotation(FRotator::ZeroRotator);
 
 	SpringArm->bUsePawnControlRotation = true;
 	
@@ -124,6 +127,9 @@ void APlayerCharacterBase::BeginPlay()
 	}
 
 	SetMouseSensitivity(0.85f, 0.85f);
+
+	CurrentArmLength = SpringArm->TargetArmLength;
+	TargetArmLength = SpringArm->TargetArmLength;
 }
 
 void APlayerCharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -137,6 +143,10 @@ void APlayerCharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 void APlayerCharacterBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	float InterpSpeed = 10.0f;
+
+	SpringArm->TargetArmLength = FMath::FInterpTo(SpringArm->TargetArmLength, TargetArmLength, DeltaTime, InterpSpeed);
 }
 
 // Called to bind functionality to input
@@ -179,7 +189,9 @@ void APlayerCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 
 	if (Action)
 	{
-		EnhancedInput->BindAction(Action, ETriggerEvent::Triggered, this, &APlayerCharacterBase::DashKey);
+		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::DashKey);
+		EnhancedInput->BindAction(Action, ETriggerEvent::Completed, this, &APlayerCharacterBase::DashReleaseKey);
+		EnhancedInput->BindAction(Action, ETriggerEvent::Canceled, this, &APlayerCharacterBase::DashReleaseKey);
 	}
 
 	Action = InputData->FindAction(FInputKeyNames::Attack);
@@ -205,8 +217,24 @@ void APlayerCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		EnhancedInput->BindAction(Action, ETriggerEvent::Triggered, this, &APlayerCharacterBase::RotationMouse);
 	}
 
+	Action = InputData->FindAction(FInputKeyNames::Aim);
+
+	if (Action)
+	{
+		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::AimKey);
+		EnhancedInput->BindAction(Action, ETriggerEvent::Completed, this, &APlayerCharacterBase::AimReleaseKey);
+		EnhancedInput->BindAction(Action, ETriggerEvent::Canceled, this, &APlayerCharacterBase::AimReleaseKey);
+	}
+
 }
 
+void APlayerCharacterBase::Server_SetMaxWalkSpeed_Implementation(float NewSpeed)
+{
+	if (GetCharacterMovement())
+	{
+		GetCharacterMovement()->MaxWalkSpeed = NewSpeed;
+	}
+}
 void APlayerCharacterBase::MoveKey(const FInputActionValue& Value)
 {
 
@@ -219,11 +247,30 @@ void APlayerCharacterBase::MoveKey(const FInputActionValue& Value)
 
 void APlayerCharacterBase::DashKey(const FInputActionValue& Value)
 {
-	bool Dash = Value.Get<bool>();
+	IsDashing = true;
 
-	if (Dash)
+	if (!IsAiming && GetCharacterMovement())
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("DashKey"));
+
+		// 🔴 로컬 속도 변경 + 🔵 서버 속도 변경 요청
+		GetCharacterMovement()->MaxWalkSpeed = 600.f;
+		Server_SetMaxWalkSpeed(600.f);
+	}
+}
+
+void APlayerCharacterBase::DashReleaseKey(const FInputActionValue& Value)
+{
+
+	IsDashing = false;
+
+	if (GetCharacterMovement())
+	{
+		float TargetSpeed = IsAiming ? 200.f : 400.f;
+		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("DashReleaseKey"));
+
+		GetCharacterMovement()->MaxWalkSpeed = TargetSpeed;
+		Server_SetMaxWalkSpeed(TargetSpeed);
 	}
 }
 
@@ -269,6 +316,48 @@ void APlayerCharacterBase::SitKey(const FInputActionValue& Value)
 	if (Sit)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("SitKey"));
+	}
+}
+
+void APlayerCharacterBase::AimKey(const FInputActionValue& Value)
+{
+	IsAiming = true;
+
+	TargetArmLength = 200.f;
+
+	if (GetCharacterMovement())
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("AimKey"));
+
+		// 🔴 로컬 속도 변경 + 🔵 서버 속도 변경 요청
+		GetCharacterMovement()->MaxWalkSpeed = 200.f;
+		Server_SetMaxWalkSpeed(200.f);
+		Camera->FieldOfView = 60.f;
+		SpringArm->SetRelativeLocation(FVector(0.0, 50.0, 60.f));
+
+
+
+	}
+}
+
+void APlayerCharacterBase::AimReleaseKey(const FInputActionValue& Value)
+{
+	IsAiming = false;
+
+	TargetArmLength = 250.f;
+
+	if (GetCharacterMovement())
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("AimReleaseKey"));
+		float TargetSpeed = IsDashing ? 600.f : 400.f;
+
+		// 🔴 로컬 속도 변경 + 🔵 서버 속도 변경 요청
+		GetCharacterMovement()->MaxWalkSpeed = TargetSpeed;
+		Server_SetMaxWalkSpeed(TargetSpeed);
+		Camera->FieldOfView = 90.f;
+		SpringArm->SetRelativeLocation(FVector(0.0, 0.0, 60.f));
+
+
 	}
 }
 

@@ -25,6 +25,7 @@ struct FInputKeyNames
 	inline static const FName Attack = FName(TEXT("Attack"));
 	inline static const FName Sit = FName(TEXT("Sit"));
 	inline static const FName Rotation = FName(TEXT("Rotation"));
+	inline static const FName Aim = FName(TEXT("Aim"));
 };
 
 UCLASS(Blueprintable, BlueprintType, EditInlineNew)

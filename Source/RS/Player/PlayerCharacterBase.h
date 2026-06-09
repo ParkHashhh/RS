@@ -70,6 +70,12 @@ protected:
 	UPROPERTY(Replicated)
 	bool IsAttacking = false;
 
+	bool IsDashing = false;
+	bool IsAiming = false;
+
+	float CurrentArmLength; // 현재 타겟 길이
+	float TargetArmLength;  // 목표 길이
+
 public:
 	// Setter / Getter
 	bool GetIsAttacking()
@@ -101,16 +107,20 @@ public:
 	{
 		return MouseYSensitivity;
 	}
-
+protected:
+	UFUNCTION(Server, Reliable)
+	void Server_SetMaxWalkSpeed(float NewSpeed);
 
 private:
 	// Input Function
 	void MoveKey(const FInputActionValue& Value);
 	void DashKey(const FInputActionValue& Value);
+	void DashReleaseKey(const FInputActionValue& Value);
 	void AttackKey(const FInputActionValue& Value);
 	void AttackReleaseKey(const FInputActionValue& Value);
 	void SitKey(const FInputActionValue& Value);
-
+	void AimKey(const FInputActionValue& Value);
+	void AimReleaseKey(const FInputActionValue& Value);
 	void RotationMouse(const FInputActionValue& Value);
 
 protected:
