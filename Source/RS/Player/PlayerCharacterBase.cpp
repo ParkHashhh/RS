@@ -2,6 +2,7 @@
 
 
 #include "PlayerCharacterBase.h"
+#include "RS/Player/Character/PlayerAnimInstance.h"
 #include "RS/Input/InputData.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
@@ -67,6 +68,8 @@ APlayerCharacterBase::APlayerCharacterBase()
 	SetReplicateMovement(true);
 
 	SetGenericTeamId(FGenericTeamId(TeamPlayer));
+
+
 }
 
 
@@ -130,13 +133,19 @@ void APlayerCharacterBase::BeginPlay()
 
 	CurrentArmLength = SpringArm->TargetArmLength;
 	TargetArmLength = SpringArm->TargetArmLength;
+
+
+	GetCharacterMovement()->MaxWalkSpeed = 400.f;
+	Server_SetMaxWalkSpeed(400.f);
+
+	AnimInst = Cast<UPlayerAnimInstance>(GetMesh()->GetAnimInstance());
 }
 
 void APlayerCharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(APlayerCharacterBase, IsAttacking); // 🎯 동기화 대상 등록
+	DOREPLIFETIME(APlayerCharacterBase, bIsAttacking); // 🎯 동기화 대상 등록
 }
 
 // Called every frame
@@ -189,7 +198,7 @@ void APlayerCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 
 	if (Action)
 	{
-		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::DashKey);
+		EnhancedInput->BindAction(Action, ETriggerEvent::Triggered, this, &APlayerCharacterBase::DashKey);
 		EnhancedInput->BindAction(Action, ETriggerEvent::Completed, this, &APlayerCharacterBase::DashReleaseKey);
 		EnhancedInput->BindAction(Action, ETriggerEvent::Canceled, this, &APlayerCharacterBase::DashReleaseKey);
 	}
@@ -235,6 +244,7 @@ void APlayerCharacterBase::Server_SetMaxWalkSpeed_Implementation(float NewSpeed)
 		GetCharacterMovement()->MaxWalkSpeed = NewSpeed;
 	}
 }
+
 void APlayerCharacterBase::MoveKey(const FInputActionValue& Value)
 {
 
@@ -243,46 +253,50 @@ void APlayerCharacterBase::MoveKey(const FInputActionValue& Value)
 	AddMovementInput(GetActorForwardVector(), MovementVector.X);
 
 	AddMovementInput(GetActorRightVector(), MovementVector.Y);
+
+	if (bIsDashing && AnimInst && !AnimInst->GetDirectionFoward())
+	{
+		bIsDashing = false;
+
+		float TargetSpeed = bIsAiming ? 200.f : 400.f;
+		GetCharacterMovement()->MaxWalkSpeed = TargetSpeed;
+		Server_SetMaxWalkSpeed(TargetSpeed);
+	}
 }
 
 void APlayerCharacterBase::DashKey(const FInputActionValue& Value)
 {
-	IsDashing = true;
 
-	if (!IsAiming && GetCharacterMovement())
+	if (!bIsDashing && !bIsAiming && AnimInst && AnimInst->GetDirectionFoward())
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("DashKey"));
-
-		// 🔴 로컬 속도 변경 + 🔵 서버 속도 변경 요청
+		bIsDashing = true;
 		GetCharacterMovement()->MaxWalkSpeed = 600.f;
 		Server_SetMaxWalkSpeed(600.f);
 	}
+		
 }
 
 void APlayerCharacterBase::DashReleaseKey(const FInputActionValue& Value)
 {
+	bIsDashing = false;
 
-	IsDashing = false;
+	float TargetSpeed = bIsAiming ? 200.f : 400.f;
 
-	if (GetCharacterMovement())
-	{
-		float TargetSpeed = IsAiming ? 200.f : 400.f;
-		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("DashReleaseKey"));
+	GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("DashReleaseKey"));
 
-		GetCharacterMovement()->MaxWalkSpeed = TargetSpeed;
-		Server_SetMaxWalkSpeed(TargetSpeed);
-	}
+	GetCharacterMovement()->MaxWalkSpeed = TargetSpeed;
+	Server_SetMaxWalkSpeed(TargetSpeed);
 }
 
 void APlayerCharacterBase::AttackKey(const FInputActionValue& Value)
 {
 
 	// Bool 변수로 누르고 있는지 땠는지를 판단 한 후 공격속도마다 공격 함수를 호출하게 하고(이펙트 파티클 등등), 서버에서는 충돌처리 및 데미지 체크하기
-	IsAttacking = true;
+	bIsAttacking = true;
 
 	SetIsAttacking(true); // Server RPC 함수 필요
 
-	if (IsLocallyControlled() && IsAttacking)
+	if (IsLocallyControlled() && bIsAttacking)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("AttackKey"));
 		if (ASC)
@@ -298,14 +312,14 @@ void APlayerCharacterBase::AttackKey(const FInputActionValue& Value)
 
 void APlayerCharacterBase::AttackReleaseKey(const FInputActionValue& Value)
 {
-	IsAttacking = false;
+	bIsAttacking = false;
 	SetIsAttacking(false);
 	RS_PRINT_SCREEN(2, FColor::Red, TEXT("Release Attack Key"));
 }
 
 void APlayerCharacterBase::SetIsAttacking_Implementation(bool Attacking)
 {
-	IsAttacking = Attacking;
+	bIsAttacking = Attacking;
 }
 
 
@@ -321,7 +335,7 @@ void APlayerCharacterBase::SitKey(const FInputActionValue& Value)
 
 void APlayerCharacterBase::AimKey(const FInputActionValue& Value)
 {
-	IsAiming = true;
+	bIsAiming = true;
 
 	TargetArmLength = 200.f;
 
@@ -334,30 +348,25 @@ void APlayerCharacterBase::AimKey(const FInputActionValue& Value)
 		Server_SetMaxWalkSpeed(200.f);
 		Camera->FieldOfView = 60.f;
 		SpringArm->SetRelativeLocation(FVector(0.0, 50.0, 60.f));
-
-
-
 	}
 }
 
 void APlayerCharacterBase::AimReleaseKey(const FInputActionValue& Value)
 {
-	IsAiming = false;
+	bIsAiming = false;
 
 	TargetArmLength = 250.f;
 
 	if (GetCharacterMovement())
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("AimReleaseKey"));
-		float TargetSpeed = IsDashing ? 600.f : 400.f;
+		float TargetSpeed = bIsDashing ? 600.f : 400.f;
 
 		// 🔴 로컬 속도 변경 + 🔵 서버 속도 변경 요청
 		GetCharacterMovement()->MaxWalkSpeed = TargetSpeed;
 		Server_SetMaxWalkSpeed(TargetSpeed);
 		Camera->FieldOfView = 90.f;
 		SpringArm->SetRelativeLocation(FVector(0.0, 0.0, 60.f));
-
-
 	}
 }
 
@@ -375,8 +384,6 @@ void APlayerCharacterBase::OnConstruction(const FTransform& Transform)
 	{
 		GetMesh()->SetSkeletalMeshAsset(SkeletalMeshAsset);
 	}
-
-	
 }
 
 

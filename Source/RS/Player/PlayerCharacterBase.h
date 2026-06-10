@@ -43,9 +43,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSubclassOf<class UInputData> InputDataClass;
 
-	// 기본 감도 값
-	float MouseXSensitivity = 1.0f;
-	float MouseYSensitivity = 1.0f;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
 	TObjectPtr<UPlayerAbilitySystemComponent> ASC;
@@ -59,28 +56,30 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "GAS")
 	TMap<FName,TSubclassOf<UGameplayEffect>> Effects;
 
-
-
 	UPROPERTY(EditDefaultsOnly, Category = "GAS")
 	TArray<TSubclassOf<UGameplayAbility>> Abilitys;
 
-
 	FGenericTeamId TeamID;
 
-	UPROPERTY(Replicated)
-	bool IsAttacking = false;
+	TObjectPtr<class UPlayerAnimInstance> AnimInst;
 
-	bool IsDashing = false;
-	bool IsAiming = false;
+	UPROPERTY(Replicated)
+	bool bIsAttacking = false;
+
+	bool bIsDashing = false;
+	bool bIsAiming = false;
 
 	float CurrentArmLength; // 현재 타겟 길이
 	float TargetArmLength;  // 목표 길이
 
+	// 기본 감도 값
+	float MouseXSensitivity = 1.0f;
+	float MouseYSensitivity = 1.0f;
 public:
 	// Setter / Getter
 	bool GetIsAttacking()
 	{
-		return IsAttacking;
+		return bIsAttacking;
 	}
 
 	UFUNCTION(Server, Reliable)

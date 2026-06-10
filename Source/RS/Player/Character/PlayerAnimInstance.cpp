@@ -4,6 +4,8 @@
 #include "PlayerAnimInstance.h"
 #include "RS/Player/PlayerCharacterBase.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "RS/LogCategory.h"
+
 
 void UPlayerAnimInstance::NativeBeginPlay()
 {
@@ -23,13 +25,23 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		MoveSpeed = Movement->Velocity.Length();
 
 		// 캐릭터가 바라보는 방향과 실제 이동 속도 방향의 차이를 계산합니다.
+		//Direction = CalculateDirection(Movement->Velocity, PlayerChar->GetActorRotation());
+
 		Direction = CalculateDirection(Movement->Velocity, PlayerChar->GetActorRotation());
+
+		RS_PRINT_SCREEN(0.1, FColor::Black, TEXT("Direction : %.2f"), Direction);
+		RS_PRINT_SCREEN(0.1, FColor::Black, TEXT("Speed : %.2f"), MoveSpeed);
+		
 
 		// 공중 상태 (IsFalling)
 		IsInAir = Movement->IsFalling();
 
 		//  앉기 상태
 		IsCrouching = Movement->IsCrouching();
+
+		float Acceleration = Movement->GetCurrentAcceleration().Length();
+
+		Accelerating = Acceleration > 0.f;
 	}
 
 }

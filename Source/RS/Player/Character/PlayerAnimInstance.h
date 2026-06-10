@@ -18,7 +18,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	float	MoveSpeed;
 
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	float	mViewPitch;
 
@@ -31,7 +30,16 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	bool	IsCrouching;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	float	Direction;
+	float	Direction = 0.f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	bool	Accelerating;
+
+public:
+	bool GetDirectionFoward()
+	{
+		return FMath::IsNearlyZero(Direction, 5.0f);
+	}
 
 public:
 	virtual void NativeBeginPlay();
