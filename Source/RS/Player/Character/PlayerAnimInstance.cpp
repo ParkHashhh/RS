@@ -21,6 +21,15 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		UCharacterMovementComponent* Movement = PlayerChar->GetCharacterMovement();
 
 		MoveSpeed = Movement->Velocity.Length();
+
+		// 캐릭터가 바라보는 방향과 실제 이동 속도 방향의 차이를 계산합니다.
+		Direction = CalculateDirection(Movement->Velocity, PlayerChar->GetActorRotation());
+
+		// 공중 상태 (IsFalling)
+		IsInAir = Movement->IsFalling();
+
+		//  앉기 상태
+		IsCrouching = Movement->IsCrouching();
 	}
 
 }
