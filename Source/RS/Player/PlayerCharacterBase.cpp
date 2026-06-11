@@ -290,6 +290,10 @@ void APlayerCharacterBase::OnRep_IsAttacking() const
 
 void APlayerCharacterBase::OnIsAttackingChanged() const
 {
+	if (OnAttackingChanged.IsBound())
+	{
+		OnAttackingChanged.Broadcast(bIsAttacking);
+	}
 }
 
 void APlayerCharacterBase::OnRep_IsAiming() const
@@ -358,11 +362,10 @@ void APlayerCharacterBase::DashReleaseKey(const FInputActionValue& Value)
 void APlayerCharacterBase::AttackKey(const FInputActionValue& Value)
 {
 	// Bool 변수로 누르고 있는지 땠는지를 판단 한 후 공격속도마다 공격 함수를 호출하게 하고(이펙트 파티클 등등), 서버에서는 충돌처리 및 데미지 체크하기
+	bIsAttacking = true;
 	SetIsAttacking(true);
-
 	if (IsLocallyControlled() && bIsAttacking)
 	{
-		RS_PRINT_SCREEN(1.f, FColor::Red, TEXT("AttackKey"));
 		if (IsValid(ASC))
 		{
 			FGameplayEventData EventData;

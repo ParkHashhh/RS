@@ -15,6 +15,7 @@
 #include "PlayerCharacterBase.generated.h"
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnAimingChangedDelegate, bool);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnAttackingChangedDelegate, bool);
 
 UCLASS()
 class RS_API APlayerCharacterBase : public ARSCharacter,
@@ -91,6 +92,7 @@ protected:
 
 public:
 	FOnAimingChangedDelegate OnAimingChanged;
+	FOnAttackingChangedDelegate OnAttackingChanged;
 
 public:
 	FORCEINLINE bool IsAttacking() const
