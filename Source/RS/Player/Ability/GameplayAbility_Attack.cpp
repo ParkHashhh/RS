@@ -44,6 +44,9 @@ void UGameplayAbility_Attack::LoopAttackSequence()
 		if (PlayerChar->IsLocallyControlled())
 		{
 			PlayerChar->ShootAttackRay();
+
+			// 캐릭터의 공격 애니메이션 몽타주 재생 함수 호출
+			PlayerChar->PlayBaseAttackMontage();
 		}
 
 		float DefaultAttackSpeed = 1.0f;
@@ -62,8 +65,6 @@ void UGameplayAbility_Attack::LoopAttackSequence()
 				&UGameplayAbility_Attack::LoopAttackSequence, FinalDelay, false);
 		}
 
-		// 캐릭터의 공격 애니메이션 몽타주 재생 함수 호출
-		// PlayerChar->PlayAttackMontage();
 	}
 
 	else

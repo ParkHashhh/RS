@@ -25,15 +25,26 @@ protected:
 	float	mViewYaw;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	bool	IsInAir;
+	bool	bIsInAir;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	bool	IsCrouching;
+	bool	bIsCrouching;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	float	Direction = 0.f;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	bool	Accelerating;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UAnimMontage> BaseAttackMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	bool bIsAiming;
+
+protected:
+	UFUNCTION()
+	void MontageEnd(UAnimMontage* Montage, bool bInterrupted);
+
+	UFUNCTION()
+	void AnimNotify_AttackEnd();
+
 
 public:
 	bool GetDirectionFoward()
@@ -41,7 +52,10 @@ public:
 		return FMath::IsNearlyZero(Direction, 5.0f);
 	}
 
+
 public:
 	virtual void NativeBeginPlay();
 	virtual void NativeUpdateAnimation(float DeltaSeconds);
+	void PlayBaseAttackMontage();
+
 };

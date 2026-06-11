@@ -8,10 +8,11 @@
 #include "../ZombieBase.h"
 #include "Components/CapsuleComponent.h"
 #include "RS/GAS/BaseAttributeSet.h"
+#include "RS/RSTypes.h"
 
 UBTTask_TraceNoneBoss::UBTTask_TraceNoneBoss()
 {
-	NodeName = TEXT("Trace_NoneBoss");
+	NodeName = TEXT("Trace");
 	bNotifyTick = true;
 	bNotifyTaskFinished = true;
 }
@@ -55,7 +56,7 @@ EBTNodeResult::Type UBTTask_TraceNoneBoss::ExecuteTask(UBehaviorTreeComponent& O
 	}
 
 	//좀비가 유효하므로 애니메이션을 변경한다.
-	//Zombie->ChangeAnim(EZombieAnimationType::Run);
+	Zombie->ChangeAnim(EZombieAnimType::Run);
 
 	//추적중이므로 이동을 완료할 때 까지는 현상유지를 해야 한다.
 	//이 동안은 태스크의 Tick이 수행된다.
@@ -131,8 +132,6 @@ void UBTTask_TraceNoneBoss::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* N
 	float Distance = FVector::Dist(TargetLoc, ZombieLoc);
 
 	//몬스터의 어트리뷰트 셋으로부터 몬스터의 사거리를 얻어와야 한다.
-	//테스트용으로 100.f을 임시로 사용한다.
-
 	UBaseAttributeSet* ZombieAttri = Zombie->GetAttributeSet();
 	float AttackRange = ZombieAttri->GetAttackDistance();
 
@@ -141,7 +140,6 @@ void UBTTask_TraceNoneBoss::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* N
 		//추적을 통해 사거리 내로 접근했으므로 다음 전투 태스크를 진행한다.
 		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
 	}
-
 }
 void UBTTask_TraceNoneBoss::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory,
 	EBTNodeResult::Type TaskResult)

@@ -50,9 +50,7 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 	//좀비의 애니메이션을 변경한다.
 	//원래는 애니메이션 변경 시 공격 함수를 호출하고 이곳에서 공격 어빌리티가 발동된다.
 	//테스트를 위해 바로 일단 이곳에서 어빌리티를 발동시켜 확인한다.
-	//Zombie->ChangeAnim(EZombieAnimType::Attack);
-
-	Zombie->Attack();
+	Zombie->ChangeAnim(EZombieAnimType::Attack);
 
 	return EBTNodeResult::InProgress;
 }
@@ -88,39 +86,42 @@ void UBTTask_Attack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemo
 	}
 
 	//공격 모션이 발동되면 끝까지 재생되도록 보장해야 한다.
-	//bool EnableAttack = BlackboardComp->GetValueAsBool(TEXT("EnableAttack"));
-	//if (EnableAttack)
-	FVector TargetLoc, ZombieLoc;
-
-	TargetLoc = Target->GetActorLocation();
-	UCapsuleComponent* Capsule = Cast<UCapsuleComponent>(Target->GetRootComponent());
-	if (Capsule)
+	bool IsAttacking = BlackboardComp->GetValueAsBool(TEXT("Attacking"));
+	if (!IsAttacking)
 	{
-		TargetLoc.Z -= Capsule->GetScaledCapsuleHalfHeight();
-	}
+		BlackboardComp->SetValueAsBool(TEXT("Attacking"), true);
+		FVector TargetLoc, ZombieLoc;
 
-	ZombieLoc = Zombie->GetActorLocation();
-	Capsule = Cast<UCapsuleComponent>(Zombie->GetRootComponent());
-	if (Capsule)
-	{
-		ZombieLoc.Z -= Capsule->GetScaledCapsuleHalfHeight();
-	}
+		TargetLoc = Target->GetActorLocation();
+		UCapsuleComponent* Capsule = Cast<UCapsuleComponent>(Target->GetRootComponent());
+		if (Capsule)
+		{
+			TargetLoc.Z -= Capsule->GetScaledCapsuleHalfHeight();
+		}
 
-	float Distance = FVector::Dist(TargetLoc, ZombieLoc);
+		ZombieLoc = Zombie->GetActorLocation();
+		Capsule = Cast<UCapsuleComponent>(Zombie->GetRootComponent());
+		if (Capsule)
+		{
+			ZombieLoc.Z -= Capsule->GetScaledCapsuleHalfHeight();
+		}
 
-	UBaseAttributeSet* ZombieAttri = Zombie->GetAttributeSet();
-	float AttackRange = ZombieAttri->GetAttackDistance();
+		float Distance = FVector::Dist(TargetLoc, ZombieLoc);
 
-	if (Distance > AttackRange)
-	{
-		//사거리를 벗어났다면 공격 태스크는 종료되어야 한다.
-		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
-	}
-	else
-	{
-		//사거리 안이라면 공격을 위해 좀비의 몸을 돌려준다.
-		FRotator Rot = UKismetMathLibrary::FindLookAtRotation(ZombieLoc, TargetLoc);
-		Zombie->SetActorRotation(Rot);
+		UBaseAttributeSet* ZombieAttri = Zombie->GetAttributeSet();
+		float AttackRange = ZombieAttri->GetAttackDistance();
+
+		if (Distance > AttackRange)
+		{
+			//사거리를 벗어났다면 공격 태스크는 종료되어야 한다.
+			FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+		}
+		else
+		{
+			//사거리 안이라면 공격을 위해 좀비의 몸을 돌려준다.
+			FRotator Rot = UKismetMathLibrary::FindLookAtRotation(ZombieLoc, TargetLoc);
+			Zombie->SetActorRotation(Rot);
+		}
 	}
 }
 

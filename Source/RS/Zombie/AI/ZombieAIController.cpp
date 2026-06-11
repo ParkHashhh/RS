@@ -61,7 +61,6 @@ void AZombieAIController::OnTarget(AActor* Actor, FAIStimulus Stimulus)
 
 	if (Stimulus.WasSuccessfullySensed())
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("Target Detected!"));
 		Blackboard->SetValueAsObject(TEXT("Target"), Actor);
 	}
 	else

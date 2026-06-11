@@ -28,7 +28,7 @@ public class RS : ModuleRules
 			"UMG",
 			"Networking",
 			"NetCore",
-			"DeveloperSettings",
+			"DeveloperSettings"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });

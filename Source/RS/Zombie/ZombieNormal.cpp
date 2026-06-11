@@ -5,10 +5,18 @@
 #include "GAS/ZombieStandardAttributeSet.h"
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "AbilitySystemBlueprintLibrary.h"
+#include "GameFramework/FloatingPawnMovement.h"
 
 AZombieNormal::AZombieNormal()
 {
+	Body->SetCapsuleHalfHeight(80.f);
+	Body->SetCapsuleRadius(40.f);
+
+	Mesh->SetRelativeLocation(FVector(0.0, 0.0, -80.0));
+	Mesh->SetRelativeRotation(FRotator(0.0, -90.0, 0.0));
+
 	AttributeSet = CreateDefaultSubobject<UZombieStandardAttributeSet>(TEXT("Attribute"));
 	UZombieStandardAttributeSet* StandardAttri = Cast<UZombieStandardAttributeSet>(AttributeSet);
 	if (IsValid(StandardAttri))
@@ -17,7 +25,9 @@ AZombieNormal::AZombieNormal()
 		//테스트를 위해 공격 사거리를 이곳에서 임시로 어트리뷰트셋에 넣어준다.
 		StandardAttri->InitAttackDistance(200.f);
 		StandardAttri->InitAttack(30.f);
+		StandardAttri->InitRunSpeed(300.f);
 	}
+	Movement->MaxSpeed = StandardAttri->GetRunSpeed();
 }
 
 void AZombieNormal::BeginPlay()
@@ -35,6 +45,10 @@ void AZombieNormal::BeginPlay()
 	}
 
 	NormalAttributeSet = Cast<UZombieStandardAttributeSet>(AttributeSet);
+
+	//시작 지점을 미리 보관하고, 다음 이동 지점을 하나 만들어둔다.
+	SpawnPointLocation = GetActorLocation();
+	CalcNextPointLocation();
 }
 
 void AZombieNormal::Attack()

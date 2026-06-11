@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "GameplayTagContainer.h"
 
 class UGameplayEffect;
@@ -83,4 +83,14 @@ USTRUCT(BlueprintType)
 struct FPlayerDefaultInfo : public FTableRowBase
 {
 	GENERATED_BODY()
+};
+
+UENUM(BlueprintType)
+enum class EZombieAnimType : uint8
+{
+	Idle,
+	Walk,
+	Run,
+	Attack,
+	Death
 };

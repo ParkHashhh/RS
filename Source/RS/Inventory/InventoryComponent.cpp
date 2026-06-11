@@ -79,6 +79,12 @@ void FInventoryItem::ApplyItemEffect(UInventoryComponent* InventoryComponent)
 	const auto* DataSubsystem = GameInstance->GetSubsystem<UDataSubsystem>();
 	check(DataSubsystem);
 
+	if (!DataSubsystem->IsItemTableLoaded())
+	{
+		RS_LOG_DEBUG(LogRSData, Warning, TEXT("%s: Item table is not loaded"), *LOG_LINE_INFO);
+		return;
+	}
+
 	const FItemTableInfo* ItemTableInfo = GetRowInfo(DataSubsystem);
 	if (!ItemTableInfo || !IsValid(ItemTableInfo->MasterItemEffectClass))
 	{
@@ -132,6 +138,12 @@ void FInventoryArray::AddItem(FName InRowName, int32 InCount, const UDataSubsyst
 		RS_LOG_DEBUG(LogRSItem, Error, TEXT("%s: Invalid parameters - RowName: %s, Count: %d, DataSubsystem: %s"),
 		             *LOG_LINE_INFO, *InRowName.ToString(), InCount,
 		             IsValid(DataSubsystem) ? TEXT("Valid") : TEXT("Invalid"));
+		return;
+	}
+
+	if (!DataSubsystem->IsItemTableLoaded())
+	{
+		RS_LOG_DEBUG(LogRSData, Warning, TEXT("%s: Item table is not loaded"), *LOG_LINE_INFO);
 		return;
 	}
 
@@ -218,6 +230,12 @@ void UInventoryComponent::UseConsumableItem(FInventoryItem& Item)
 
 	const auto* DataSubsystem = GameInstance->GetSubsystem<UDataSubsystem>();
 	check(DataSubsystem);
+
+	if (!DataSubsystem->IsItemTableLoaded())
+	{
+		RS_LOG_DEBUG(LogRSData, Warning, TEXT("%s: Item table is not loaded"), *LOG_LINE_INFO);
+		return;
+	}
 
 	const FItemTableInfo* ItemTableInfo = Item.GetRowInfo(DataSubsystem);
 	if (!ItemTableInfo || ItemTableInfo->UseType != EItemUseType::Consumable || !ItemTableInfo->MasterItemEffectClass)

@@ -310,6 +310,18 @@ void APlayerCharacterBase::AttackKey(const FInputActionValue& Value)
 	}
 }
 
+
+void APlayerCharacterBase::PlayBaseAttackMontage()
+{
+	if (!AnimInst)
+	{
+		return;
+	}
+
+	AnimInst->PlayBaseAttackMontage();
+	RS_PRINT_SCREEN(1, FColor::Yellow, TEXT("PlayerBase AttackMontage"));
+}
+
 void APlayerCharacterBase::AttackReleaseKey(const FInputActionValue& Value)
 {
 	bIsAttacking = false;

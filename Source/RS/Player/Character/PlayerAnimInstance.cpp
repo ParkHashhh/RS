@@ -7,11 +7,15 @@
 #include "RS/LogCategory.h"
 
 
+
 void UPlayerAnimInstance::NativeBeginPlay()
 {
 	Super::NativeBeginPlay();
 
+	//OnMontageEnded.AddDynamic(this, &UPlayerAnimInstance::MontageEnd);
+
 }
+
 void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 {
 	Super::NativeUpdateAnimation(DeltaSeconds);
@@ -29,19 +33,41 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 		Direction = CalculateDirection(Movement->Velocity, PlayerChar->GetActorRotation());
 
-		RS_PRINT_SCREEN(0.1, FColor::Black, TEXT("Direction : %.2f"), Direction);
-		RS_PRINT_SCREEN(0.1, FColor::Black, TEXT("Speed : %.2f"), MoveSpeed);
-		
-
 		// 공중 상태 (IsFalling)
-		IsInAir = Movement->IsFalling();
+		bIsInAir = Movement->IsFalling();
 
 		//  앉기 상태
-		IsCrouching = Movement->IsCrouching();
+		bIsCrouching = Movement->IsCrouching();
 
-		float Acceleration = Movement->GetCurrentAcceleration().Length();
-
-		Accelerating = Acceleration > 0.f;
+		bIsAiming = PlayerChar->GetIsAiming();
 	}
 
+}
+
+void UPlayerAnimInstance::PlayBaseAttackMontage()
+{
+	if (!BaseAttackMontage)
+	{
+		return;
+	}
+	if (Montage_IsPlaying(BaseAttackMontage))
+	{
+		return;
+	}
+	Montage_Play(BaseAttackMontage, 1.f);
+	RS_PRINT_SCREEN(1, FColor::Yellow, TEXT("Attack Start"));
+}
+
+
+void UPlayerAnimInstance::MontageEnd(UAnimMontage* Montage, bool bInterrupted)
+{
+	//RS_PRINT_SCREEN(1, FColor::Yellow, TEXT("PlayerAnimInst MontageEnd"));
+
+}
+
+
+
+void UPlayerAnimInstance::AnimNotify_AttackEnd()
+{
+	RS_PRINT_SCREEN(5, FColor::Red, TEXT("PlayerAnimInst MontageEnd"));
 }

@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "RS/RSPawn.h"
 #include "../RSConstants.h"
+#include "RS/RSTypes.h"
 #include "GenericTeamAgentInterface.h"
 #include "AbilitySystemInterface.h"
 #include "ZombieBase.generated.h"
@@ -16,6 +17,7 @@ class AZombieAIController;
 class UBaseAttributeSet;
 class UGameplayAbility;
 class UGameplayEffect;
+class UZombieAnimInstance;
 
 UCLASS()
 class RS_API AZombieBase : public ARSPawn,
@@ -48,8 +50,8 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UBaseAttributeSet> AttributeSet;
 
-	//UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	//TObjectPtr<class UZombieAnimInstance> AnimInstance;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UZombieAnimInstance> AnimInstance;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta =(AllowPrivateAccess = "true"))
 	TSubclassOf<AZombieAIController> AICtrl;
@@ -62,10 +64,19 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TMap<FName, TSubclassOf<UGameplayEffect>> EffectMap;
 
+	UPROPERTY(VisibleAnywhere, ReplicatedUsing = OnRep_ChangeAnimType)
+	EZombieAnimType AnimType;
+
+	UPROPERTY();
+	FVector SpawnPointLocation;
+	UPROPERTY();
+	FVector NextPointLocation;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	virtual void PostInitProperties() override;
+	virtual void PostInitializeComponents() override;
 
 public:
 	// Called every frame
@@ -75,25 +86,39 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	virtual void PossessedBy(AController* NewController);
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+public:
+	void SetSpawnPointLocation(FVector Loc)
+	{
+		SpawnPointLocation = Loc;
+	}
 
 public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const
 	{
 		return ASC;
 	}
+	UBaseAttributeSet* GetAttributeSet() const
+	{
+		return AttributeSet;
+	}
+	FVector GetNextPointLocation() const
+	{
+		return NextPointLocation;
+	}
 
 public:
 	virtual void SetGenericTeamId(const FGenericTeamId& ID);
 	virtual FGenericTeamId GetGenericTeamId() const;
 	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const;
-
-public:
-	UBaseAttributeSet* GetAttributeSet() const
-	{
-		return AttributeSet;
-	}
-
 public:
 	virtual void Attack();
 	TSubclassOf<UGameplayEffect> GetEffect(const FName& Name);
+	void ChangeAnim(EZombieAnimType Type);
+	void CalcNextPointLocation();
+
+public:
+	UFUNCTION()
+	void OnRep_ChangeAnimType();
 };

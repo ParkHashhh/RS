@@ -17,13 +17,10 @@ class RS_API UPlayerAnimInstanceTemplate : public UPlayerAnimInstance
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TMap<FName, TObjectPtr<UAnimSequence>>	mAnimMap;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TMap<FName, TObjectPtr<UBlendSpace>>	mBlendSpaceMap;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TMap<FName, TObjectPtr<UAnimMontage>>	mSkillMap;
+	TMap<FName, TObjectPtr<UAnimMontage>>	mMontageMap;
 
 public:
 	virtual void NativeBeginPlay();

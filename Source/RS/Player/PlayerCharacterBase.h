@@ -81,6 +81,10 @@ public:
 	{
 		return bIsAttacking;
 	}
+	bool GetIsAiming()
+	{
+		return bIsAiming;
+	}
 
 	UFUNCTION(Server, Reliable)
 	void SetIsAttacking(bool Attacking);
@@ -150,4 +154,7 @@ public:
 protected:
 	UFUNCTION(Server, Reliable)
 	void Apply_Damage_Server(AActor* TargetActor, FHitResult Hit);
+
+public:
+	void PlayBaseAttackMontage();
 };
