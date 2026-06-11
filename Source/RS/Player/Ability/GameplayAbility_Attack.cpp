@@ -39,7 +39,7 @@ void UGameplayAbility_Attack::LoopAttackSequence()
 {
 
 	APlayerCharacterBase* PlayerChar = Cast<APlayerCharacterBase>(GetAvatarActorFromActorInfo());
-	if (PlayerChar && PlayerChar->GetIsAttacking())
+	if (PlayerChar && PlayerChar->IsAttacking())
 	{
 		if (PlayerChar->IsLocallyControlled())
 		{

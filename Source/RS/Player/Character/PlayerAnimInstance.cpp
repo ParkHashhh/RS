@@ -31,15 +31,17 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		// 캐릭터가 바라보는 방향과 실제 이동 속도 방향의 차이를 계산합니다.
 		//Direction = CalculateDirection(Movement->Velocity, PlayerChar->GetActorRotation());
 
+		// UAnimInstance::CalculateDirection는 Deprecated 되어 대신 UKismetAnimationLibrary 사용
 		Direction = CalculateDirection(Movement->Velocity, PlayerChar->GetActorRotation());
-
 		// 공중 상태 (IsFalling)
 		bIsInAir = Movement->IsFalling();
 
 		//  앉기 상태
 		bIsCrouching = Movement->IsCrouching();
 
-		bIsAiming = PlayerChar->GetIsAiming();
+		bIsAiming = PlayerChar->IsAiming();
+
+
 	}
 
 }

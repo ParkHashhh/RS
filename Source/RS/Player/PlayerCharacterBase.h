@@ -10,13 +10,16 @@
 #include "AbilitySystemInterface.h"
 #include "PlayerAbilitySystemComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "RS/LogCategory.h"
+
 #include "PlayerCharacterBase.generated.h"
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnAimingChangedDelegate, bool);
 
 UCLASS()
 class RS_API APlayerCharacterBase : public ARSCharacter,
-	public IGenericTeamAgentInterface,
-	public IAbilitySystemInterface
+                                    public IGenericTeamAgentInterface,
+                                    public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
@@ -54,7 +57,8 @@ protected:
 
 
 	UPROPERTY(EditDefaultsOnly, Category = "GAS")
-	TMap<FName,TSubclassOf<UGameplayEffect>> Effects;
+	TMap<FName, TSubclassOf<UGameplayEffect>> Effects;
+
 
 	UPROPERTY(EditDefaultsOnly, Category = "GAS")
 	TArray<TSubclassOf<UGameplayAbility>> Abilitys;
@@ -67,52 +71,173 @@ protected:
 	bool bIsAttacking = false;
 
 	bool bIsDashing = false;
+
+	UPROPERTY(ReplicatedUsing=OnRep_IsAiming, BlueprintReadOnly, BlueprintGetter=K2_IsAiming, meta=(AllowPrivateAccess=true))
 	bool bIsAiming = false;
 
 	float CurrentArmLength; // 현재 타겟 길이
-	float TargetArmLength;  // 목표 길이
+	float TargetArmLength; // 목표 길이
 
 	// 기본 감도 값
 	float MouseXSensitivity = 1.0f;
 	float MouseYSensitivity = 1.0f;
+
+	// 1m 거리에서 탄이 퍼지는 반경
+	UPROPERTY(Transient, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Combat|Shot")
+	float ShotSpreadRadius;
+
+	UPROPERTY(Transient, ReplicatedUsing=OnRep_CurrentShotSpreadRadius, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Combat|Shot")
+	float CurrentShotSpreadRadius;
+
 public:
-	// Setter / Getter
-	bool GetIsAttacking()
+	FOnAimingChangedDelegate OnAimingChanged;
+
+public:
+	FORCEINLINE bool IsAttacking() const
 	{
 		return bIsAttacking;
 	}
+
+	UFUNCTION(BlueprintGetter)
+	bool K2_IsAttacking() const
+	{
+		return IsAttacking();
+	}
+
 	bool GetIsAiming()
 	{
 		return bIsAiming;
 	}
 
-	UFUNCTION(Server, Reliable)
-	void SetIsAttacking(bool Attacking);
+	UFUNCTION(BlueprintCallable)
+	void SetIsAttacking(bool bNewIsAttacking)
+	{
+		if (bIsAttacking == bNewIsAttacking)
+		{
+			return;
+		}
 
-	UPlayerAttributeSet* GetAttributeSet()
+		if (HasAuthority())
+		{
+			bIsAttacking = bNewIsAttacking;
+			OnIsAttackingChanged();
+		}
+		else
+		{
+			Server_SetIsAttacking(bNewIsAttacking);
+		}
+	}
+
+	UFUNCTION(Server, Reliable, BlueprintCallable, Category="Combat")
+	void Server_SetIsAttacking(bool bNewIsAttacking);
+
+	FORCEINLINE bool IsAiming() const
+	{
+		return bIsAiming;
+	}
+
+	UFUNCTION(BlueprintGetter)
+	bool K2_IsAiming() const
+	{
+		return IsAiming();
+	}
+
+	UFUNCTION(BlueprintCallable)
+	void SetIsAiming(bool bNewIsAiming)
+	{
+		if (bIsAiming == bNewIsAiming)
+		{
+			return;
+		}
+
+		if (HasAuthority())
+		{
+			bIsAiming = bNewIsAiming;
+			OnIsAimingChanged();
+		}
+		else
+		{
+			Server_SetIsAiming(bNewIsAiming);
+		}
+	}
+
+	UFUNCTION(Server, Reliable, BlueprintCallable, Category="Combat")
+	void Server_SetIsAiming(bool bNewIsAiming);
+
+	FORCEINLINE float GetCurrentShotSpreadRadius() const
+	{
+		return CurrentShotSpreadRadius;
+	}
+
+	UFUNCTION(BlueprintGetter)
+	float K2_GetCurrentShotSpreadRadius() const
+	{
+		return GetCurrentShotSpreadRadius();
+	}
+
+	UFUNCTION(BlueprintCallable)
+	void SetCurrentShotSpreadRadius(float NewCurrentShotSpreadRadius)
+	{
+		if (CurrentShotSpreadRadius == NewCurrentShotSpreadRadius)
+		{
+			return;
+		}
+
+		if (HasAuthority())
+		{
+			CurrentShotSpreadRadius = NewCurrentShotSpreadRadius;
+			OnCurrentShotSpreadRadiusChanged();
+		}
+		else
+		{
+			Server_SetCurrentShotSpreadRadius(NewCurrentShotSpreadRadius);
+		}
+	}
+
+	UFUNCTION(Server, Reliable, BlueprintCallable, Category="Combat")
+	void Server_SetCurrentShotSpreadRadius(float NewCurrentShotSpreadRadius);
+
+	FORCEINLINE UPlayerAttributeSet* GetAttributeSet()
 	{
 		return AttributeSet;
 	}
-	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const
+
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override
 	{
 		return Cast<UAbilitySystemComponent>(ASC);
 	}
+
 	void SetMouseSensitivity(float NewX, float NewY)
 	{
 		MouseXSensitivity = NewX;
 		MouseYSensitivity = NewY;
 	}
+
 	float GetMouseXSensitivity() const
 	{
 		return MouseXSensitivity;
 	}
+
 	float GetMouseYSensitivity() const
 	{
 		return MouseYSensitivity;
 	}
+
 protected:
 	UFUNCTION(Server, Reliable)
 	void Server_SetMaxWalkSpeed(float NewSpeed);
+
+	UFUNCTION()
+	void OnRep_IsAttacking() const;
+	void OnIsAttackingChanged() const;
+
+	UFUNCTION()
+	void OnRep_IsAiming() const;
+	void OnIsAimingChanged() const;
+
+	UFUNCTION()
+	void OnRep_CurrentShotSpreadRadius() const;
+	void OnCurrentShotSpreadRadiusChanged() const;
 
 private:
 	// Input Function
@@ -126,12 +251,15 @@ private:
 	void AimReleaseKey(const FInputActionValue& Value);
 	void RotationMouse(const FInputActionValue& Value);
 
+	UFUNCTION()
+	void LoadDefaultData();
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 public:
-	virtual void OnConstruction(const FTransform& Transform);
+	virtual void OnConstruction(const FTransform& Transform) override;
 
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -139,7 +267,7 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 public:
 	void ShootAttackRay();
@@ -147,9 +275,9 @@ public:
 	TSubclassOf<UGameplayEffect> GetEffect(const FName TagName) const;
 
 public:
-	virtual void SetGenericTeamId(const FGenericTeamId& ID);
-	virtual FGenericTeamId GetGenericTeamId() const;
-	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const;
+	virtual void SetGenericTeamId(const FGenericTeamId& ID) override;
+	virtual FGenericTeamId GetGenericTeamId() const override;
+	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const override;
 
 protected:
 	UFUNCTION(Server, Reliable)

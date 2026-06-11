@@ -21,6 +21,8 @@ class RS_API UDataSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 private:
+	inline static const FName DefaultItemRowName = TEXT("Default");
+
 	UPROPERTY()
 	TObjectPtr<UDataTable> ItemInfoTable;
 
@@ -43,29 +45,35 @@ public:
 public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
-	[[nodiscard]] const FItemTableInfo* GetItemTableInfo(FName Name) const;
+	const FItemTableInfo* GetItemTableInfo(FName Name) const;
 
 	UFUNCTION(BlueprintCallable, Category = "Data", meta=(DisplayName = "Get Item Table Info"))
 	bool K2_GetItemTableInfo(FName Name, FItemTableInfo& OutItemInfo) const;
 
-	UFUNCTION(BlueprintPure, Category = "Data")
-	bool IsItemTableLoaded() const { return IsValid(ItemInfoTable); }
+	FORCEINLINE bool IsItemTableLoaded() const { return IsValid(ItemInfoTable); }
 
-	[[nodiscard]] const FMiscTableInfo* GetMiscTableInfo(FName Name) const;
+	UFUNCTION(BlueprintPure, Category = "Data", meta=(DisplayName = "Is Item Table Loaded"))
+	bool K2_IsItemTableLoaded() const { return IsItemTableLoaded(); }
+
+	const FMiscTableInfo* GetMiscTableInfo() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Data", meta=(DisplayName = "Get Misc Table Info"))
-	bool K2_GetMiscTableInfo(FName Name, FMiscTableInfo& OutItemInfo) const;
+	bool K2_GetMiscTableInfo(FMiscTableInfo& OutItemInfo) const;
 
-	UFUNCTION(BlueprintPure, Category = "Data")
-	bool IsMiscTableLoaded() const { return IsValid(MiscInfoTable); }
+	FORCEINLINE bool IsMiscTableLoaded() const { return IsValid(MiscInfoTable); }
 
-	[[nodiscard]] const FPlayerDefaultInfo* GetPlayerDefaultTableInfo(FName Name) const;
+	UFUNCTION(BlueprintPure, Category = "Data", meta=(DisplayName = "Is Misc Table Loaded"))
+	bool K2_IsMiscTableLoaded() const { return IsMiscTableLoaded(); }
+
+	const FPlayerDefaultInfo* GetPlayerDefaultTableInfo() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Data", meta=(DisplayName = "Get Player Default Table Info"))
-	bool K2_GetPlayerDefaultTableInfo(FName Name, FPlayerDefaultInfo& OutPlayerDefaultInfo) const;
+	bool K2_GetPlayerDefaultTableInfo(FPlayerDefaultInfo& OutPlayerDefaultInfo) const;
 
-	UFUNCTION(BlueprintPure, Category = "Data")
-	bool IsPlayerDefaultTableLoaded() const { return IsValid(PlayerDefaultInfoTable); }
+	FORCEINLINE bool IsPlayerDefaultTableLoaded() const { return IsValid(PlayerDefaultInfoTable); }
+
+	UFUNCTION(BlueprintPure, Category = "Data", meta=(DisplayName = "Is Player Default Table Loaded"))
+	bool K2_IsPlayerDefaultTableLoaded() const { return IsPlayerDefaultTableLoaded(); }
 
 private:
 	void LoadItemInfoTable();

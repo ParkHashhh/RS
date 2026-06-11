@@ -12,6 +12,15 @@ enum class EItemUseType : uint8
 	Consumable,
 };
 
+UENUM(BlueprintType)
+enum class EGrade : uint8
+{
+	Common,
+	Rare,
+	Epic,
+	Legendary,
+};
+
 // 기획자가 에디터/엑셀에서 입력할 동적 옵션 구조체
 USTRUCT(BlueprintType)
 struct FItemOption
@@ -77,12 +86,51 @@ USTRUCT(BlueprintType)
 struct FMiscTableInfo : public FTableRowBase
 {
 	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Misc|UI")
+	FLinearColor CommonColor{};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Misc|UI")
+	FLinearColor RareColor{};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Misc|UI")
+	FLinearColor EpicColor{};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Misc|UI")
+	FLinearColor LegendaryColor{};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Misc|UI")
+	float CommonIconThickness{};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Misc|UI")
+	float RareIconThickness{};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Misc|UI")
+	float EpicIconThickness{};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Misc|UI")
+	float LegendaryIconThickness{};
 };
 
 USTRUCT(BlueprintType)
 struct FPlayerDefaultInfo : public FTableRowBase
 {
 	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Combat|Shot")
+	float BaseShotSpreadRadius{};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Combat|Shot")
+	float AimShotSpreadModifier{};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Combat|Shot")
+	float MoveShotSpreadModifier{};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Combat|Shot")
+	float FireShotSpreadModifier{};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Combat|Shot")
+	float ShotSpreadRecoveryTime{};
 };
 
 UENUM(BlueprintType)

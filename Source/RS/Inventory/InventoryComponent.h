@@ -29,7 +29,7 @@ struct FInventoryItem : public FFastArraySerializerItem
 	UPROPERTY()
 	FActiveGameplayEffectHandle AppliedEffectHandle;
 
-	[[nodiscard]] const FItemTableInfo* GetRowInfo(const UDataSubsystem* Subsystem) const;
+	const FItemTableInfo* GetRowInfo(const UDataSubsystem* Subsystem) const;
 
 	void PreReplicatedRemove(const FInventoryArray& InArraySerializer);
 	void PostReplicatedAdd(const FInventoryArray& InArraySerializer);

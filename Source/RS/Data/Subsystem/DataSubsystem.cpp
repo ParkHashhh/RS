@@ -49,25 +49,25 @@ bool UDataSubsystem::K2_GetItemTableInfo(FName Name, FItemTableInfo& OutItemInfo
 	return false;
 }
 
-const FMiscTableInfo* UDataSubsystem::GetMiscTableInfo(FName Name) const
+const FMiscTableInfo* UDataSubsystem::GetMiscTableInfo() const
 {
 	if (!IsValid(MiscInfoTable))
 	{
-		RS_LOG_DEBUG(LogRSData, Warning, TEXT("%s: MiscInfoTable is NOT valid when getting row %s. It might still be loading."), *LOG_LINE_INFO, *Name.ToString());
+		RS_LOG_DEBUG(LogRSData, Warning, TEXT("%s: MiscInfoTable is NOT valid when getting row %s. It might still be loading."), *LOG_LINE_INFO, *DefaultItemRowName.ToString());
 		return nullptr;
 	}
 
-	const auto* Row = ItemInfoTable->FindRow<FMiscTableInfo>(Name, TEXT("MiscInfo"));
+	const auto* Row = ItemInfoTable->FindRow<FMiscTableInfo>(DefaultItemRowName, TEXT("MiscInfo"));
 	if (!Row)
 	{
-		RS_LOG_DEBUG(LogRSData, Warning, TEXT("%s: Failed to find row %s in MiscInfoTable"), *LOG_LINE_INFO, *Name.ToString());
+		RS_LOG_DEBUG(LogRSData, Warning, TEXT("%s: Failed to find row %s in MiscInfoTable"), *LOG_LINE_INFO, *DefaultItemRowName.ToString());
 	}
 	return Row;
 }
 
-bool UDataSubsystem::K2_GetMiscTableInfo(FName Name, FMiscTableInfo& OutItemInfo) const
+bool UDataSubsystem::K2_GetMiscTableInfo(FMiscTableInfo& OutItemInfo) const
 {
-	if (const FMiscTableInfo* ItemInfoPtr = GetMiscTableInfo(Name))
+	if (const FMiscTableInfo* ItemInfoPtr = GetMiscTableInfo())
 	{
 		OutItemInfo = *ItemInfoPtr;
 		return true;
@@ -77,25 +77,25 @@ bool UDataSubsystem::K2_GetMiscTableInfo(FName Name, FMiscTableInfo& OutItemInfo
 	return false;
 }
 
-const FPlayerDefaultInfo* UDataSubsystem::GetPlayerDefaultTableInfo(FName Name) const
+const FPlayerDefaultInfo* UDataSubsystem::GetPlayerDefaultTableInfo() const
 {
 	if (!IsValid(PlayerDefaultInfoTable))
 	{
-		RS_LOG_DEBUG(LogRSData, Warning, TEXT("%s: PlayerDefaultInfoTable is NOT valid when getting row %s. It might still be loading."), *LOG_LINE_INFO, *Name.ToString());
+		RS_LOG_DEBUG(LogRSData, Warning, TEXT("%s: PlayerDefaultInfoTable is NOT valid when getting row %s. It might still be loading."), *LOG_LINE_INFO, *DefaultItemRowName.ToString());
 		return nullptr;
 	}
 
-	const auto* Row = PlayerDefaultInfoTable->FindRow<FPlayerDefaultInfo>(Name, TEXT("PlayerDefaultInfo"));
+	const auto* Row = PlayerDefaultInfoTable->FindRow<FPlayerDefaultInfo>(DefaultItemRowName, TEXT("PlayerDefaultInfo"));
 	if (!Row)
 	{
-		RS_LOG_DEBUG(LogRSData, Warning, TEXT("%s: Failed to find row %s in PlayerDefaultInfoTable"), *LOG_LINE_INFO, *Name.ToString());
+		RS_LOG_DEBUG(LogRSData, Warning, TEXT("%s: Failed to find row %s in PlayerDefaultInfoTable"), *LOG_LINE_INFO, *DefaultItemRowName.ToString());
 	}
 	return Row;
 }
 
-bool UDataSubsystem::K2_GetPlayerDefaultTableInfo(FName Name, FPlayerDefaultInfo& OutPlayerDefaultInfo) const
+bool UDataSubsystem::K2_GetPlayerDefaultTableInfo(FPlayerDefaultInfo& OutPlayerDefaultInfo) const
 {
-	if (const FPlayerDefaultInfo* PlayerDefaultInfoPtr = GetPlayerDefaultTableInfo(Name))
+	if (const FPlayerDefaultInfo* PlayerDefaultInfoPtr = GetPlayerDefaultTableInfo())
 	{
 		OutPlayerDefaultInfo = *PlayerDefaultInfoPtr;
 		return true;

@@ -2,16 +2,15 @@
 
 
 #include "PlayerCharacterBase.h"
-#include "RS/Player/Character/PlayerAnimInstance.h"
-#include "RS/Input/InputData.h"
-#include "GameFramework/SpringArmComponent.h"
-#include "Camera/CameraComponent.h"
-#include "RS/Input/InputData.h"
-#include "Components/CapsuleComponent.h"
 #include "Attribute/PlayerAttributeSet.h"
-#include "RS/Zombie/ZombieBase.h"
-#include "RS/LogCategory.h"
+#include "Camera/CameraComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/SpringArmComponent.h"
+#include "RS/Data/Subsystem/DataSubsystem.h"
+#include "RS/Input/InputData.h"
+#include "RS/Player/Character/PlayerAnimInstance.h"
+#include "RS/Zombie/ZombieBase.h"
 
 // Sets default values
 APlayerCharacterBase::APlayerCharacterBase()
@@ -23,14 +22,14 @@ APlayerCharacterBase::APlayerCharacterBase()
 	// SpringArm의 부모 컴포넌트로 Capsule을 지정한다.
 	SpringArm->SetupAttachment(GetCapsuleComponent());
 
-	GetMesh()->AddRelativeLocation(FVector(0,0, -GetCapsuleComponent()->GetScaledCapsuleHalfHeight()));
+	GetMesh()->AddRelativeLocation(FVector(0, 0, -GetCapsuleComponent()->GetScaledCapsuleHalfHeight()));
 
 	SpringArm->TargetArmLength = 250.f;
 	SpringArm->SetRelativeLocation(FVector(0.0, 0.0, 60.f));
 	SpringArm->SetRelativeRotation(FRotator::ZeroRotator);
 
 	SpringArm->bUsePawnControlRotation = true;
-	
+
 	// CameraComponent를 생성하고 SpringArm에 붙여준다.
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(SpringArm);
@@ -68,16 +67,28 @@ APlayerCharacterBase::APlayerCharacterBase()
 	SetReplicateMovement(true);
 
 	SetGenericTeamId(FGenericTeamId(TeamPlayer));
-
-
 }
-
 
 
 // Called when the game starts or when spawned
 void APlayerCharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	const UGameInstance* GameInstance = GetGameInstance();
+	check(GameInstance);
+
+	auto* DataSubsystem = GameInstance->GetSubsystem<UDataSubsystem>();
+	check(DataSubsystem);
+
+	if (!DataSubsystem->IsPlayerDefaultTableLoaded())
+	{
+		DataSubsystem->OnPlayerDefaultInfoLoaded.AddDynamic(this, &APlayerCharacterBase::LoadDefaultData);
+	}
+	else
+	{
+		LoadDefaultData();
+	}
 
 	APlayerController* PlayerController = Cast<APlayerController>(GetController());
 
@@ -86,7 +97,7 @@ void APlayerCharacterBase::BeginPlay()
 		UEnhancedInputLocalPlayerSubsystem* SubSystem =
 			ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer());
 
-		// BP_PlayerCharacterBase에 등록되어있는 InputDataClass를 가져와 Mapping한다. 
+		// BP_PlayerCharacterBase에 등록되어있는 InputDataClass를 가져와 Mapping한다.
 		if (InputDataClass && SubSystem)
 		{
 			const UInputData* InputData = GetDefault<UInputData>(InputDataClass);
@@ -146,6 +157,8 @@ void APlayerCharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(APlayerCharacterBase, bIsAttacking); // 🎯 동기화 대상 등록
+	DOREPLIFETIME(APlayerCharacterBase, bIsAiming);
+	DOREPLIFETIME(APlayerCharacterBase, CurrentShotSpreadRadius);
 }
 
 // Called every frame
@@ -234,20 +247,75 @@ void APlayerCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		EnhancedInput->BindAction(Action, ETriggerEvent::Completed, this, &APlayerCharacterBase::AimReleaseKey);
 		EnhancedInput->BindAction(Action, ETriggerEvent::Canceled, this, &APlayerCharacterBase::AimReleaseKey);
 	}
-
 }
 
 void APlayerCharacterBase::Server_SetMaxWalkSpeed_Implementation(float NewSpeed)
 {
-	if (GetCharacterMovement())
+	UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+	if (IsValid(MovementComponent))
 	{
-		GetCharacterMovement()->MaxWalkSpeed = NewSpeed;
+		MovementComponent->MaxWalkSpeed = NewSpeed;
 	}
+}
+
+void APlayerCharacterBase::Server_SetIsAiming_Implementation(bool bNewIsAiming)
+{
+	if (bIsAiming == bNewIsAiming)
+	{
+		return;
+	}
+
+	bIsAiming = bNewIsAiming;
+	// 리슨 서버용 OnRep 내부 로직 직접 호출
+	OnIsAimingChanged();
+}
+
+void APlayerCharacterBase::Server_SetCurrentShotSpreadRadius_Implementation(float NewCurrentShotSpreadRadius)
+{
+	if (CurrentShotSpreadRadius == NewCurrentShotSpreadRadius)
+	{
+		return;
+	}
+
+	CurrentShotSpreadRadius = NewCurrentShotSpreadRadius;
+
+	// 리슨 서버용 OnRep 내부 로직 직접 호출
+	OnIsAttackingChanged();
+}
+
+void APlayerCharacterBase::OnRep_IsAttacking() const
+{
+	OnIsAttackingChanged();
+}
+
+void APlayerCharacterBase::OnIsAttackingChanged() const
+{
+}
+
+void APlayerCharacterBase::OnRep_IsAiming() const
+{
+	OnIsAimingChanged();
+}
+
+void APlayerCharacterBase::OnIsAimingChanged() const
+{
+	if (OnAimingChanged.IsBound())
+	{
+		OnAimingChanged.Broadcast(bIsAiming);
+	}
+}
+
+void APlayerCharacterBase::OnRep_CurrentShotSpreadRadius() const
+{
+	OnCurrentShotSpreadRadiusChanged();
+}
+
+void APlayerCharacterBase::OnCurrentShotSpreadRadiusChanged() const
+{
 }
 
 void APlayerCharacterBase::MoveKey(const FInputActionValue& Value)
 {
-
 	FVector2D MovementVector = Value.Get<FVector2D>();
 
 	AddMovementInput(GetActorForwardVector(), MovementVector.X);
@@ -273,7 +341,6 @@ void APlayerCharacterBase::DashKey(const FInputActionValue& Value)
 		GetCharacterMovement()->MaxWalkSpeed = 600.f;
 		Server_SetMaxWalkSpeed(600.f);
 	}
-		
 }
 
 void APlayerCharacterBase::DashReleaseKey(const FInputActionValue& Value)
@@ -290,20 +357,17 @@ void APlayerCharacterBase::DashReleaseKey(const FInputActionValue& Value)
 
 void APlayerCharacterBase::AttackKey(const FInputActionValue& Value)
 {
-
 	// Bool 변수로 누르고 있는지 땠는지를 판단 한 후 공격속도마다 공격 함수를 호출하게 하고(이펙트 파티클 등등), 서버에서는 충돌처리 및 데미지 체크하기
-	bIsAttacking = true;
-
-	SetIsAttacking(true); // Server RPC 함수 필요
+	SetIsAttacking(true);
 
 	if (IsLocallyControlled() && bIsAttacking)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("AttackKey"));
-		if (ASC)
+		RS_PRINT_SCREEN(1.f, FColor::Red, TEXT("AttackKey"));
+		if (IsValid(ASC))
 		{
 			FGameplayEventData EventData;
 			EventData.Instigator = this; // 이 스킬을 발동한 주체
-			EventData.Target = this;     // 이 스킬이 꽂히는 대상
+			EventData.Target = this; // 이 스킬이 꽂히는 대상
 
 			ASC->HandleGameplayEvent(FGameplayTag::RequestGameplayTag(TEXT("Player.Battle.Attack")), &EventData);
 		}
@@ -324,39 +388,46 @@ void APlayerCharacterBase::PlayBaseAttackMontage()
 
 void APlayerCharacterBase::AttackReleaseKey(const FInputActionValue& Value)
 {
-	bIsAttacking = false;
 	SetIsAttacking(false);
 	RS_PRINT_SCREEN(2, FColor::Red, TEXT("Release Attack Key"));
 }
 
-void APlayerCharacterBase::SetIsAttacking_Implementation(bool Attacking)
+void APlayerCharacterBase::Server_SetIsAttacking_Implementation(bool bNewIsAttacking)
 {
-	bIsAttacking = Attacking;
+	if (bIsAttacking == bNewIsAttacking)
+	{
+		return;
+	}
+
+	bIsAttacking = bNewIsAttacking;
+
+	// 리슨 서버용 OnRep 내부 로직 직접 호출
+	OnIsAttackingChanged();
 }
 
 
 void APlayerCharacterBase::SitKey(const FInputActionValue& Value)
 {
-	bool Sit = Value.Get<bool>();
+	bool bSit = Value.Get<bool>();
 
-	if (Sit)
+	if (bSit)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("SitKey"));
+		RS_PRINT_SCREEN(1.f, FColor::Red, TEXT("SitKey"));
 	}
 }
 
 void APlayerCharacterBase::AimKey(const FInputActionValue& Value)
 {
-	bIsAiming = true;
+	SetIsAiming(true);
 
 	TargetArmLength = 200.f;
 
-	if (GetCharacterMovement())
+	UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+	if (IsValid(MovementComponent))
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("AimKey"));
+		RS_PRINT_SCREEN(1.f, FColor::Red, TEXT("AimKey"));
 
-		// 🔴 로컬 속도 변경 + 🔵 서버 속도 변경 요청
-		GetCharacterMovement()->MaxWalkSpeed = 200.f;
+		MovementComponent->MaxWalkSpeed = 200.f;
 		Server_SetMaxWalkSpeed(200.f);
 		Camera->FieldOfView = 60.f;
 		SpringArm->SetRelativeLocation(FVector(0.0, 50.0, 60.f));
@@ -365,17 +436,17 @@ void APlayerCharacterBase::AimKey(const FInputActionValue& Value)
 
 void APlayerCharacterBase::AimReleaseKey(const FInputActionValue& Value)
 {
-	bIsAiming = false;
+	SetIsAiming(false);
 
 	TargetArmLength = 250.f;
 
-	if (GetCharacterMovement())
+	if (UCharacterMovementComponent* MovementComponent = GetCharacterMovement(); IsValid(MovementComponent))
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("AimReleaseKey"));
 		float TargetSpeed = bIsDashing ? 600.f : 400.f;
 
 		// 🔴 로컬 속도 변경 + 🔵 서버 속도 변경 요청
-		GetCharacterMovement()->MaxWalkSpeed = TargetSpeed;
+		MovementComponent->MaxWalkSpeed = TargetSpeed;
 		Server_SetMaxWalkSpeed(TargetSpeed);
 		Camera->FieldOfView = 90.f;
 		SpringArm->SetRelativeLocation(FVector(0.0, 0.0, 60.f));
@@ -384,17 +455,48 @@ void APlayerCharacterBase::AimReleaseKey(const FInputActionValue& Value)
 
 void APlayerCharacterBase::RotationMouse(const FInputActionValue& Value)
 {
-	FVector	Axis = Value.Get<FVector>();
+	FVector Axis = Value.Get<FVector>();
 	AddControllerYawInput(Axis.X * MouseXSensitivity);
 	AddControllerPitchInput(Axis.Y * MouseYSensitivity);
+}
+
+void APlayerCharacterBase::LoadDefaultData()
+{
+	const UGameInstance* GameInstance = GetGameInstance();
+	check(GameInstance);
+
+	const auto* DataSubsystem = GameInstance->GetSubsystem<UDataSubsystem>();
+	check(DataSubsystem);
+
+	const FPlayerDefaultInfo* PlayerDefaultInfo = DataSubsystem->GetPlayerDefaultTableInfo();
+	if (!PlayerDefaultInfo)
+	{
+		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: No valid player default data"), *LOG_LINE_INFO);
+		return;
+	}
+
+	// TODO: 실제 데이터 처리
 }
 
 void APlayerCharacterBase::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
-	if (SkeletalMeshAsset)
+
+	if (IsValid(SkeletalMeshAsset))
 	{
-		GetMesh()->SetSkeletalMeshAsset(SkeletalMeshAsset);
+		USkeletalMeshComponent* MeshComponent = GetMesh();
+		if (IsValid(MeshComponent))
+		{
+			MeshComponent->SetSkeletalMeshAsset(SkeletalMeshAsset);
+		}
+		else
+		{
+			RS_LOG_DEBUG(LogRSInit, Error, TEXT("%s: MeshComponent is invalid"), *LOG_LINE_INFO);
+		}
+	}
+	else
+	{
+		RS_LOG_DEBUG(LogRSProperties, Error, TEXT("%s: SkeletalMeshAsset is invalid"), *LOG_LINE_INFO);
 	}
 }
 
@@ -425,7 +527,7 @@ void APlayerCharacterBase::ShootAttackRay()
 
 		ETeamAttitude::Type Attitude = GetTeamAttitudeTowards(*TargetActor);
 
-		RS_PRINT_SCREEN(0.2, FColor::Red, TEXT("Hit Actor Name : %s"),*TargetActor->GetName());
+		RS_PRINT_SCREEN(0.2, FColor::Red, TEXT("Hit Actor Name : %s"), *TargetActor->GetName());
 
 		if (Attitude == ETeamAttitude::Hostile)
 		{
@@ -433,26 +535,28 @@ void APlayerCharacterBase::ShootAttackRay()
 
 			if (TargetASC && ASC)
 			{
-				Apply_Damage_Server(TargetActor,Hit);
+				Apply_Damage_Server(TargetActor, Hit);
 			}
 		}
 	}
 	else
 	{
-
 		if (IsLocallyControlled())
 		{
 			DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 2.0f, 0, 2.0f);
 		}
+
 		RS_PRINT_SCREEN(0.2, FColor::Black, TEXT("No Hit"));
 	}
 }
 
 TSubclassOf<UGameplayEffect> APlayerCharacterBase::GetEffect(const FName TagName) const
 {
-	const TSubclassOf<UGameplayEffect>* FindTag = Effects.Find(TagName);
-	if(FindTag)
+	if (const TSubclassOf<UGameplayEffect>* FindTag = Effects.Find(TagName))
+	{
 		return *FindTag;
+	}
+
 	return nullptr;
 }
 
@@ -472,18 +576,21 @@ ETeamAttitude::Type APlayerCharacterBase::GetTeamAttitudeTowards(const AActor& O
 	const IGenericTeamAgentInterface* OtherTeamAgent = Cast<const IGenericTeamAgentInterface>(&Other);
 
 	if (!OtherTeamAgent)
+	{
 		return ETeamAttitude::Neutral;
-
+	}
 	else if (OtherTeamAgent->GetGenericTeamId().GetId() == TeamNeutral)
+	{
 		return ETeamAttitude::Neutral;
+	}
 
-	return GetGenericTeamId() == OtherTeamAgent->GetGenericTeamId() ?
-		ETeamAttitude::Friendly : ETeamAttitude::Hostile;
+	return GetGenericTeamId() == OtherTeamAgent->GetGenericTeamId()
+		       ? ETeamAttitude::Friendly
+		       : ETeamAttitude::Hostile;
 }
 
 void APlayerCharacterBase::Apply_Damage_Server_Implementation(AActor* TargetActor, FHitResult Hit)
 {
-
 	AZombieBase* TargetChar = Cast<AZombieBase>(TargetActor);
 
 	UAbilitySystemComponent* TargetASC = TargetActor->FindComponentByClass<UAbilitySystemComponent>();
@@ -518,4 +625,3 @@ void APlayerCharacterBase::Apply_Damage_Server_Implementation(AActor* TargetActo
 
 	TargetASC->ExecuteGameplayCue(CueTag, CueParams);
 }
-
