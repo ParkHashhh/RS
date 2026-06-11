@@ -11,6 +11,10 @@
 #include "Net/UnrealNetwork.h"
 #include "Animation/ZombieAnimInstance.h"
 #include "NavigationSystem.h"
+#include "RS/GAS/BaseAttributeSet.h"
+#include "BrainComponent.h"
+
+#include "RS/LogCategory.h"
 
 // Sets default values
 AZombieBase::AZombieBase()
@@ -200,6 +204,82 @@ void AZombieBase::CalcNextPointLocation()
 	}
 }
 
+void AZombieBase::CallBackHP(AActor* InstigatorActor)
+{
+	if (AttributeSet->GetHP() <= 0)
+	{
+		//좀비의 사망 애니메이션을 동작시킨다
+		//이 함수를 호출해야 클라이언트에서도 애니메이션을 사망 애니메이션으로 변경한다.
+		ChangeAnim(EZombieAnimType::Death);
+
+		//사망 처리 시 서버에서 해야 할 일 - 판정과 관련된 정보 정리
+		//1. 인공지능 종료
+		//2. 무브먼트 종료
+		//3. 캡슐의 충돌 제거
+
+		AAIController* Ctrl = GetController<AAIController>();
+		if (IsValid(Ctrl))
+		{
+			Ctrl->BrainComponent->StopLogic(TEXT("Death"));
+			Ctrl->BrainComponent->Cleanup();
+		}
+
+		Movement->StopMovementImmediately();
+		Movement->Deactivate();
+		Movement->SetComponentTickEnabled(false);
+
+		//좀비가 죽어서 플레이어의 GAS를 변화시켜야 한다면 (골드 증가 등)
+		//서버에서 해야 할 작업이므로 이곳에서 처리한다.
+	}
+	else
+	{
+		//죽지 않은 경우
+		RS_LOG_DEBUG(LogRSBattle, Log, TEXT("좀비가 공격받음"));
+	}
+	
+}
+
+void AZombieBase::Death()
+{
+	//랙돌 처리를 위한 함수
+	ApplyRagdoll();
+
+	//디졸브 처리
+
+	//랙돌 처리를 서버에서도 하도록 요청한다.
+	Death_Server();
+}
+
+void AZombieBase::ApplyRagdoll()
+{
+	//서버와 클라이언트 두 곳 모두에서 설정해줘야 하는 것들을 이곳에 넣는다.
+	//1. 캡슐 충돌판정 제거
+	//2. 메쉬 충돌판정 활성화
+	//3. 메쉬 콜리전 프리셋을 랙돌로 변경
+	//4. 메쉬의 시뮬레이트 피직스 활성화
+	//5. 메쉬의 부분 시뮬레이트 연산
+	Body->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	Mesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+
+	Mesh->SetCollisionProfileName(TEXT("Ragdoll"));
+
+	Mesh->SetSimulatePhysics(true);
+	//바디 피직스 시뮬레이트 연출 계산에 방해가 될 외부 수치를 제거한다.
+	Mesh->SetAllPhysicsLinearVelocity(FVector::ZeroVector);
+	Mesh->SetAllPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+
+	//전신 바디 시뮬레이트를 켜되 루트 본은 제외한다.
+	Mesh->SetAllBodiesSimulatePhysics(false);
+	Mesh->SetAllBodiesBelowSimulatePhysics(TEXT("pelvis"), true, true);
+
+	//사용하지 않아 비활성화 된 바디를 강제로 깨워준다.
+	Mesh->WakeAllRigidBodies();
+
+	//기존 애니메이션과 시뮬레이트 피직스 결과를 섞도록 한다.
+	Mesh->bBlendPhysics = true;
+}
+
 void AZombieBase::OnRep_ChangeAnimType()
 {
 	//서버는 애니메이션을 재생할 필요가 없기 때문이다.
@@ -220,5 +300,26 @@ void AZombieBase::OnRep_ChangeAnimType()
 		AnimInstance->SetAnim(AnimType);
 	}
 
+}
+
+bool AZombieBase::Death_Server_Validate()
+{
+	if (AttributeSet->GetHP() > 0)
+	{
+		return false;
+	}
+	return true;
+}
+
+void AZombieBase::Death_Server_Implementation()
+{
+	//신호 검증은 _Validate 함수에서 수행했다.
+	//이곳에서는 중복 연산을 체크한다.
+	if (Mesh->bBlendPhysics)
+	{
+		return;
+	}
+	//클라와 동일하게 서버에서도 처리하도록 동일한 함수를 호출해준다.
+	ApplyRagdoll();
 }
 

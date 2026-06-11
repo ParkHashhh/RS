@@ -391,6 +391,7 @@ void APlayerCharacterBase::PlayBaseAttackMontage()
 
 void APlayerCharacterBase::AttackReleaseKey(const FInputActionValue& Value)
 {
+	bIsAttacking = false;
 	SetIsAttacking(false);
 	RS_PRINT_SCREEN(2, FColor::Red, TEXT("Release Attack Key"));
 }

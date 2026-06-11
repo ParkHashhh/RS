@@ -117,8 +117,21 @@ public:
 	TSubclassOf<UGameplayEffect> GetEffect(const FName& Name);
 	void ChangeAnim(EZombieAnimType Type);
 	void CalcNextPointLocation();
+	virtual void CallBackHP(AActor* InstigatorActor);
+	virtual void Death();
+	//랙돌을 위한 설정을 모아놓은 함수
+	void ApplyRagdoll();
 
 public:
 	UFUNCTION()
 	void OnRep_ChangeAnimType();
+
+	//
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Death_Server();
+
+	//클라 변조를 막아줄 검증 함수
+	virtual bool Death_Server_Validate();
+	virtual void Death_Server_Implementation();
+
 };

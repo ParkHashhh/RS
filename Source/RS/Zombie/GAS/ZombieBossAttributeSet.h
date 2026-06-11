@@ -13,5 +13,11 @@ UCLASS()
 class RS_API UZombieBossAttributeSet : public UBaseAttributeSet
 {
 	GENERATED_BODY()
+
+public:
+	UZombieBossAttributeSet();
+
+public:
+	virtual void OnHpChanged(AActor* Instigator);
 	
 };

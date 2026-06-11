@@ -22,8 +22,6 @@ public:
 	ATTRIBUTE_ACCESSORS_BASIC(UZombieStandardAttributeSet, DetectRange_Sight)
 
 public:
-	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
-
 	virtual void OnHpChanged(AActor* Instigator);
 	
 };

@@ -40,9 +40,9 @@ void UGameplayAbility_Attack::LoopAttackSequence()
 
 	APlayerCharacterBase* PlayerChar = Cast<APlayerCharacterBase>(GetAvatarActorFromActorInfo());
 
-	if (PlayerChar && PlayerChar->IsAttacking())
+	if (PlayerChar)
 	{
-		if (PlayerChar->IsLocallyControlled())
+		if (PlayerChar->IsLocallyControlled() && PlayerChar->IsAttacking())
 		{
 			PlayerChar->ShootAttackRay();
 

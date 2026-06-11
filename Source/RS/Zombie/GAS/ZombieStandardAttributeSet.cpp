@@ -2,15 +2,20 @@
 
 
 #include "ZombieStandardAttributeSet.h"
-#include "GameplayEffectExtension.h"
-#include "GameplayEffect.h"
-#include "RS/LogCategory.h"
+#include "RS/Zombie/ZombieBase.h"
 
-void UZombieStandardAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
-{
 
-}
 void UZombieStandardAttributeSet::OnHpChanged(AActor* Instigator)
 {
-
+	//좀비의 HP변화를 처리하는 함수를 호출한다.
+	UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent();
+	if (IsValid(ASC))
+	{
+		//GetOwnerActor와 GetAvatarActor의 차이점 체크
+		AZombieBase* Zombie = Cast<AZombieBase>(ASC->GetAvatarActor());
+		if (IsValid(Zombie))
+		{
+			Zombie->CallBackHP(Instigator);
+		}
+	}
 }

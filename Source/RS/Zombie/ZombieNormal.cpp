@@ -22,10 +22,15 @@ AZombieNormal::AZombieNormal()
 	if (IsValid(StandardAttri))
 	{
 		ASC->AddAttributeSetSubobject<UZombieStandardAttributeSet>(StandardAttri);
+
 		//테스트를 위해 공격 사거리를 이곳에서 임시로 어트리뷰트셋에 넣어준다.
-		StandardAttri->InitAttackDistance(200.f);
 		StandardAttri->InitAttack(30.f);
+		StandardAttri->InitDefense(0.f);
+		StandardAttri->InitHP(150.f);
+		StandardAttri->InitHPMax(150.f);
+		StandardAttri->InitWalkSpeed(150.f);
 		StandardAttri->InitRunSpeed(300.f);
+		StandardAttri->InitAttackDistance(200.f);
 	}
 	Movement->MaxSpeed = StandardAttri->GetRunSpeed();
 }

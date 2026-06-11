@@ -54,9 +54,6 @@ void UGameplayAbility_ZombieAttack::ActivateAbility(const FGameplayAbilitySpecHa
 		return;
 	}
 
-	//FString DebugMessage = FString::Printf(TEXT("Zombie Attack! Damage = %.2f"), Attack);
-	//GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Blue, DebugMessage);
-
 	//Damage Effect를 발동시키기 위해 Spec Handle을 만든다.
 	FGameplayEffectContextHandle Context = MakeEffectContext(Handle, ActorInfo);
 	Context.AddHitResult(HitData->HitResult);
@@ -82,7 +79,7 @@ void UGameplayAbility_ZombieAttack::ActivateAbility(const FGameplayAbilitySpecHa
 	Damage = FMath::Max(1.f, Damage);
 
 	//변화시킬 값을 가리키는 태그, 변화시킬 값을 이펙트 SpecHandle에 세팅한다.
-	DamageSpec.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(TEXT("SetByCaller.Stat.CurrentHP")), -Damage);
+	DamageSpec.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(TEXT("SetByCaller.State.HP")), -Damage);
 
 	//타겟 전송을 위해 타겟 데이터, 타겟 배열을 생성
 	FGameplayAbilityTargetDataHandle TargetData;
