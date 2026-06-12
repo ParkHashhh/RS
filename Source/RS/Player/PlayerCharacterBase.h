@@ -14,6 +14,7 @@
 #include "PlayerCharacterBase.generated.h"
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnAttackingChangedDelegate, bool);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnDashingChangedDelegate, bool);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnAimingChangedDelegate, bool);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnCurrentShotSpreadChangedDelegate, float);
 
@@ -74,13 +75,13 @@ protected:
 
 	TObjectPtr<class UPlayerAnimInstance> AnimInst;
 
-	UPROPERTY(Replicated)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, BlueprintGetter=K2_IsAttacking, meta=(AllowPrivateAccess=true))
 	bool bIsAttacking = false;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, BlueprintGetter=K2_IsDashing, meta=(AllowPrivateAccess=true))
 	bool bIsDashing = false;
 
-	UPROPERTY(ReplicatedUsing=OnRep_IsAiming, BlueprintReadOnly, BlueprintGetter=K2_IsAiming,
-		meta=(AllowPrivateAccess=true))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, BlueprintGetter=K2_IsAiming, meta=(AllowPrivateAccess=true))
 	bool bIsAiming = false;
 
 	float CurrentArmLength; // 현재 타겟 길이
@@ -102,6 +103,7 @@ protected:
 
 public:
 	FOnAttackingChangedDelegate OnAttackingChanged;
+	FOnDashingChangedDelegate OnDashingChanged;
 	FOnAimingChangedDelegate OnAimingChanged;
 	FOnCurrentShotSpreadChangedDelegate OnCurrentShotSpreadChanged;
 
@@ -122,19 +124,37 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetIsAttacking(bool bNewIsAttacking)
 	{
-		if (HasAuthority())
+		if (bIsAttacking == bNewIsAttacking)
 		{
-			bIsAttacking = bNewIsAttacking;
-			OnIsAttackingChanged();
+			return;
 		}
-		else
-		{
-			Server_SetIsAttacking(bNewIsAttacking);
-		}
+
+		bIsAttacking = bNewIsAttacking;
+		OnIsAttackingChanged();
 	}
 
-	UFUNCTION(Server, Reliable, BlueprintCallable, Category="Combat")
-	void Server_SetIsAttacking(bool bNewIsAttacking);
+	FORCEINLINE bool IsDashing() const
+	{
+		return bIsDashing;
+	}
+
+	UFUNCTION(BlueprintGetter, DisplayName="Is Dashing")
+	bool K2_IsDashing() const
+	{
+		return IsDashing();
+	}
+
+	UFUNCTION(BlueprintCallable)
+	void SetIsDashing(bool bNewIsDashing)
+	{
+		if (bIsDashing == bNewIsDashing)
+		{
+			return;
+		}
+
+		bIsDashing = bNewIsDashing;
+		OnIsDashingChanged();
+	}
 
 	FORCEINLINE bool IsAiming() const
 	{
@@ -155,19 +175,9 @@ public:
 			return;
 		}
 
-		if (HasAuthority())
-		{
 			bIsAiming = bNewIsAiming;
 			OnIsAimingChanged();
-		}
-		else
-		{
-			Server_SetIsAiming(bNewIsAiming);
-		}
 	}
-
-	UFUNCTION(Server, Reliable, BlueprintCallable, Category="Combat")
-	void Server_SetIsAiming(bool bNewIsAiming);
 
 	FORCEINLINE float GetCurrentShotSpreadRadius() const
 	{
@@ -239,12 +249,8 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void Server_SetMaxWalkSpeed(float NewSpeed);
 
-	UFUNCTION()
-	void OnRep_IsAttacking() const;
 	void OnIsAttackingChanged() const;
-
-	UFUNCTION()
-	void OnRep_IsAiming() const;
+	void OnIsDashingChanged() const;
 	void OnIsAimingChanged() const;
 
 	UFUNCTION()

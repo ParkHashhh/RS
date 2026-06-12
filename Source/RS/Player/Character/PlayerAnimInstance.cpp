@@ -2,11 +2,10 @@
 
 
 #include "PlayerAnimInstance.h"
-#include "RS/Player/PlayerCharacterBase.h"
+#include "KismetAnimationLibrary.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "RS/LogCategory.h"
-#include "KismetAnimationLibrary.h"
-
+#include "RS/Player/PlayerCharacterBase.h"
 
 
 void UPlayerAnimInstance::NativeBeginPlay()
@@ -14,14 +13,13 @@ void UPlayerAnimInstance::NativeBeginPlay()
 	Super::NativeBeginPlay();
 
 	//OnMontageEnded.AddDynamic(this, &UPlayerAnimInstance::MontageEnd);
-
 }
 
 void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 {
 	Super::NativeUpdateAnimation(DeltaSeconds);
 
-	TObjectPtr<APlayerCharacterBase>	PlayerChar = Cast<APlayerCharacterBase>(TryGetPawnOwner());
+	TObjectPtr<APlayerCharacterBase> PlayerChar = Cast<APlayerCharacterBase>(TryGetPawnOwner());
 
 	if (IsValid(PlayerChar))
 	{
@@ -42,8 +40,10 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 		bIsAiming = PlayerChar->IsAiming();
 
-	}
+		bIsAttacking = PlayerChar->IsAttacking();
 
+		bIsDashing = PlayerChar->IsDashing();
+	}
 }
 
 void UPlayerAnimInstance::PlayBaseAttackMontage()
@@ -64,9 +64,7 @@ void UPlayerAnimInstance::PlayBaseAttackMontage()
 void UPlayerAnimInstance::MontageEnd(UAnimMontage* Montage, bool bInterrupted)
 {
 	//RS_PRINT_SCREEN(1, FColor::Yellow, TEXT("PlayerAnimInst MontageEnd"));
-
 }
-
 
 
 void UPlayerAnimInstance::AnimNotify_AttackEnd()

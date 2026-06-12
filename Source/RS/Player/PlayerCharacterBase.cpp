@@ -12,6 +12,7 @@
 #include "RS/Data/Subsystem/DataSubsystem.h"
 #include "RS/Input/InputData.h"
 #include "RS/Player/Character/PlayerAnimInstance.h"
+#include "Engine/SkeletalMeshSocket.h"
 #include "RS/Zombie/ZombieBase.h"
 
 // Sets default values
@@ -162,8 +163,6 @@ void APlayerCharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(APlayerCharacterBase, bIsAttacking); // 🎯 동기화 대상 등록
-	DOREPLIFETIME(APlayerCharacterBase, bIsAiming);
 	DOREPLIFETIME(APlayerCharacterBase, CurrentShotSpreadRadius);
 }
 
@@ -270,19 +269,6 @@ void APlayerCharacterBase::Server_SetMaxWalkSpeed_Implementation(float NewSpeed)
 	}
 }
 
-void APlayerCharacterBase::Server_SetIsAiming_Implementation(bool bNewIsAiming)
-{
-	if (bIsAiming == bNewIsAiming)
-	{
-		return;
-	}
-
-	bIsAiming = bNewIsAiming;
-
-	// 리슨 서버용 OnRep 내부 로직 직접 호출
-	OnIsAimingChanged();
-}
-
 void APlayerCharacterBase::Server_SetCurrentShotSpreadRadius_Implementation(float NewCurrentShotSpreadRadius)
 {
 	if (CurrentShotSpreadRadius == NewCurrentShotSpreadRadius)
@@ -293,7 +279,7 @@ void APlayerCharacterBase::Server_SetCurrentShotSpreadRadius_Implementation(floa
 	CurrentShotSpreadRadius = NewCurrentShotSpreadRadius;
 
 	// 리슨 서버용 OnRep 내부 로직 직접 호출
-	OnIsAttackingChanged();
+	OnCurrentShotSpreadRadiusChanged();
 }
 
 void APlayerCharacterBase::NotifyASCReady()
@@ -308,20 +294,14 @@ void APlayerCharacterBase::NotifyASCReady()
 	OnASCReady.Broadcast();
 }
 
-void APlayerCharacterBase::OnRep_IsAttacking() const
-{
-
-	OnIsAttackingChanged();
-}
-
 void APlayerCharacterBase::OnIsAttackingChanged() const
 {
 	OnAttackingChanged.Broadcast(bIsAttacking);
 }
 
-void APlayerCharacterBase::OnRep_IsAiming() const
+void APlayerCharacterBase::OnIsDashingChanged() const
 {
-	OnIsAimingChanged();
+	OnDashingChanged.Broadcast(bIsDashing);
 }
 
 void APlayerCharacterBase::OnIsAimingChanged() const
@@ -347,11 +327,11 @@ void APlayerCharacterBase::MoveKey(const FInputActionValue& Value)
 
 	AddMovementInput(GetActorRightVector(), MovementVector.Y);
 
-	if (bIsDashing && AnimInst && !AnimInst->GetDirectionFoward())
+	if (IsDashing() && AnimInst && !AnimInst->GetDirectionFoward())
 	{
-		bIsDashing = false;
+		SetIsDashing(false);
 
-		float TargetSpeed = bIsAiming ? 200.f : 400.f;
+		float TargetSpeed = IsAiming() ? 200.f : 400.f;
 		GetCharacterMovement()->MaxWalkSpeed = TargetSpeed;
 		Server_SetMaxWalkSpeed(TargetSpeed);
 	}
@@ -359,10 +339,10 @@ void APlayerCharacterBase::MoveKey(const FInputActionValue& Value)
 
 void APlayerCharacterBase::DashKey(const FInputActionValue& Value)
 {
-
-	if (!bIsDashing && !bIsAiming && AnimInst && AnimInst->GetDirectionFoward())
+	if (!IsDashing() && !IsAiming() &&
+		AnimInst && AnimInst->GetDirectionFoward() && !IsAttacking())
 	{
-		bIsDashing = true;
+		SetIsDashing(true);
 		GetCharacterMovement()->MaxWalkSpeed = 600.f;
 		Server_SetMaxWalkSpeed(600.f);
 	}
@@ -370,9 +350,9 @@ void APlayerCharacterBase::DashKey(const FInputActionValue& Value)
 
 void APlayerCharacterBase::DashReleaseKey(const FInputActionValue& Value)
 {
-	bIsDashing = false;
+	SetIsDashing(false);
 
-	float TargetSpeed = bIsAiming ? 200.f : 400.f;
+	float TargetSpeed = IsAiming() ? 200.f : 400.f;
 
 	GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("DashReleaseKey"));
 
@@ -383,16 +363,20 @@ void APlayerCharacterBase::DashReleaseKey(const FInputActionValue& Value)
 void APlayerCharacterBase::AttackKey(const FInputActionValue& Value)
 {
 	// Bool 변수로 누르고 있는지 땠는지를 판단 한 후 공격속도마다 공격 함수를 호출하게 하고(이펙트 파티클 등등), 서버에서는 충돌처리 및 데미지 체크하기
-	bIsAttacking = true;
 	SetIsAttacking(true);
 
-	if (IsLocallyControlled() && bIsAttacking)
+	if (IsLocallyControlled() && IsAttacking())
 	{
 		if (IsValid(ASC))
 		{
 			FGameplayEventData EventData;
 			EventData.Instigator = this; // 이 스킬을 발동한 주체
 			EventData.Target = this; // 이 스킬이 꽂히는 대상
+
+
+			GetCharacterMovement()->MaxWalkSpeed = 400;
+			Server_SetMaxWalkSpeed(400);
+			SetIsDashing(false);
 
 			ASC->HandleGameplayEvent(FGameplayTag::RequestGameplayTag(TEXT("Player.Battle.Attack")), &EventData);
 		}
@@ -413,22 +397,7 @@ void APlayerCharacterBase::PlayBaseAttackMontage()
 
 void APlayerCharacterBase::AttackReleaseKey(const FInputActionValue& Value)
 {
-	bIsAttacking = false;
 	SetIsAttacking(false);
-	RS_PRINT_SCREEN(2, FColor::Blue, TEXT("Release Attack Keybbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"));
-}
-
-void APlayerCharacterBase::Server_SetIsAttacking_Implementation(bool bNewIsAttacking)
-{
-	if (bIsAttacking == bNewIsAttacking)
-	{
-		return;
-	}
-
-	bIsAttacking = bNewIsAttacking;
-
-	// 리슨 서버용 OnRep 내부 로직 직접 호출
-	OnIsAttackingChanged();
 }
 
 
@@ -541,7 +510,13 @@ void APlayerCharacterBase::OnConstruction(const FTransform& Transform)
 void APlayerCharacterBase::ShootAttackRay()
 {
 	FHitResult Hit;
+
 	FVector Start = GetActorLocation(); // 소켓이 들어가야함
+	if (IsValid(WeaponMeshComponent))
+	{
+		Start = WeaponMeshComponent->GetSocketLocation(FName("Muzzle"));
+	}
+
 	float Dist = AttributeSet->GetAttackDistance();
 	float HP = AttributeSet->GetHP();
 
@@ -555,7 +530,7 @@ void APlayerCharacterBase::ShootAttackRay()
 	{
 		if (IsLocallyControlled())
 		{
-			DrawDebugLine(GetWorld(), Start, Hit.Location, FColor::Red, false, 2.0f, 0, 2.0f);
+			DrawDebugLine(GetWorld(), Start, Hit.Location, FColor::Red, false, 0.2f, 0, 2.0f);
 		}
 		AActor* TargetActor = Hit.GetActor();
 		if (!TargetActor)
@@ -579,7 +554,7 @@ void APlayerCharacterBase::ShootAttackRay()
 	{
 		if (IsLocallyControlled())
 		{
-			DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 2.0f, 0, 2.0f);
+			DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 0.2f, 0, 2.0f);
 		}
 
 		RS_PRINT_SCREEN(0.2, FColor::Black, TEXT("No Hit"));
