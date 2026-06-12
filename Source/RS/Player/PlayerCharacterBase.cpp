@@ -176,6 +176,8 @@ void APlayerCharacterBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+
+
 	float InterpSpeed = 10.0f;
 
 	SpringArm->TargetArmLength = FMath::FInterpTo(SpringArm->TargetArmLength, TargetArmLength, DeltaTime, InterpSpeed);
@@ -236,11 +238,11 @@ void APlayerCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		EnhancedInput->BindAction(Action, ETriggerEvent::Canceled, this, &APlayerCharacterBase::AttackReleaseKey);
 	}
 
-	Action = InputData->FindAction(FInputKeyNames::Sit);
+	Action = InputData->FindAction(FInputKeyNames::Jump);
 
 	if (Action)
 	{
-		EnhancedInput->BindAction(Action, ETriggerEvent::Triggered, this, &APlayerCharacterBase::SitKey);
+		EnhancedInput->BindAction(Action, ETriggerEvent::Triggered, this, &APlayerCharacterBase::JumpKey);
 	}
 
 	Action = InputData->FindAction(FInputKeyNames::Rotation);
@@ -254,7 +256,7 @@ void APlayerCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 
 	if (Action)
 	{
-		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::AimKey);
+		EnhancedInput->BindAction(Action, ETriggerEvent::Triggered, this, &APlayerCharacterBase::AimKey);
 		EnhancedInput->BindAction(Action, ETriggerEvent::Completed, this, &APlayerCharacterBase::AimReleaseKey);
 		EnhancedInput->BindAction(Action, ETriggerEvent::Canceled, this, &APlayerCharacterBase::AimReleaseKey);
 	}
@@ -331,7 +333,15 @@ void APlayerCharacterBase::MoveKey(const FInputActionValue& Value)
 	{
 		SetIsDashing(false);
 
-		float TargetSpeed = IsAiming() ? 200.f : 400.f;
+		float TargetSpeed;
+		if (IsAiming())
+		{
+			TargetSpeed = 200.f;
+		}
+		if (AnimInst->GetIsInAir())
+		{
+			TargetSpeed = 400.f;
+		}
 		GetCharacterMovement()->MaxWalkSpeed = TargetSpeed;
 		Server_SetMaxWalkSpeed(TargetSpeed);
 	}
@@ -339,12 +349,17 @@ void APlayerCharacterBase::MoveKey(const FInputActionValue& Value)
 
 void APlayerCharacterBase::DashKey(const FInputActionValue& Value)
 {
-	if (!IsDashing() && !IsAiming() &&
-		AnimInst && AnimInst->GetDirectionFoward() && !IsAttacking())
+
+	if (!IsDashing() && !IsAiming() && !IsAttacking() && AnimInst )
 	{
-		SetIsDashing(true);
-		GetCharacterMovement()->MaxWalkSpeed = 600.f;
-		Server_SetMaxWalkSpeed(600.f);
+		RS_PRINT_SCREEN(0.1f, FColor::Red, TEXT("%d"), AnimInst->GetDirectionFoward());
+
+		if (AnimInst->GetDirectionFoward())
+		{
+			SetIsDashing(true);
+			GetCharacterMovement()->MaxWalkSpeed = 600.f;
+			Server_SetMaxWalkSpeed(600.f);
+		}
 	}
 }
 
@@ -363,6 +378,10 @@ void APlayerCharacterBase::DashReleaseKey(const FInputActionValue& Value)
 void APlayerCharacterBase::AttackKey(const FInputActionValue& Value)
 {
 	// Bool 변수로 누르고 있는지 땠는지를 판단 한 후 공격속도마다 공격 함수를 호출하게 하고(이펙트 파티클 등등), 서버에서는 충돌처리 및 데미지 체크하기
+	if (AnimInst && AnimInst->GetIsInAir())
+	{
+		return;
+	}
 	SetIsAttacking(true);
 
 	if (IsLocallyControlled() && IsAttacking())
@@ -373,11 +392,12 @@ void APlayerCharacterBase::AttackKey(const FInputActionValue& Value)
 			EventData.Instigator = this; // 이 스킬을 발동한 주체
 			EventData.Target = this; // 이 스킬이 꽂히는 대상
 
-
-			GetCharacterMovement()->MaxWalkSpeed = 400;
-			Server_SetMaxWalkSpeed(400);
-			SetIsDashing(false);
-
+			if (!IsAiming())
+			{
+				GetCharacterMovement()->MaxWalkSpeed = 400;
+				Server_SetMaxWalkSpeed(400);
+				SetIsDashing(false);
+			}
 			ASC->HandleGameplayEvent(FGameplayTag::RequestGameplayTag(TEXT("Player.Battle.Attack")), &EventData);
 		}
 	}
@@ -401,27 +421,45 @@ void APlayerCharacterBase::AttackReleaseKey(const FInputActionValue& Value)
 }
 
 
-void APlayerCharacterBase::SitKey(const FInputActionValue& Value)
+void APlayerCharacterBase::JumpKey(const FInputActionValue& Value)
 {
-	bool bSit = Value.Get<bool>();
+	bool bJump = Value.Get<bool>();
 
-	if (bSit)
+	if (bJump)
 	{
-		RS_PRINT_SCREEN(1.f, FColor::Red, TEXT("SitKey"));
+		if (CanJump())
+		{
+			Jump();
+			AimReleaseKey(Value);
+			RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("Jump Success"));
+		}
+		else
+		{
+			// 여기서 왜 안 되는지 로그 확인
+			RS_PRINT_SCREEN(1.f, FColor::Yellow, TEXT("CanJump is False!"));
+		}
 	}
 }
 
 void APlayerCharacterBase::AimKey(const FInputActionValue& Value)
-{
-	SetIsAiming(true);
+{	
+	UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+	if (AnimInst && AnimInst->GetIsInAir())
+	{
+		MovementComponent->MaxWalkSpeed = 400.f;
+		Server_SetMaxWalkSpeed(400.f);
+		Camera->FieldOfView = 90.f;
+		SpringArm->SetRelativeLocation(FVector(0.0, 0.0, 60.f));
+		return;
+	}
 
 	TargetArmLength = 200.f;
 
-	UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
 	if (IsValid(MovementComponent))
 	{
 		RS_PRINT_SCREEN(1.f, FColor::Red, TEXT("AimKey"));
-
+		SetIsAiming(true);
+		SetIsDashing(false);
 		MovementComponent->MaxWalkSpeed = 200.f;
 		Server_SetMaxWalkSpeed(200.f);
 		Camera->FieldOfView = 60.f;
@@ -431,12 +469,11 @@ void APlayerCharacterBase::AimKey(const FInputActionValue& Value)
 
 void APlayerCharacterBase::AimReleaseKey(const FInputActionValue& Value)
 {
-	SetIsAiming(false);
-
-	TargetArmLength = 250.f;
-
-	if (UCharacterMovementComponent* MovementComponent = GetCharacterMovement(); IsValid(MovementComponent))
+	UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+	if (IsValid(MovementComponent))
 	{
+		SetIsAiming(false);
+		TargetArmLength = 250.f;
 		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("AimReleaseKey"));
 		float TargetSpeed = bIsDashing ? 600.f : 400.f;
 

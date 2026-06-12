@@ -23,7 +23,7 @@ struct FInputKeyNames
 	inline static const FName Move = FName(TEXT("Move"));
 	inline static const FName Dash = FName(TEXT("Dash"));
 	inline static const FName Attack = FName(TEXT("Attack"));
-	inline static const FName Sit = FName(TEXT("Sit"));
+	inline static const FName Jump = FName(TEXT("Jump"));
 	inline static const FName Rotation = FName(TEXT("Rotation"));
 	inline static const FName Aim = FName(TEXT("Aim"));
 };

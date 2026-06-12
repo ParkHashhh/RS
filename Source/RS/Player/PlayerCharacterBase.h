@@ -264,7 +264,7 @@ private:
 	void DashReleaseKey(const FInputActionValue& Value);
 	void AttackKey(const FInputActionValue& Value);
 	void AttackReleaseKey(const FInputActionValue& Value);
-	void SitKey(const FInputActionValue& Value);
+	void JumpKey(const FInputActionValue& Value);
 	void AimKey(const FInputActionValue& Value);
 	void AimReleaseKey(const FInputActionValue& Value);
 	void RotationMouse(const FInputActionValue& Value);

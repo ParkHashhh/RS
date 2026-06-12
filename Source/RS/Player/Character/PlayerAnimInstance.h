@@ -55,7 +55,12 @@ protected:
 public:
 	bool GetDirectionFoward()
 	{
-		return FMath::IsNearlyZero(Direction, 5.0f);
+		return FMath::Abs(Direction) < 45.0f;
+	}
+
+	bool GetIsInAir()
+	{
+		return bIsInAir;
 	}
 
 

@@ -4,8 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "RS/Player/Character/PlayerAnimInstance.h"
+#include "Animation/AimOffsetBlendSpace.h"
 #include "PlayerAnimInstanceTemplate.generated.h"
-
 /**
  * 
  */
@@ -22,6 +22,8 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TMap<FName, TObjectPtr<UAnimMontage>>	mMontageMap;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UAimOffsetBlendSpace>	mAimOffset;
 public:
 	virtual void NativeBeginPlay();
 	virtual void NativeUpdateAnimation(float DeltaSeconds);
