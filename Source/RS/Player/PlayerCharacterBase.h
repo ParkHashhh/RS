@@ -84,6 +84,8 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, BlueprintGetter=K2_IsAiming, meta=(AllowPrivateAccess=true))
 	bool bIsAiming = false;
 
+	bool bCanDashing = false;
+
 	float CurrentArmLength; // 현재 타겟 길이
 	float TargetArmLength; // 목표 길이
 

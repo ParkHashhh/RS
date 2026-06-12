@@ -329,37 +329,26 @@ void APlayerCharacterBase::MoveKey(const FInputActionValue& Value)
 
 	AddMovementInput(GetActorRightVector(), MovementVector.Y);
 
-	if (IsDashing() && AnimInst && !AnimInst->GetDirectionFoward())
-	{
-		SetIsDashing(false);
+	bCanDashing = MovementVector.X > 0.9f && FMath::Abs(MovementVector.Y) < 0.1f;
 
-		float TargetSpeed;
-		if (IsAiming())
+	if (IsDashing())
+	{
+		if (!bCanDashing)
 		{
-			TargetSpeed = 200.f;
+			DashReleaseKey(Value);
 		}
-		if (AnimInst->GetIsInAir())
-		{
-			TargetSpeed = 400.f;
-		}
-		GetCharacterMovement()->MaxWalkSpeed = TargetSpeed;
-		Server_SetMaxWalkSpeed(TargetSpeed);
 	}
+
 }
 
 void APlayerCharacterBase::DashKey(const FInputActionValue& Value)
 {
 
-	if (!IsDashing() && !IsAiming() && !IsAttacking() && AnimInst )
+	if (!IsDashing() && !IsAiming() && !IsAttacking() && AnimInst && bCanDashing)
 	{
-		RS_PRINT_SCREEN(0.1f, FColor::Red, TEXT("%d"), AnimInst->GetDirectionFoward());
-
-		if (AnimInst->GetDirectionFoward())
-		{
-			SetIsDashing(true);
-			GetCharacterMovement()->MaxWalkSpeed = 600.f;
-			Server_SetMaxWalkSpeed(600.f);
-		}
+		SetIsDashing(true);
+		GetCharacterMovement()->MaxWalkSpeed = 600.f;
+		Server_SetMaxWalkSpeed(600.f);
 	}
 }
 
@@ -656,7 +645,7 @@ void APlayerCharacterBase::Apply_Damage_Server_Implementation(AActor* TargetActo
 		TSubclassOf<UGameplayEffect> Effect = GetEffect(TEXT("Damage"));
 
 		FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(Effect, 1.0f, EffectContext);
-
+			
 
 
 		SpecHandle.Data.Get()->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(TEXT("SetByCaller.State.HP")), -Damage);

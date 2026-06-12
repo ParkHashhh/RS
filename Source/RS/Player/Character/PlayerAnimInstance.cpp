@@ -8,6 +8,7 @@
 #include "RS/Player/PlayerCharacterBase.h"
 
 
+
 void UPlayerAnimInstance::NativeBeginPlay()
 {
 	Super::NativeBeginPlay();
@@ -32,9 +33,12 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 		// UAnimInstance::CalculateDirection는 Deprecated 되어 대신 UKismetAnimationLibrary 사용
 		Direction = UKismetAnimationLibrary::CalculateDirection(Movement->Velocity, PlayerChar->GetActorRotation());
-		// 공중 상태 (IsFalling)
-		bIsInAir = Movement->IsFalling();
 
+		if (!PlayerChar->IsAttacking() || !PlayerChar->IsAiming() || !PlayerChar->IsDashing())
+		{
+			// 공중 상태 (IsFalling)
+			bIsInAir = Movement->IsFalling();
+		}
 		//  앉기 상태
 		bIsCrouching = Movement->IsCrouching();
 
