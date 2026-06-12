@@ -40,12 +40,12 @@ void UGameplayAbility_Attack::LoopAttackSequence()
 
 	APlayerCharacterBase* PlayerChar = Cast<APlayerCharacterBase>(GetAvatarActorFromActorInfo());
 
-	if (PlayerChar)
+
+	if (PlayerChar && PlayerChar->IsAttacking())
 	{
-		if (PlayerChar->IsLocallyControlled() && PlayerChar->IsAttacking())
+		if (PlayerChar->IsLocallyControlled() )
 		{
 			PlayerChar->ShootAttackRay();
-
 			// 캐릭터의 공격 애니메이션 몽타주 재생 함수 호출
 			PlayerChar->PlayBaseAttackMontage();
 		}
@@ -58,7 +58,7 @@ void UGameplayAbility_Attack::LoopAttackSequence()
 		}
 
 		float BaseDelay = 0.2f;
-		float FinalDelay = BaseDelay / FMath::Max(DefaultAttackSpeed, 0.01f);
+		float FinalDelay = BaseDelay / FMath::Max(1, 0.01f);
 
 		if (UWorld* World = GetWorld())
 		{

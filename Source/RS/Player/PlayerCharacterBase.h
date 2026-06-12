@@ -3,24 +3,27 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "RS/RSCharacter.h"
+#include "AbilitySystemInterface.h"
 #include "GenericTeamAgentInterface.h"
 #include "InputActionValue.h"
-#include "../RSConstants.h"
-#include "AbilitySystemInterface.h"
 #include "PlayerAbilitySystemComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "RS/RSCharacter.h"
 #include "RS/LogCategory.h"
-
+#include "RS/Utils/ASCProvider.h"
 #include "PlayerCharacterBase.generated.h"
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnAimingChangedDelegate, bool);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnAttackingChangedDelegate, bool);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnAimingChangedDelegate, bool);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnCurrentShotSpreadChangedDelegate, float);
+
+DECLARE_MULTICAST_DELEGATE(FOnASCReadyDelegate);
 
 UCLASS()
 class RS_API APlayerCharacterBase : public ARSCharacter,
                                     public IGenericTeamAgentInterface,
-                                    public IAbilitySystemInterface
+                                    public IAbilitySystemInterface,
+                                    public IASCProvider
 {
 	GENERATED_BODY()
 
@@ -34,6 +37,9 @@ public:
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USkeletalMesh> SkeletalMeshAsset;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USkeletalMeshComponent> WeaponMeshComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCapsuleComponent> Body;
@@ -73,7 +79,8 @@ protected:
 
 	bool bIsDashing = false;
 
-	UPROPERTY(ReplicatedUsing=OnRep_IsAiming, BlueprintReadOnly, BlueprintGetter=K2_IsAiming, meta=(AllowPrivateAccess=true))
+	UPROPERTY(ReplicatedUsing=OnRep_IsAiming, BlueprintReadOnly, BlueprintGetter=K2_IsAiming,
+		meta=(AllowPrivateAccess=true))
 	bool bIsAiming = false;
 
 	float CurrentArmLength; // 현재 타겟 길이
@@ -84,15 +91,21 @@ protected:
 	float MouseYSensitivity = 1.0f;
 
 	// 1m 거리에서 탄이 퍼지는 반경
-	UPROPERTY(Transient, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Combat|Shot")
+	UPROPERTY(Transient, VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Combat|Shot")
 	float ShotSpreadRadius;
 
-	UPROPERTY(Transient, ReplicatedUsing=OnRep_CurrentShotSpreadRadius, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Combat|Shot")
+	UPROPERTY(Transient, ReplicatedUsing=OnRep_CurrentShotSpreadRadius, VisibleAnywhere, BlueprintReadOnly,
+		meta=(AllowPrivateAccess=true), Category="Combat|Shot")
 	float CurrentShotSpreadRadius;
 
+	bool bASCReady = false;
+
 public:
-	FOnAimingChangedDelegate OnAimingChanged;
 	FOnAttackingChangedDelegate OnAttackingChanged;
+	FOnAimingChangedDelegate OnAimingChanged;
+	FOnCurrentShotSpreadChangedDelegate OnCurrentShotSpreadChanged;
+
+	FOnASCReadyDelegate OnASCReady;
 
 public:
 	FORCEINLINE bool IsAttacking() const
@@ -100,25 +113,15 @@ public:
 		return bIsAttacking;
 	}
 
-	UFUNCTION(BlueprintGetter)
+	UFUNCTION(BlueprintGetter, DisplayName="Is Attacking")
 	bool K2_IsAttacking() const
 	{
 		return IsAttacking();
 	}
 
-	bool GetIsAiming()
-	{
-		return bIsAiming;
-	}
-
 	UFUNCTION(BlueprintCallable)
 	void SetIsAttacking(bool bNewIsAttacking)
 	{
-		if (bIsAttacking == bNewIsAttacking)
-		{
-			return;
-		}
-
 		if (HasAuthority())
 		{
 			bIsAttacking = bNewIsAttacking;
@@ -138,7 +141,7 @@ public:
 		return bIsAiming;
 	}
 
-	UFUNCTION(BlueprintGetter)
+	UFUNCTION(BlueprintGetter, DisplayName="Is Aiming")
 	bool K2_IsAiming() const
 	{
 		return IsAiming();
@@ -171,7 +174,7 @@ public:
 		return CurrentShotSpreadRadius;
 	}
 
-	UFUNCTION(BlueprintGetter)
+	UFUNCTION(BlueprintGetter, DisplayName="Get Current Shot Spread Radius")
 	float K2_GetCurrentShotSpreadRadius() const
 	{
 		return GetCurrentShotSpreadRadius();
@@ -225,6 +228,13 @@ public:
 		return MouseYSensitivity;
 	}
 
+	FORCEINLINE bool IsASCReady() const
+	{
+		return bASCReady;
+	}
+
+	void NotifyASCReady();
+
 protected:
 	UFUNCTION(Server, Reliable)
 	void Server_SetMaxWalkSpeed(float NewSpeed);
@@ -253,6 +263,8 @@ private:
 	void AimReleaseKey(const FInputActionValue& Value);
 	void RotationMouse(const FInputActionValue& Value);
 
+	void AttatchWeapon();
+
 	UFUNCTION()
 	void LoadDefaultData();
 
@@ -271,7 +283,8 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-public:
+	FORCEINLINE virtual UAbilitySystemComponent* GetASC() const override;
+
 	void ShootAttackRay();
 
 	TSubclassOf<UGameplayEffect> GetEffect(const FName TagName) const;

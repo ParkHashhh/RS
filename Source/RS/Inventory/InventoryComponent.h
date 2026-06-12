@@ -6,7 +6,7 @@
 #include "ActiveGameplayEffectHandle.h"
 #include "Components/ActorComponent.h"
 #include "Net/Serialization/FastArraySerializer.h"
-#include "RS/Utils/AscProvider.h"
+#include "RS/Utils/ASCProvider.h"
 #include "InventoryComponent.generated.h"
 
 class UInventoryComponent;
@@ -81,7 +81,7 @@ struct TStructOpsTypeTraits<FInventoryArray> : public TStructOpsTypeTraitsBase2<
 };
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
-class RS_API UInventoryComponent : public UActorComponent, public IAscProvider
+class RS_API UInventoryComponent : public UActorComponent, public IASCProvider
 {
 	GENERATED_BODY()
 

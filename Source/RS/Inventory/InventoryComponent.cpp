@@ -66,7 +66,7 @@ void FInventoryItem::ApplyItemEffect(UInventoryComponent* InventoryComponent)
 	auto* ASC = InventoryComponent->GetASC();
 	if (!IsValid(ASC))
 	{
-		RS_LOG_DEBUG(LogRSItem, Error, TEXT("%s: Invalid ability system component"), *LOG_LINE_INFO);
+		RS_LOG_DEBUG(LogRSItem, Log, TEXT("%s: Invalid ability system component"), *LOG_LINE_INFO);
 		return;
 	}
 
@@ -308,7 +308,7 @@ void UInventoryComponent::AddItemToInventory(FName InRowName, int32 InCount)
 
 UAbilitySystemComponent* UInventoryComponent::GetASC() const
 {
-	const auto* AscOwner = Cast<IAscProvider>(GetOwner());
+	const auto* AscOwner = Cast<IASCProvider>(GetOwner());
 	if (!AscOwner)
 	{
 		return nullptr;

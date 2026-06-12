@@ -11,6 +11,18 @@ ARSPlayerState::ARSPlayerState()
 {
 }
 
+void ARSPlayerState::NotifyPlayerStateReady()
+{
+	if (bPlayerStateReady)
+	{
+		return;
+	}
+
+	bPlayerStateReady = true;
+
+	OnPlayerStateReady.Broadcast();
+}
+
 UAbilitySystemComponent* ARSPlayerState::GetASC() const
 {
 	if (!IsValid(GetPawn()))
@@ -20,4 +32,18 @@ UAbilitySystemComponent* ARSPlayerState::GetASC() const
 	}
 
 	return RSUtils::FindASC(GetPawn());
+}
+
+void ARSPlayerState::BeginPlay()
+{
+	Super::BeginPlay();
+
+	InitializePlayerState();
+}
+
+void ARSPlayerState::InitializePlayerState()
+{
+	// 실제 PS 초기화
+
+	NotifyPlayerStateReady();
 }

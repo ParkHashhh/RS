@@ -7,7 +7,7 @@
 #include "RSPlayerController.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class RS_API ARSPlayerController : public APlayerController
@@ -15,4 +15,16 @@ class RS_API ARSPlayerController : public APlayerController
 	GENERATED_BODY()
 public:
 	ARSPlayerController();
+
+public:
+	virtual void OnRep_Pawn() override;
+
+protected:
+	virtual void BeginPlay() override;
+
+	virtual void OnPossess(APawn* aPawn) override;
+	virtual void OnUnPossess() override;
+
+private:
+	void NotifyPawnChanged(APawn* NewPawn);
 };

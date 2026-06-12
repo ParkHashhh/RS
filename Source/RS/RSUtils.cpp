@@ -10,8 +10,7 @@ UAbilitySystemComponent* RSUtils::FindASC(const AActor* Actor)
 		return nullptr;
 	}
 
-	if (const IAbilitySystemInterface* Interface =
-		Cast<IAbilitySystemInterface>(Actor))
+	if (const auto* Interface = Cast<IAbilitySystemInterface>(Actor))
 	{
 		return Interface->GetAbilitySystemComponent();
 	}

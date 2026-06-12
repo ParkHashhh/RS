@@ -4,12 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
-#include "AscProvider.generated.h"
+#include "ASCProvider.generated.h"
 
 class UAbilitySystemComponent;
 // This class does not need to be modified.
 UINTERFACE()
-class UAscProvider : public UInterface
+class UASCProvider : public UInterface
 {
 	GENERATED_BODY()
 };
@@ -17,7 +17,7 @@ class UAscProvider : public UInterface
 /**
  *
  */
-class RS_API IAscProvider
+class RS_API IASCProvider
 {
 	GENERATED_BODY()
 

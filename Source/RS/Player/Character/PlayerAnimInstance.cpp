@@ -5,6 +5,7 @@
 #include "RS/Player/PlayerCharacterBase.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "RS/LogCategory.h"
+#include "KismetAnimationLibrary.h"
 
 
 
@@ -32,7 +33,7 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		//Direction = CalculateDirection(Movement->Velocity, PlayerChar->GetActorRotation());
 
 		// UAnimInstance::CalculateDirection는 Deprecated 되어 대신 UKismetAnimationLibrary 사용
-		Direction = CalculateDirection(Movement->Velocity, PlayerChar->GetActorRotation());
+		Direction = UKismetAnimationLibrary::CalculateDirection(Movement->Velocity, PlayerChar->GetActorRotation());
 		// 공중 상태 (IsFalling)
 		bIsInAir = Movement->IsFalling();
 
@@ -40,7 +41,6 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		bIsCrouching = Movement->IsCrouching();
 
 		bIsAiming = PlayerChar->IsAiming();
-
 
 	}
 

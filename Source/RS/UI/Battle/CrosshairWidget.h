@@ -6,6 +6,7 @@
 #include "RS/UI/RSUserWidget.h"
 #include "CrosshairWidget.generated.h"
 
+class ARSPlayerController;
 class UImage;
 /**
  *
@@ -46,18 +47,38 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Crosshair")
 	float FireSpreadModifer;
 
-	UPROPERTY(Transient, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Crosshair")
+	UPROPERTY(Transient, VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Crosshair")
 	float CurrentSpread;
 
-	UPROPERTY(Transient, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Crosshair")
+	UPROPERTY(Transient, VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Crosshair")
 	float TargetSpread;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Crosshair")
 	float MoveTime;
 
-	UPROPERTY(Transient, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Crosshair")
+	UPROPERTY(Transient, VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Crosshair")
 	float ElapsedTime;
+
+	UPROPERTY(Transient, VisibleAnywhere, BlueprintReadOnly, BlueprintGetter=K2_GetCachedPlayerController, meta=(AllowPrivateAccess=true))
+	TObjectPtr<ARSPlayerController> CachedPlayerController;
+
+	FDelegateHandle WaitPlayerControllerHandle;
+
+public:
+	ARSPlayerController* GetCachedPlayerController();
+
+	UFUNCTION(BlueprintGetter)
+	ARSPlayerController* K2_GetCachedPlayerController()
+	{
+		return GetCachedPlayerController();
+	}
+
+	bool TryCachePlayerController();
+
 
 protected:
 	virtual void NativeOnInitialized() override;
+	virtual void NativeConstruct() override;
+
+	void OnPlayerControllerReady(ARSPlayerController* PlayerController);
 };
