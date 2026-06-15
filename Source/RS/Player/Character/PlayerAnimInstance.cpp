@@ -47,6 +47,8 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		bIsAttacking = PlayerChar->IsAttacking();
 
 		bIsDashing = PlayerChar->IsDashing();
+
+		RS_PRINT_SCREEN(-0.1f, FColor::Red, TEXT("Pitch : %.2f"), ViewPitch);
 	}
 }
 

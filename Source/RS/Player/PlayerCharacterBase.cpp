@@ -11,7 +11,6 @@
 #include "RS/LogCategory.h"
 #include "RS/Data/Subsystem/DataSubsystem.h"
 #include "RS/Input/InputData.h"
-#include "RS/Player/Character/PlayerAnimInstance.h"
 #include "Engine/SkeletalMeshSocket.h"
 #include "RS/Zombie/ZombieBase.h"
 
@@ -27,8 +26,6 @@ APlayerCharacterBase::APlayerCharacterBase()
 
 	GetMesh()->AddRelativeLocation(FVector(0, 0, -GetCapsuleComponent()->GetScaledCapsuleHalfHeight()));
 
-	SpringArm->TargetArmLength = 250.f;
-	SpringArm->SetRelativeLocation(FVector(0.0, 0.0, 60.f));
 	SpringArm->SetRelativeRotation(FRotator::ZeroRotator);
 
 	SpringArm->bUsePawnControlRotation = true;
@@ -37,6 +34,7 @@ APlayerCharacterBase::APlayerCharacterBase()
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(SpringArm);
 	Camera->bUsePawnControlRotation = false;
+
 
 	bUseControllerRotationYaw = true;
 
@@ -117,8 +115,8 @@ void APlayerCharacterBase::BeginPlay()
 
 		if (PlayerController->PlayerCameraManager)
 		{
-			PlayerController->PlayerCameraManager->ViewPitchMin = -60.f;
-			PlayerController->PlayerCameraManager->ViewPitchMax = 60.f;
+			PlayerController->PlayerCameraManager->ViewPitchMin = -40.f;
+			PlayerController->PlayerCameraManager->ViewPitchMax = 40.f;
 		}
 	}
 	if (IsValid(ASC))
@@ -149,12 +147,8 @@ void APlayerCharacterBase::BeginPlay()
 
 	CurrentArmLength = SpringArm->TargetArmLength;
 	TargetArmLength = SpringArm->TargetArmLength;
-
-
-	GetCharacterMovement()->MaxWalkSpeed = 400.f;
-	Server_SetMaxWalkSpeed(400.f);
-
 	AnimInst = Cast<UPlayerAnimInstance>(GetMesh()->GetAnimInstance());
+	SetDefaultCameraPosition();
 
 	AttatchWeapon();
 }
@@ -176,7 +170,12 @@ void APlayerCharacterBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	FRotator CurrentControlRot = GetControlRotation();
+	FRotator ActorRot = GetActorRotation();
 
+	float RelativePitch = FRotator::NormalizeAxis(CurrentControlRot.Pitch - ActorRot.Pitch);
+
+	AnimInst->ViewPitch= FMath::Clamp(RelativePitch, -40.0f, 40.0f);
 
 	float InterpSpeed = 10.0f;
 
@@ -296,6 +295,19 @@ void APlayerCharacterBase::NotifyASCReady()
 	OnASCReady.Broadcast();
 }
 
+
+
+void APlayerCharacterBase::PlayBaseAttackMontage()
+{
+	if (!AnimInst)
+	{
+		return;
+	}
+
+	AnimInst->PlayBaseAttackMontage();
+	RS_PRINT_SCREEN(1, FColor::Yellow, TEXT("PlayerBase AttackMontage"));
+}
+
 void APlayerCharacterBase::OnIsAttackingChanged() const
 {
 	OnAttackingChanged.Broadcast(bIsAttacking);
@@ -343,30 +355,20 @@ void APlayerCharacterBase::MoveKey(const FInputActionValue& Value)
 
 void APlayerCharacterBase::DashKey(const FInputActionValue& Value)
 {
-
-	if (!IsDashing() && !IsAiming() && !IsAttacking() && AnimInst && bCanDashing)
+	if (CanDashing())
 	{
 		SetIsDashing(true);
-		GetCharacterMovement()->MaxWalkSpeed = 600.f;
-		Server_SetMaxWalkSpeed(600.f);
 	}
 }
 
 void APlayerCharacterBase::DashReleaseKey(const FInputActionValue& Value)
 {
 	SetIsDashing(false);
-
-	float TargetSpeed = IsAiming() ? 200.f : 400.f;
-
-	GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("DashReleaseKey"));
-
-	GetCharacterMovement()->MaxWalkSpeed = TargetSpeed;
-	Server_SetMaxWalkSpeed(TargetSpeed);
 }
 
 void APlayerCharacterBase::AttackKey(const FInputActionValue& Value)
 {
-	// Bool 변수로 누르고 있는지 땠는지를 판단 한 후 공격속도마다 공격 함수를 호출하게 하고(이펙트 파티클 등등), 서버에서는 충돌처리 및 데미지 체크하기
+	// Bool 변수로 누르고 있는지 땠는지를 판단 한 후 공격속도마다 공격 함수를 호출하게 하고(이펙트 파티클 등등), 서버에서는 충돌처리 및 데미지 체크하기 => 완료
 	if (AnimInst && AnimInst->GetIsInAir())
 	{
 		return;
@@ -383,8 +385,6 @@ void APlayerCharacterBase::AttackKey(const FInputActionValue& Value)
 
 			if (!IsAiming())
 			{
-				GetCharacterMovement()->MaxWalkSpeed = 400;
-				Server_SetMaxWalkSpeed(400);
 				SetIsDashing(false);
 			}
 			ASC->HandleGameplayEvent(FGameplayTag::RequestGameplayTag(TEXT("Player.Battle.Attack")), &EventData);
@@ -392,17 +392,6 @@ void APlayerCharacterBase::AttackKey(const FInputActionValue& Value)
 	}
 }
 
-
-void APlayerCharacterBase::PlayBaseAttackMontage()
-{
-	if (!AnimInst)
-	{
-		return;
-	}
-
-	AnimInst->PlayBaseAttackMontage();
-	RS_PRINT_SCREEN(1, FColor::Yellow, TEXT("PlayerBase AttackMontage"));
-}
 
 void APlayerCharacterBase::AttackReleaseKey(const FInputActionValue& Value)
 {
@@ -420,6 +409,7 @@ void APlayerCharacterBase::JumpKey(const FInputActionValue& Value)
 		{
 			Jump();
 			AimReleaseKey(Value);
+			DashReleaseKey(Value);
 			RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("Jump Success"));
 		}
 		else
@@ -432,46 +422,17 @@ void APlayerCharacterBase::JumpKey(const FInputActionValue& Value)
 
 void APlayerCharacterBase::AimKey(const FInputActionValue& Value)
 {	
-	UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
 	if (AnimInst && AnimInst->GetIsInAir())
 	{
-		MovementComponent->MaxWalkSpeed = 400.f;
-		Server_SetMaxWalkSpeed(400.f);
-		Camera->FieldOfView = 90.f;
-		SpringArm->SetRelativeLocation(FVector(0.0, 0.0, 60.f));
 		return;
 	}
-
-	TargetArmLength = 200.f;
-
-	if (IsValid(MovementComponent))
-	{
-		RS_PRINT_SCREEN(1.f, FColor::Red, TEXT("AimKey"));
-		SetIsAiming(true);
-		SetIsDashing(false);
-		MovementComponent->MaxWalkSpeed = 200.f;
-		Server_SetMaxWalkSpeed(200.f);
-		Camera->FieldOfView = 60.f;
-		SpringArm->SetRelativeLocation(FVector(0.0, 50.0, 60.f));
-	}
+	SetIsAiming(true);
+	SetIsDashing(false);
 }
 
 void APlayerCharacterBase::AimReleaseKey(const FInputActionValue& Value)
 {
-	UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
-	if (IsValid(MovementComponent))
-	{
-		SetIsAiming(false);
-		TargetArmLength = 250.f;
-		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("AimReleaseKey"));
-		float TargetSpeed = bIsDashing ? 600.f : 400.f;
-
-		// 로컬 속도,서버 속도 변경 요청
-		MovementComponent->MaxWalkSpeed = TargetSpeed;
-		Server_SetMaxWalkSpeed(TargetSpeed);
-		Camera->FieldOfView = 90.f;
-		SpringArm->SetRelativeLocation(FVector(0.0, 0.0, 60.f));
-	}
+	SetIsAiming(false);
 }
 
 void APlayerCharacterBase::RotationMouse(const FInputActionValue& Value)
@@ -479,6 +440,32 @@ void APlayerCharacterBase::RotationMouse(const FInputActionValue& Value)
 	FVector Axis = Value.Get<FVector>();
 	AddControllerYawInput(Axis.X * MouseXSensitivity);
 	AddControllerPitchInput(Axis.Y * MouseYSensitivity);
+}
+
+
+void APlayerCharacterBase::SetDefaultCameraPosition()
+{
+	SpringArm->TargetArmLength = 250.f;
+	Camera->FieldOfView = 60.f;
+	SpringArm->SetRelativeLocation(FVector(0.0, 0.0, 60.f));
+	Camera->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
+
+}
+
+void APlayerCharacterBase::SetAimCameraPosition()
+{
+	SpringArm->TargetArmLength = 150.f;
+	Camera->FieldOfView = 40.f;
+	Camera->SetRelativeRotation(FRotator(0.0f, -5.0f, 0.0f));
+
+	SpringArm->SetRelativeLocation(FVector(0.0, 100.0, 50.f));
+}
+
+void APlayerCharacterBase::SetRunAndGunCameraPosition()
+{
+	SpringArm->TargetArmLength = 250.f;
+	Camera->FieldOfView = 60.f;
+	SpringArm->SetRelativeLocation(FVector(0.0, 50.0, 60.f));
 }
 
 void APlayerCharacterBase::AttatchWeapon()
@@ -490,7 +477,56 @@ void APlayerCharacterBase::AttatchWeapon()
 		WeaponMeshComponent->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, SocketName);
 	}
 }
+void APlayerCharacterBase::UpdatePlayerCameraState()
+{
+	// 1. 공중
+	if (AnimInst->GetIsInAir())
+	{
+		SetDefaultCameraPosition();
+		return;
+	}
+	// 2. 카메라 위치 결정
+	if (IsAiming())
+	{
+		SetAimCameraPosition();
+	}
+	else if (IsAttacking())
+	{
+		SetRunAndGunCameraPosition();
+	}
+	else
+	{
+		SetDefaultCameraPosition();
+	}
+}
 
+void APlayerCharacterBase::UpdatePlayerSpeedState()
+{
+	UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+	if (AnimInst->GetIsInAir())
+	{
+		MovementComponent->MaxWalkSpeed = 400.f;
+		Server_SetMaxWalkSpeed(400.f);
+		return;
+	}
+	float TargetSpeed = 400.f;
+	if (IsDashing())
+	{
+		TargetSpeed = 600.f;
+	}
+	else if (IsAiming())
+	{
+		TargetSpeed = 200.f;
+	}
+	else
+	{
+		TargetSpeed = 400.f;
+	}
+	MovementComponent->MaxWalkSpeed = TargetSpeed;
+	Server_SetMaxWalkSpeed(TargetSpeed);
+
+
+}
 void APlayerCharacterBase::LoadDefaultData()
 {
 	const UGameInstance* GameInstance = GetGameInstance();

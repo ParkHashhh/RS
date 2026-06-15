@@ -11,6 +11,7 @@
 #include "RS/RSCharacter.h"
 #include "RS/LogCategory.h"
 #include "RS/Utils/ASCProvider.h"
+#include "RS/Player/Character/PlayerAnimInstance.h"
 #include "PlayerCharacterBase.generated.h"
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnAttackingChangedDelegate, bool);
@@ -73,7 +74,7 @@ protected:
 
 	FGenericTeamId TeamID;
 
-	TObjectPtr<class UPlayerAnimInstance> AnimInst;
+	TObjectPtr<UPlayerAnimInstance> AnimInst;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, BlueprintGetter=K2_IsAttacking, meta=(AllowPrivateAccess=true))
 	bool bIsAttacking = false;
@@ -112,6 +113,10 @@ public:
 	FOnASCReadyDelegate OnASCReady;
 
 public:
+	bool CanDashing()
+	{
+		return !IsDashing() && !IsAiming() && !IsAttacking() && AnimInst && bCanDashing;
+	}
 	FORCEINLINE bool IsAttacking() const
 	{
 		return bIsAttacking;
@@ -130,8 +135,12 @@ public:
 		{
 			return;
 		}
-
 		bIsAttacking = bNewIsAttacking;
+		if (!IsAiming())
+		{
+			UpdatePlayerCameraState();
+			UpdatePlayerSpeedState();
+		}
 		OnIsAttackingChanged();
 	}
 
@@ -155,6 +164,7 @@ public:
 		}
 
 		bIsDashing = bNewIsDashing;
+		UpdatePlayerSpeedState();
 		OnIsDashingChanged();
 	}
 
@@ -176,9 +186,13 @@ public:
 		{
 			return;
 		}
-
-			bIsAiming = bNewIsAiming;
-			OnIsAimingChanged();
+		bIsAiming = bNewIsAiming;
+		if (!AnimInst->GetIsInAir())
+		{
+			UpdatePlayerCameraState();
+			UpdatePlayerSpeedState();
+		}
+		OnIsAimingChanged();
 	}
 
 	FORCEINLINE float GetCurrentShotSpreadRadius() const
@@ -247,6 +261,11 @@ public:
 
 	void NotifyASCReady();
 
+	void SetDefaultCameraPosition();
+	void SetAimCameraPosition();
+	void SetRunAndGunCameraPosition();
+
+
 protected:
 	UFUNCTION(Server, Reliable)
 	void Server_SetMaxWalkSpeed(float NewSpeed);
@@ -270,8 +289,11 @@ private:
 	void AimKey(const FInputActionValue& Value);
 	void AimReleaseKey(const FInputActionValue& Value);
 	void RotationMouse(const FInputActionValue& Value);
-
+	// WeaponSkeleton Attatch
 	void AttatchWeapon();
+
+	void UpdatePlayerCameraState();
+	void UpdatePlayerSpeedState();
 
 	UFUNCTION()
 	void LoadDefaultData();
@@ -296,6 +318,8 @@ public:
 	void ShootAttackRay();
 
 	TSubclassOf<UGameplayEffect> GetEffect(const FName TagName) const;
+	void PlayBaseAttackMontage();
+
 
 public:
 	virtual void SetGenericTeamId(const FGenericTeamId& ID) override;
@@ -306,6 +330,4 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void Apply_Damage_Server(AActor* TargetActor, FHitResult Hit);
 
-public:
-	void PlayBaseAttackMontage();
 };
