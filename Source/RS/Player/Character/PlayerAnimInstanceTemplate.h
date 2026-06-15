@@ -16,14 +16,21 @@ class RS_API UPlayerAnimInstanceTemplate : public UPlayerAnimInstance
 
 
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TMap<FName, TObjectPtr<UBlendSpace>>	mBlendSpaceMap;
+	// 일반 애니메이션 (Idle, Jump 등)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation")
+	TMap<FName, TObjectPtr<UAnimSequence>> AnimSequenceMap;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TMap<FName, TObjectPtr<UAnimMontage>>	mMontageMap;
+	// 블렌드 스페이스
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation")
+	TMap<FName, TObjectPtr<UBlendSpace>> BlendSpaceMap;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UAimOffsetBlendSpace>	mAimOffset;
+	// 몽타주
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation")
+	TMap<FName, TObjectPtr<UAnimMontage>> MontageMap;
+
+	// 에임 오프셋 (별도 관리)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Animation")
+	TObjectPtr<UAimOffsetBlendSpace> AimOffset;
 public:
 	virtual void NativeBeginPlay();
 	virtual void NativeUpdateAnimation(float DeltaSeconds);

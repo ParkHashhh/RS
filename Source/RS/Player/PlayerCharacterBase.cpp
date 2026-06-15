@@ -147,8 +147,8 @@ void APlayerCharacterBase::BeginPlay()
 	CurrentArmLength = SpringArm->TargetArmLength;
 	TargetArmLength = SpringArm->TargetArmLength;
 	AnimInst = Cast<UPlayerAnimInstance>(GetMesh()->GetAnimInstance());
-	SetDefaultCameraPosition();
-
+	UpdatePlayerSpeedState();
+	UpdatePlayerCameraState();
 	AttatchWeapon();
 }
 
@@ -464,7 +464,6 @@ void APlayerCharacterBase::AttackReleaseKey(const FInputActionValue& Value)
 void APlayerCharacterBase::JumpKey(const FInputActionValue& Value)
 {
 	bool bJump = Value.Get<bool>();
-
 	if (bJump)
 	{
 		if (CanJump())
@@ -472,7 +471,6 @@ void APlayerCharacterBase::JumpKey(const FInputActionValue& Value)
 			Jump();
 			AimReleaseKey(Value);
 			DashReleaseKey(Value);
-			RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("Jump Success"));
 		}
 		else
 		{
@@ -631,7 +629,9 @@ void APlayerCharacterBase::UpdatePlayerSpeedState()
 		Server_SetMaxWalkSpeed(400.f);
 		return;
 	}
+
 	float TargetSpeed = 400.f;
+
 	if (IsDashing())
 	{
 		TargetSpeed = 600.f;
@@ -644,10 +644,9 @@ void APlayerCharacterBase::UpdatePlayerSpeedState()
 	{
 		TargetSpeed = 400.f;
 	}
+	RS_PRINT_SCREEN(10.f, FColor::Black, TEXT("TargetSpeed : %.2f"), TargetSpeed);
 	MovementComponent->MaxWalkSpeed = TargetSpeed;
 	Server_SetMaxWalkSpeed(TargetSpeed);
-
-
 }
 void APlayerCharacterBase::LoadDefaultData()
 {
