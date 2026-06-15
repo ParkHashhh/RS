@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Subsystems/GameInstanceSubsystem.h"
+#include "Subsystems/LocalPlayerSubsystem.h"
 #include "UISubsystem.generated.h"
 
 class URSUserWidget;
@@ -11,7 +11,7 @@ class URSUserWidget;
  *
  */
 UCLASS()
-class RS_API UUISubsystem : public UGameInstanceSubsystem
+class RS_API UUISubsystem : public ULocalPlayerSubsystem
 {
 	GENERATED_BODY()
 

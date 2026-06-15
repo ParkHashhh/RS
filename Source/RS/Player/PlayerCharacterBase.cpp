@@ -35,7 +35,6 @@ APlayerCharacterBase::APlayerCharacterBase()
 	Camera->SetupAttachment(SpringArm);
 	Camera->bUsePawnControlRotation = false;
 
-
 	bUseControllerRotationYaw = true;
 
 	USkeletalMeshComponent* PlayerMesh = GetMesh();
@@ -259,6 +258,69 @@ void APlayerCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		EnhancedInput->BindAction(Action, ETriggerEvent::Completed, this, &APlayerCharacterBase::AimReleaseKey);
 		EnhancedInput->BindAction(Action, ETriggerEvent::Canceled, this, &APlayerCharacterBase::AimReleaseKey);
 	}
+
+#if !UE_BUILD_SHIPPING
+	Action = InputData->FindAction(FInputKeyNames::Debug_00);
+	if (Action)
+	{
+		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::DebugKey0);
+	}
+
+	Action = InputData->FindAction(FInputKeyNames::Debug_01);
+	if (Action)
+	{
+		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::DebugKey1);
+	}
+
+	Action = InputData->FindAction(FInputKeyNames::Debug_02);
+	if (Action)
+	{
+		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::DebugKey2);
+	}
+
+	Action = InputData->FindAction(FInputKeyNames::Debug_03);
+	if (Action)
+	{
+		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::DebugKey3);
+	}
+
+	Action = InputData->FindAction(FInputKeyNames::Debug_04);
+	if (Action)
+	{
+		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::DebugKey4);
+	}
+
+	Action = InputData->FindAction(FInputKeyNames::Debug_05);
+	if (Action)
+	{
+		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::DebugKey5);
+	}
+
+	Action = InputData->FindAction(FInputKeyNames::Debug_06);
+	if (Action)
+	{
+		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::DebugKey6);
+	}
+
+	Action = InputData->FindAction(FInputKeyNames::Debug_07);
+	if (Action)
+	{
+		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::DebugKey7);
+	}
+
+	Action = InputData->FindAction(FInputKeyNames::Debug_08);
+	if (Action)
+	{
+		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::DebugKey8);
+	}
+
+	Action = InputData->FindAction(FInputKeyNames::Debug_09);
+	if (Action)
+	{
+		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::DebugKey9);
+	}
+#endif
+
 }
 
 void APlayerCharacterBase::Server_SetMaxWalkSpeed_Implementation(float NewSpeed)
@@ -466,6 +528,66 @@ void APlayerCharacterBase::SetRunAndGunCameraPosition()
 	SpringArm->TargetArmLength = 250.f;
 	Camera->FieldOfView = 60.f;
 	SpringArm->SetRelativeLocation(FVector(0.0, 50.0, 60.f));
+}
+
+void APlayerCharacterBase::DebugKey0(const FInputActionValue& Value)
+{
+	RS_LOG_DEBUG(LogRSCommon, Log, TEXT("DebugKey0"));
+	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("DebugKey0"));
+}
+
+void APlayerCharacterBase::DebugKey1(const FInputActionValue& Value)
+{
+	RS_LOG_DEBUG(LogRSCommon, Log, TEXT("DebugKey1"));
+	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("DebugKey1"));
+}
+
+void APlayerCharacterBase::DebugKey2(const FInputActionValue& Value)
+{
+	RS_LOG_DEBUG(LogRSCommon, Log, TEXT("DebugKey2"));
+	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("DebugKey2"));
+}
+
+void APlayerCharacterBase::DebugKey3(const FInputActionValue& Value)
+{
+	RS_LOG_DEBUG(LogRSCommon, Log, TEXT("DebugKey3"));
+	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("DebugKey3"));
+}
+
+void APlayerCharacterBase::DebugKey4(const FInputActionValue& Value)
+{
+	RS_LOG_DEBUG(LogRSCommon, Log, TEXT("DebugKey4"));
+	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("DebugKey4"));
+}
+
+void APlayerCharacterBase::DebugKey5(const FInputActionValue& Value)
+{
+	RS_LOG_DEBUG(LogRSCommon, Log, TEXT("DebugKey5"));
+	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("DebugKey5"));
+}
+
+void APlayerCharacterBase::DebugKey6(const FInputActionValue& Value)
+{
+	RS_LOG_DEBUG(LogRSCommon, Log, TEXT("DebugKey6"));
+	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("DebugKey6"));
+}
+
+void APlayerCharacterBase::DebugKey7(const FInputActionValue& Value)
+{
+	RS_LOG_DEBUG(LogRSCommon, Log, TEXT("DebugKey7"));
+	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("DebugKey7"));
+}
+
+void APlayerCharacterBase::DebugKey8(const FInputActionValue& Value)
+{
+	RS_LOG_DEBUG(LogRSCommon, Log, TEXT("DebugKey8"));
+	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("DebugKey8"));
+}
+
+void APlayerCharacterBase::DebugKey9(const FInputActionValue& Value)
+{
+	RS_LOG_DEBUG(LogRSCommon, Log, TEXT("DebugKey9"));
+	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("DebugKey9"));
 }
 
 void APlayerCharacterBase::AttatchWeapon()

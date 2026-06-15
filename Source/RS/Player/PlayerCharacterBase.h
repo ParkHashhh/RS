@@ -292,6 +292,17 @@ private:
 	// WeaponSkeleton Attatch
 	void AttatchWeapon();
 
+	void DebugKey0(const FInputActionValue& Value);
+	void DebugKey1(const FInputActionValue& Value);
+	void DebugKey2(const FInputActionValue& Value);
+	void DebugKey3(const FInputActionValue& Value);
+	void DebugKey4(const FInputActionValue& Value);
+	void DebugKey5(const FInputActionValue& Value);
+	void DebugKey6(const FInputActionValue& Value);
+	void DebugKey7(const FInputActionValue& Value);
+	void DebugKey8(const FInputActionValue& Value);
+	void DebugKey9(const FInputActionValue& Value);
+
 	void UpdatePlayerCameraState();
 	void UpdatePlayerSpeedState();
 

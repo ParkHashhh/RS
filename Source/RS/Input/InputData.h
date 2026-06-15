@@ -12,7 +12,7 @@
 #include "InputData.generated.h"
 
 /**
- * 
+ *
  */
 
 USTRUCT(BlueprintType)
@@ -26,6 +26,17 @@ struct FInputKeyNames
 	inline static const FName Jump = FName(TEXT("Jump"));
 	inline static const FName Rotation = FName(TEXT("Rotation"));
 	inline static const FName Aim = FName(TEXT("Aim"));
+
+	inline static const FName Debug_00 = FName(TEXT("debug_00"));
+	inline static const FName Debug_01 = FName(TEXT("debug_01"));
+	inline static const FName Debug_02 = FName(TEXT("debug_02"));
+	inline static const FName Debug_03 = FName(TEXT("debug_03"));
+	inline static const FName Debug_04 = FName(TEXT("debug_04"));
+	inline static const FName Debug_05 = FName(TEXT("debug_05"));
+	inline static const FName Debug_06 = FName(TEXT("debug_06"));
+	inline static const FName Debug_07 = FName(TEXT("debug_07"));
+	inline static const FName Debug_08 = FName(TEXT("debug_08"));
+	inline static const FName Debug_09 = FName(TEXT("debug_09"));
 };
 
 UCLASS(Blueprintable, BlueprintType, EditInlineNew)
@@ -44,7 +55,7 @@ public:
 	TMap<FName, TObjectPtr<UInputAction>> Actions;
 
 	TObjectPtr<UInputAction> FindAction(const FName& Name) const;
-};	
+};
 
 UCLASS()
 class RS_API UDefaultInputData : public UInputData
@@ -53,7 +64,6 @@ class RS_API UDefaultInputData : public UInputData
 
 public:
 	UDefaultInputData();
-
 };
 
 
@@ -65,4 +75,3 @@ class RS_API USelectInputData : public UInputData
 public:
 	USelectInputData();
 };
-

@@ -18,15 +18,21 @@ public:
 	URSUserWidget(const FObjectInitializer& ObjectInitializer);
 
 private:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta=(AllowPrivateAccess = true))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, BlueprintGetter=K2_GetWidgetName, meta=(AllowPrivateAccess = true))
 	FName WidgetName;
 
 	TMap<FName, TWeakObjectPtr<UWidgetAnimation>> Animations;
 
 public:
-	FName GetWidgetName() const
+	FORCEINLINE FName GetWidgetName() const
 	{
 		return WidgetName;
+	}
+
+	UFUNCTION(BlueprintGetter, DisplayName="Get Widget Name")
+	FName K2_GetWidgetName() const
+	{
+		return GetWidgetName();
 	}
 
 	void PlayWidgetAnimation(FName AnimationName, float StartAtTime = 0.0f, float PlaybackSpeed = 1.f,

@@ -27,17 +27,19 @@ void URSUserWidget::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
 
-	const UGameInstance* GameInstance = GetGameInstance();
-	check(GameInstance);
-
-	auto* UiSubsystem = GameInstance->GetSubsystem<UUISubsystem>();
-	check(UiSubsystem);
-
-	UiSubsystem->AddWidget(WidgetName, this);
-	if (WidgetName.IsNone())
+	if (GetWidgetName().IsNone())
 	{
 		RS_LOG_DEBUG(LogRSProperties, Error, TEXT("%s: Widget name is none"), *LOG_LINE_INFO)
+		return;
 	}
+
+	ULocalPlayer* LP = GetOwningLocalPlayer();
+	check(LP);
+
+	auto* UiSubsystem = LP->GetSubsystem<UUISubsystem>();
+	check(UiSubsystem);
+
+	UiSubsystem->AddWidget(GetWidgetName(), this);
 
 	if (UWidgetBlueprintGeneratedClass* GeneratedClass = GetWidgetTreeOwningClass())
 	{
@@ -57,13 +59,25 @@ void URSUserWidget::NativeOnInitialized()
 
 void URSUserWidget::NativeDestruct()
 {
+	if (GetWidgetName().IsNone())
+	{
+		RS_LOG_DEBUG(LogRSProperties, Error, TEXT("%s: Widget name is none"), *LOG_LINE_INFO)
+		return;
+	}
+
+	ULocalPlayer* LP = GetOwningLocalPlayer();
+	if (!LP)
+	{
+		return;
+	}
+
+	auto* UiSubsystem = LP->GetSubsystem<UUISubsystem>();
+	if (!UiSubsystem)
+	{
+		return;
+	}
+
+	UiSubsystem->RemoveWidget(GetWidgetName());
+
 	Super::NativeDestruct();
-
-	const UGameInstance* GameInstance = GetGameInstance();
-	check(GameInstance);
-
-	auto* UiSubsystem = GameInstance->GetSubsystem<UUISubsystem>();
-	check(UiSubsystem);
-
-	UiSubsystem->RemoveWidget(WidgetName);
 }

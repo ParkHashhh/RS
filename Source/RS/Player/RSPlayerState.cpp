@@ -27,7 +27,6 @@ UAbilitySystemComponent* ARSPlayerState::GetASC() const
 {
 	if (!IsValid(GetPawn()))
 	{
-		RS_LOG_DEBUG(LogRSGAS, Error, TEXT("%s: Player state has no valid pawn, returning nullptr"), *LOG_LINE_INFO);
 		return nullptr;
 	}
 

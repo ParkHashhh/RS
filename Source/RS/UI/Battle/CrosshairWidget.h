@@ -67,7 +67,7 @@ private:
 public:
 	ARSPlayerController* GetCachedPlayerController();
 
-	UFUNCTION(BlueprintGetter)
+	UFUNCTION(BlueprintGetter, DisplayName="Get Cached Player Controller")
 	ARSPlayerController* K2_GetCachedPlayerController()
 	{
 		return GetCachedPlayerController();

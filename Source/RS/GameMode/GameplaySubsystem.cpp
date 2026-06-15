@@ -3,6 +3,7 @@
 
 #include "GameplaySubsystem.h"
 
+#include "RS/LogCategory.h"
 #include "RS/Player/PlayerCharacterBase.h"
 #include "RS/Player/RSPlayerController.h"
 #include "RS/Player/RSPlayerState.h"
@@ -10,8 +11,6 @@
 void UGameplaySubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
-
-	Bind();
 }
 
 void UGameplaySubsystem::Deinitialize()
@@ -21,14 +20,23 @@ void UGameplaySubsystem::Deinitialize()
 
 void UGameplaySubsystem::OnPawnChanged(const APawn* NewPawn)
 {
-	bPawnReady = NewPawn != nullptr;
-	bASCReady = false;
+	if (!CachedPC.IsValid())
+	{
+		Bind();
+	}
+
+	BindPawn();
 
 	CheckGameplayReady();
 }
 
 void UGameplaySubsystem::Bind()
 {
+	if (CachedPC.IsValid())
+	{
+		return;
+	}
+
 	ULocalPlayer* LocalPlayer = GetLocalPlayer();
 	if (!LocalPlayer)
 	{
@@ -44,18 +52,30 @@ void UGameplaySubsystem::Bind()
 	CachedPC = PC;
 
 	BindPlayerState();
-	BindPawn();
 }
 
 void UGameplaySubsystem::BindPlayerState()
 {
 	auto* PS = CachedPC.IsValid() ? CachedPC.Get()->GetPlayerState<ARSPlayerState>() : nullptr;
-	if (!PS)
+
+	if (CachedPS == PS)
 	{
 		return;
 	}
 
+	if (CachedPS.IsValid())
+	{
+		CachedPS->OnPlayerStateReady.RemoveAll(this);
+	}
+
 	CachedPS = PS;
+
+	if (!PS)
+	{
+		bPlayerStateReady = false;
+
+		return;
+	}
 
 	if (PS->IsPlayerStateReady())
 	{
@@ -70,12 +90,26 @@ void UGameplaySubsystem::BindPlayerState()
 void UGameplaySubsystem::BindPawn()
 {
 	auto* Character = Cast<APlayerCharacterBase>(CachedPC.IsValid() ? CachedPC.Get()->GetPawn() : nullptr);
-	if (!Character)
+
+	if (CachedCharacter == Character)
 	{
 		return;
 	}
 
+	bPawnReady = false;
+	bASCReady = false;
+
+	if (CachedCharacter.IsValid())
+	{
+		CachedCharacter->OnASCReady.RemoveAll(this);
+	}
+
 	CachedCharacter = Character;
+
+	if (!Character)
+	{
+		return;
+	}
 
 	bPawnReady = true;
 

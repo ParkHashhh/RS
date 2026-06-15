@@ -6,8 +6,9 @@
 #include "RS/Player/RSPlayerController.h"
 #include "PlayerControllerBase.generated.h"
 
+class UBattleHUDWidget;
 /**
- * 
+ *
  */
 UCLASS()
 class RS_API APlayerControllerBase : public ARSPlayerController
@@ -17,24 +18,32 @@ class RS_API APlayerControllerBase : public ARSPlayerController
 public:
 	APlayerControllerBase();
 
-
 protected:
-	FString			mPlayerName;
+	FString PlayerName;
 
+	UPROPERTY(EditDefaultsOnly, Category="UI")
+	TSubclassOf<UBattleHUDWidget> BattleHUDWidgetClass;
 
-	FString GetPlayerName()	const
+public:
+	FORCEINLINE FString GetPlayerName() const
 	{
-		return mPlayerName;
+		return PlayerName;
 	}
 
-	void SetPlayerName(const FString& PlayerName)
+	void SetPlayerName(const FString& NewPlayerName)
 	{
-		mPlayerName = PlayerName;
+		PlayerName = NewPlayerName;
 	}
+
 protected:
-	virtual void BeginPlay();
-	virtual void OnPossess(APawn* aPawn);
-	virtual void OnUnPossess();
-	virtual void Tick(float DeltaTime);
+	virtual void BeginPlay() override;
+	virtual void OnPossess(APawn* aPawn) override;
+	virtual void OnUnPossess() override;
+
+public:
+	virtual void Tick(float DeltaTime) override;
+
+private:
+	void CreateBattleHUD();
 
 };
