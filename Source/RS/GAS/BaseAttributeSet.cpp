@@ -25,8 +25,6 @@ void UBaseAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 
 	if (Data.EvaluatedData.Attribute == GetHPAttribute())
 	{
-		RS_PRINT_SCREEN(10.F, FColor::Red, TEXT("%s: HP가 변경됨! 현재 HP: %.2f"), *LOG_LINE_INFO, GetHP());
-		RS_LOG_DEBUG(LogRSBattle, Log, TEXT("%s: HP가 변경됨! 현재 HP: %.2f"), *LOG_LINE_INFO, GetHP());
 		OnHpChanged(Instigator);
 	}
 }

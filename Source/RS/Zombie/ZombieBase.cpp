@@ -102,7 +102,6 @@ void AZombieBase::PossessedBy(AController* NewController)
 {
 	//컨트롤러 빙의가 성공했을 때 비헤이비어 트리를 바로 활성화 시켜줘야 한다.
 	AZombieAIController* Ctrl = Cast<AZombieAIController>(NewController);
-	GEngine->AddOnScreenDebugMessage(-1, 30.f, FColor::Red, TEXT("Test"));
 	if (IsValid(Ctrl))
 	{
 		Ctrl->ActivateBT();

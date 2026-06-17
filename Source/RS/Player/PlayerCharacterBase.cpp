@@ -74,6 +74,7 @@ APlayerCharacterBase::APlayerCharacterBase()
 void APlayerCharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
+
 	const UGameInstance* GameInstance = GetGameInstance();
 	check(GameInstance);
 
@@ -117,6 +118,21 @@ void APlayerCharacterBase::BeginPlay()
 			PlayerController->PlayerCameraManager->ViewPitchMax = 40.f;
 		}
 	}
+
+	SetMouseSensitivity(0.85f, 0.85f);
+
+	CurrentArmLength = SpringArm->TargetArmLength;
+	TargetArmLength = SpringArm->TargetArmLength;
+	AnimInst = Cast<UPlayerAnimInstance>(GetMesh()->GetAnimInstance());
+	UpdatePlayerSpeedState();
+	UpdatePlayerCameraState();
+	AttachWeapon();
+}
+
+void APlayerCharacterBase::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
 	if (IsValid(ASC))
 	{
 		ASC->InitAbilityActorInfo(this, this);
@@ -173,23 +189,8 @@ void APlayerCharacterBase::Tick(float DeltaTime)
 	AnimInst->ViewPitch= FMath::Clamp(RelativePitch, -40.0f, 40.0f);
 
 
-	//SpringArm->TargetArmLength = TargetLength;
-	//Camera->FieldOfView = CameraFieldView;
-
-
-	//SpringArm->SetRelativeLocation(CameraPos);
-
-	//Camera->SetRelativeRotation(CameraRot);
-
-
 	float InterpSpeed = 10.f;
 	// 현재의 위치에서 타겟위치까지 보간
-
-
-	RS_PRINT_SCREEN(0.f, FColor::Red, TEXT("TargetArmLength : %.2f"), TargetArmLength);
-	RS_PRINT_SCREEN(0.f, FColor::Red, TEXT("TargetFOV : %.2f"), TargetFOV);
-	RS_PRINT_SCREEN(0.f, FColor::Red, TEXT("TargetCameraPos : %.2f, %.2f, %.2f"), TargetCameraPos.X, TargetCameraPos.Y, TargetCameraPos.Z);
-	RS_PRINT_SCREEN(0.f, FColor::Red, TEXT("TargetCameraRot : %.2f, %.2f, %.2f"), TargetCameraRot.Vector().X, TargetCameraRot.Vector().Y, TargetCameraRot.Vector().Z);
 	SpringArm->TargetArmLength = FMath::FInterpTo(SpringArm->TargetArmLength, TargetArmLength, DeltaTime, InterpSpeed);
 	Camera->FieldOfView = FMath::FInterpTo(Camera->FieldOfView, TargetFOV, DeltaTime, InterpSpeed);
 	SpringArm->SetRelativeLocation(FMath::VInterpTo(SpringArm->GetRelativeLocation(), TargetCameraPos, DeltaTime, InterpSpeed));
@@ -336,7 +337,6 @@ void APlayerCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::DebugKey9);
 	}
 #endif
-
 }
 
 void APlayerCharacterBase::Server_SetMaxWalkSpeed_Implementation(float NewSpeed)
@@ -454,7 +454,11 @@ void APlayerCharacterBase::DashReleaseKey(const FInputActionValue& Value)
 
 void APlayerCharacterBase::AttackKey(const FInputActionValue& Value)
 {
-	RS_PRINT_SCREEN(5.f, FColor::Red, TEXT("AttackKey"));
+	// Bool 변수로 누르고 있는지 땠는지를 판단 한 후 공격속도마다 공격 함수를 호출하게 하고(이펙트 파티클 등등), 서버에서는 충돌처리 및 데미지 체크하기 => 완료
+	if (!GetMovementComponent() || GetMovementComponent()->IsFalling())
+	{
+		return;
+	}
 
 	SetIsAttacking(true);
 
@@ -480,8 +484,6 @@ void APlayerCharacterBase::AttackKey(const FInputActionValue& Value)
 void APlayerCharacterBase::AttackReleaseKey(const FInputActionValue& Value)
 {
 	SetIsAttacking(false);
-	RS_PRINT_SCREEN(5.f, FColor::Red, TEXT("AttackReleaseKey"));
-
 }
 
 
@@ -498,8 +500,6 @@ void APlayerCharacterBase::JumpKey(const FInputActionValue& Value)
 		}
 		else
 		{
-			// 여기서 왜 안 되는지 로그 확인
-			RS_PRINT_SCREEN(1.f, FColor::Yellow, TEXT("CanJump is False!"));
 		}
 	}
 }
@@ -755,8 +755,6 @@ void APlayerCharacterBase::ShootAttackRay()
 
 		ETeamAttitude::Type Attitude = GetTeamAttitudeTowards(*TargetActor);
 
-		RS_PRINT_SCREEN(0.2, FColor::Red, TEXT("Hit Actor Name : %s"), *TargetActor->GetName());
-
 		if (Attitude == ETeamAttitude::Hostile)
 		{
 			UAbilitySystemComponent* TargetASC = TargetActor->FindComponentByClass<UAbilitySystemComponent>();
@@ -774,7 +772,6 @@ void APlayerCharacterBase::ShootAttackRay()
 			DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 0.2f, 0, 2.0f);
 		}
 
-		RS_PRINT_SCREEN(0.2, FColor::Black, TEXT("No Hit"));
 	}
 }
 
@@ -843,7 +840,6 @@ void APlayerCharacterBase::Apply_Damage_Server_Implementation(AActor* TargetActo
 
 		ASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
 		float CurrentHP = TargetChar->GetAttributeSet()->GetHP();
-		RS_PRINT_SCREEN(1.0f, FColor::Cyan, TEXT("Current HP : %f"), CurrentHP);
 	}
 
 
