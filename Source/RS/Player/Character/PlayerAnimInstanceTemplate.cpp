@@ -14,7 +14,4 @@ void UPlayerAnimInstanceTemplate::NativeBeginPlay()
 void UPlayerAnimInstanceTemplate::NativeUpdateAnimation(float DeltaSeconds)
 {
 	Super::NativeUpdateAnimation(DeltaSeconds);
-
-	RS_PRINT_SCREEN(-0.1f, FColor::Red, TEXT("MoveSpeed : %.2f"), MoveSpeed);
-
 }

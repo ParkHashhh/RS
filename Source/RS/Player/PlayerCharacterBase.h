@@ -87,8 +87,7 @@ protected:
 
 	bool bCanDashing = false;
 
-	float CurrentArmLength; // 현재 타겟 길이
-	float TargetArmLength; // 목표 길이
+	bool bIsMoveKey = false;
 
 	// 기본 감도 값
 	float MouseXSensitivity = 1.0f;
@@ -104,6 +103,26 @@ protected:
 
 	bool bASCReady = false;
 
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	FVector CameraPos;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FRotator CameraRot;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float TargetLength;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float CameraFieldView;
+
+
+	// 기본값 세팅
+	float TargetArmLength;
+	FVector TargetCameraPos;
+	FRotator TargetCameraRot;
+	float TargetFOV;
+
+
 public:
 	FOnAttackingChangedDelegate OnAttackingChanged;
 	FOnDashingChangedDelegate OnDashingChanged;
@@ -113,6 +132,16 @@ public:
 	FOnASCReadyDelegate OnASCReady;
 
 public:
+	bool GetIsMovekey()
+	{
+		return bIsMoveKey;
+	}
+
+	TObjectPtr<USkeletalMeshComponent> GetWeaponComponent()
+	{
+		return WeaponMeshComponent;
+	}
+
 	bool CanDashing()
 	{
 		return !IsDashing() && !IsAiming() && !IsAttacking() && AnimInst && bCanDashing;
@@ -135,7 +164,9 @@ public:
 		{
 			return;
 		}
+
 		bIsAttacking = bNewIsAttacking;
+
 		if (!IsAiming())
 		{
 			UpdatePlayerCameraState();
@@ -165,6 +196,7 @@ public:
 
 		bIsDashing = bNewIsDashing;
 		UpdatePlayerSpeedState();
+		UpdatePlayerCameraState();
 		OnIsDashingChanged();
 	}
 
@@ -264,6 +296,7 @@ public:
 	void SetDefaultCameraPosition();
 	void SetAimCameraPosition();
 	void SetRunAndGunCameraPosition();
+	void SetDashingCameraPosition();
 
 
 protected:
@@ -281,6 +314,7 @@ protected:
 private:
 	// Input Function
 	void MoveKey(const FInputActionValue& Value);
+	void MoveReleaseKey(const FInputActionValue& Value);
 	void DashKey(const FInputActionValue& Value);
 	void DashReleaseKey(const FInputActionValue& Value);
 	void AttackKey(const FInputActionValue& Value);

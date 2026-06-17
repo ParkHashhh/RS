@@ -6,9 +6,23 @@
 #include "RS/Player/Character/PlayerAnimInstance.h"
 #include "Animation/AimOffsetBlendSpace.h"
 #include "PlayerAnimInstanceTemplate.generated.h"
-/**
- * 
- */
+/*
+
+anim_m4a1_stand_idle -> StandIdle
+
+bs_startloco -> StartLoco
+bs_looploco -> LoopLoco
+bs_endloco -> EndLoco
+bs_aimlooploco -> AimLoopLoco
+
+anim_m4a1_jump -> JumpStart
+anim_m4a1_jump_fall_loop -> JumpApex
+anim_m4a1_jump_land -> JumpLand
+
+AimOffset
+PlayerFullBody 슬롯으로 만든 BaseAttack ->AttackMontage
+
+*/
 UCLASS()
 class RS_API UPlayerAnimInstanceTemplate : public UPlayerAnimInstance
 {

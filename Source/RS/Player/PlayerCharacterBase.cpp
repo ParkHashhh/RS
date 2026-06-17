@@ -74,7 +74,6 @@ APlayerCharacterBase::APlayerCharacterBase()
 void APlayerCharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
-
 	const UGameInstance* GameInstance = GetGameInstance();
 	check(GameInstance);
 
@@ -142,10 +141,7 @@ void APlayerCharacterBase::BeginPlay()
 		}
 	}
 
-	SetMouseSensitivity(0.85f, 0.85f);
-
-	CurrentArmLength = SpringArm->TargetArmLength;
-	TargetArmLength = SpringArm->TargetArmLength;
+	SetMouseSensitivity(0.7f, 0.7f);
 	AnimInst = Cast<UPlayerAnimInstance>(GetMesh()->GetAnimInstance());
 	UpdatePlayerSpeedState();
 	UpdatePlayerCameraState();
@@ -176,10 +172,28 @@ void APlayerCharacterBase::Tick(float DeltaTime)
 
 	AnimInst->ViewPitch= FMath::Clamp(RelativePitch, -40.0f, 40.0f);
 
-	float InterpSpeed = 10.0f;
 
+	//SpringArm->TargetArmLength = TargetLength;
+	//Camera->FieldOfView = CameraFieldView;
+
+
+	//SpringArm->SetRelativeLocation(CameraPos);
+
+	//Camera->SetRelativeRotation(CameraRot);
+
+
+	float InterpSpeed = 10.f;
+	// 현재의 위치에서 타겟위치까지 보간
+
+
+	RS_PRINT_SCREEN(0.f, FColor::Red, TEXT("TargetArmLength : %.2f"), TargetArmLength);
+	RS_PRINT_SCREEN(0.f, FColor::Red, TEXT("TargetFOV : %.2f"), TargetFOV);
+	RS_PRINT_SCREEN(0.f, FColor::Red, TEXT("TargetCameraPos : %.2f, %.2f, %.2f"), TargetCameraPos.X, TargetCameraPos.Y, TargetCameraPos.Z);
+	RS_PRINT_SCREEN(0.f, FColor::Red, TEXT("TargetCameraRot : %.2f, %.2f, %.2f"), TargetCameraRot.Vector().X, TargetCameraRot.Vector().Y, TargetCameraRot.Vector().Z);
 	SpringArm->TargetArmLength = FMath::FInterpTo(SpringArm->TargetArmLength, TargetArmLength, DeltaTime, InterpSpeed);
-
+	Camera->FieldOfView = FMath::FInterpTo(Camera->FieldOfView, TargetFOV, DeltaTime, InterpSpeed);
+	SpringArm->SetRelativeLocation(FMath::VInterpTo(SpringArm->GetRelativeLocation(), TargetCameraPos, DeltaTime, InterpSpeed));
+	Camera->SetRelativeRotation(FMath::RInterpTo(Camera->GetRelativeRotation(), TargetCameraRot, DeltaTime, InterpSpeed));
 }
 
 // Called to bind functionality to input
@@ -212,6 +226,8 @@ void APlayerCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 	if (Action)
 	{
 		EnhancedInput->BindAction(Action, ETriggerEvent::Triggered, this, &APlayerCharacterBase::MoveKey);
+		EnhancedInput->BindAction(Action, ETriggerEvent::Completed, this, &APlayerCharacterBase::MoveReleaseKey);
+		EnhancedInput->BindAction(Action, ETriggerEvent::Canceled, this, &APlayerCharacterBase::MoveReleaseKey);
 	}
 	else
 	{
@@ -367,7 +383,6 @@ void APlayerCharacterBase::PlayBaseAttackMontage()
 	}
 
 	AnimInst->PlayBaseAttackMontage();
-	RS_PRINT_SCREEN(1, FColor::Yellow, TEXT("PlayerBase AttackMontage"));
 }
 
 void APlayerCharacterBase::OnIsAttackingChanged() const
@@ -403,6 +418,8 @@ void APlayerCharacterBase::MoveKey(const FInputActionValue& Value)
 
 	AddMovementInput(GetActorRightVector(), MovementVector.Y);
 
+	bIsMoveKey = true;
+
 	bCanDashing = MovementVector.X > 0.9f && FMath::Abs(MovementVector.Y) < 0.1f;
 
 	if (IsDashing())
@@ -413,6 +430,12 @@ void APlayerCharacterBase::MoveKey(const FInputActionValue& Value)
 		}
 	}
 
+
+}
+
+void APlayerCharacterBase::MoveReleaseKey(const FInputActionValue& Value)
+{
+	bIsMoveKey = false;
 }
 
 void APlayerCharacterBase::DashKey(const FInputActionValue& Value)
@@ -420,6 +443,7 @@ void APlayerCharacterBase::DashKey(const FInputActionValue& Value)
 	if (CanDashing())
 	{
 		SetIsDashing(true);
+		
 	}
 }
 
@@ -430,14 +454,12 @@ void APlayerCharacterBase::DashReleaseKey(const FInputActionValue& Value)
 
 void APlayerCharacterBase::AttackKey(const FInputActionValue& Value)
 {
-	// Bool 변수로 누르고 있는지 땠는지를 판단 한 후 공격속도마다 공격 함수를 호출하게 하고(이펙트 파티클 등등), 서버에서는 충돌처리 및 데미지 체크하기 => 완료
-	if (AnimInst && AnimInst->GetIsInAir())
-	{
-		return;
-	}
+	RS_PRINT_SCREEN(5.f, FColor::Red, TEXT("AttackKey"));
+
 	SetIsAttacking(true);
 
-	if (IsLocallyControlled() && IsAttacking())
+	// Bool 변수로 누르고 있는지 땠는지를 판단 한 후 공격속도마다 공격 함수를 호출하게 하고(이펙트 파티클 등등), 서버에서는 충돌처리 및 데미지 체크하기 => 완료
+	if (IsAttacking())
 	{
 		if (IsValid(ASC))
 		{
@@ -458,6 +480,8 @@ void APlayerCharacterBase::AttackKey(const FInputActionValue& Value)
 void APlayerCharacterBase::AttackReleaseKey(const FInputActionValue& Value)
 {
 	SetIsAttacking(false);
+	RS_PRINT_SCREEN(5.f, FColor::Red, TEXT("AttackReleaseKey"));
+
 }
 
 
@@ -505,27 +529,34 @@ void APlayerCharacterBase::RotationMouse(const FInputActionValue& Value)
 
 void APlayerCharacterBase::SetDefaultCameraPosition()
 {
-	SpringArm->TargetArmLength = 250.f;
-	Camera->FieldOfView = 60.f;
-	SpringArm->SetRelativeLocation(FVector(0.0, 0.0, 60.f));
-	Camera->SetRelativeRotation(FRotator(0.0f, 0.0f, 0.0f));
-
+	TargetArmLength = 300.f;
+	TargetFOV = 70.f;
+	TargetCameraPos = (FVector(0.0, 50.0, 80.f));
+	TargetCameraRot = FRotator(0.0f, 0.0f, 0.0f);
 }
 
 void APlayerCharacterBase::SetAimCameraPosition()
 {
-	SpringArm->TargetArmLength = 150.f;
-	Camera->FieldOfView = 40.f;
-	Camera->SetRelativeRotation(FRotator(0.0f, -5.0f, 0.0f));
-
-	SpringArm->SetRelativeLocation(FVector(0.0, 100.0, 50.f));
+	TargetArmLength = 190.f;
+	TargetFOV = 50.f;
+	TargetCameraPos = FVector(0.0, 60.0,70.f);
+	TargetCameraRot = FRotator(0.0f, 0.0f, 0.0f);
 }
 
 void APlayerCharacterBase::SetRunAndGunCameraPosition()
 {
-	SpringArm->TargetArmLength = 250.f;
-	Camera->FieldOfView = 60.f;
-	SpringArm->SetRelativeLocation(FVector(0.0, 50.0, 60.f));
+	TargetArmLength = 310.f;
+	TargetFOV = 70.f;
+	TargetCameraPos = FVector(0.0, 80.0, 80.f);
+	TargetCameraRot = FRotator(0.0f, 0.0f, 0.0f);
+}
+
+void APlayerCharacterBase::SetDashingCameraPosition()
+{
+	TargetArmLength = 350.f;
+	TargetFOV = 75.f;
+	TargetCameraPos = (FVector(0.0, 80.0, 150.f));
+	TargetCameraRot = (FRotator(-12.0f,0.0f, 0.0f));
 }
 
 void APlayerCharacterBase::DebugKey0(const FInputActionValue& Value)
@@ -593,10 +624,10 @@ void APlayerCharacterBase::AttatchWeapon()
 	if (WeaponMeshComponent)
 	{
 		FName SocketName = FName("Weapon_Socket");
-
 		WeaponMeshComponent->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, SocketName);
 	}
 }
+
 void APlayerCharacterBase::UpdatePlayerCameraState()
 {
 	// 1. 공중
@@ -613,6 +644,10 @@ void APlayerCharacterBase::UpdatePlayerCameraState()
 	else if (IsAttacking())
 	{
 		SetRunAndGunCameraPosition();
+	}
+	else if (IsDashing())
+	{
+		SetDashingCameraPosition();
 	}
 	else
 	{
@@ -644,7 +679,6 @@ void APlayerCharacterBase::UpdatePlayerSpeedState()
 	{
 		TargetSpeed = 400.f;
 	}
-	RS_PRINT_SCREEN(10.f, FColor::Black, TEXT("TargetSpeed : %.2f"), TargetSpeed);
 	MovementComponent->MaxWalkSpeed = TargetSpeed;
 	Server_SetMaxWalkSpeed(TargetSpeed);
 }
