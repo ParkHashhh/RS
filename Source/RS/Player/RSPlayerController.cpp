@@ -19,6 +19,13 @@ void ARSPlayerController::OnRep_Pawn()
 	NotifyPawnChanged(GetPawn());
 }
 
+void ARSPlayerController::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+
+	NotifyPawnChanged(GetPawn());
+}
+
 void ARSPlayerController::BeginPlay()
 {
 	Super::BeginPlay();

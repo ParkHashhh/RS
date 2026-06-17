@@ -2,6 +2,7 @@
 
 
 #include "GameplaySubsystem.h"
+#include "AbilitySystemComponent.h"
 
 #include "RS/LogCategory.h"
 #include "RS/Player/PlayerCharacterBase.h"
@@ -18,12 +19,18 @@ void UGameplaySubsystem::Deinitialize()
 	Super::Deinitialize();
 }
 
+UAbilitySystemComponent* UGameplaySubsystem::GetPlayerASC() const
+{
+	if (CachedCharacter.IsValid())
+	{
+		return CachedCharacter->GetAbilitySystemComponent();
+	}
+	return nullptr;
+}
+
 void UGameplaySubsystem::OnPawnChanged(const APawn* NewPawn)
 {
-	if (!CachedPC.IsValid())
-	{
-		Bind();
-	}
+	Bind();
 
 	BindPawn();
 
@@ -32,11 +39,6 @@ void UGameplaySubsystem::OnPawnChanged(const APawn* NewPawn)
 
 void UGameplaySubsystem::Bind()
 {
-	if (CachedPC.IsValid())
-	{
-		return;
-	}
-
 	ULocalPlayer* LocalPlayer = GetLocalPlayer();
 	if (!LocalPlayer)
 	{

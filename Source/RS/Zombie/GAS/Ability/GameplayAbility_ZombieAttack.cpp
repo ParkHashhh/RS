@@ -2,8 +2,9 @@
 
 
 #include "GameplayAbility_ZombieAttack.h"
-#include "../../../GAS/BaseAttributeSet.h"
 #include "AbilitySystemBlueprintLibrary.h"
+#include "RS/LogCategory.h"
+#include "RS/GAS/BaseAttributeSet.h"
 #include "RS/Zombie/ZombieBase.h"
 
 UGameplayAbility_ZombieAttack::UGameplayAbility_ZombieAttack()
@@ -11,12 +12,12 @@ UGameplayAbility_ZombieAttack::UGameplayAbility_ZombieAttack()
 }
 
 void UGameplayAbility_ZombieAttack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
-	const FGameplayAbilityActorInfo* ActorInfo,
-	const FGameplayAbilityActivationInfo ActivationInfo,
-	const FGameplayEventData* TriggerEventData)
+                                                    const FGameplayAbilityActorInfo* ActorInfo,
+                                                    const FGameplayAbilityActivationInfo ActivationInfo,
+                                                    const FGameplayEventData* TriggerEventData)
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
-	
+
 	if (!TriggerEventData || !TriggerEventData->Target)
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
@@ -63,11 +64,11 @@ void UGameplayAbility_ZombieAttack::ActivateAbility(const FGameplayAbilitySpecHa
 
 	if (!IsValid(DamageEffect))
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, TEXT("Damage Effect를 지정하지 않았습니다."));
+		RS_PRINT_SCREEN(10.f, FColor::Red, TEXT("Damage Effect를 지정하지 않았습니다."));
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 		return;
 	}
-	
+
 	FGameplayEffectSpecHandle DamageSpec = MakeOutgoingGameplayEffectSpec(DamageEffect, GetAbilityLevel());
 	DamageSpec.Data->SetContext(Context);
 

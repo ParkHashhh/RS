@@ -14,6 +14,10 @@
 #include "RS/Player/Character/PlayerAnimInstance.h"
 #include "PlayerCharacterBase.generated.h"
 
+class USpringArmComponent;
+class UCameraComponent;
+class UInputData;
+class UPlayerAttributeSet;
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnAttackingChangedDelegate, bool);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnDashingChangedDelegate, bool);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnAimingChangedDelegate, bool);
@@ -47,33 +51,33 @@ protected:
 	TObjectPtr<UCapsuleComponent> Body;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class USpringArmComponent> SpringArm;
+	TObjectPtr<USpringArmComponent> SpringArm;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<class UCameraComponent> Camera;
+	TObjectPtr<UCameraComponent> Camera;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TSubclassOf<class UInputData> InputDataClass;
+	TSubclassOf<UInputData> InputDataClass;
 
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
 	TObjectPtr<UPlayerAbilitySystemComponent> ASC;
 
-	TObjectPtr<class UPlayerAttributeSet> AttributeSet;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
+	TObjectPtr<UPlayerAttributeSet> AttributeSet;
 
 	UPROPERTY(EditDefaultsOnly, Category = "GAS")
 	TSubclassOf<UGameplayEffect> DefaultAttributeEffect;
 
-
 	UPROPERTY(EditDefaultsOnly, Category = "GAS")
 	TMap<FName, TSubclassOf<UGameplayEffect>> Effects;
 
-
 	UPROPERTY(EditDefaultsOnly, Category = "GAS")
-	TArray<TSubclassOf<UGameplayAbility>> Abilitys;
+	TArray<TSubclassOf<UGameplayAbility>> Abilities;
 
 	FGenericTeamId TeamID;
 
+	UPROPERTY(Transient, VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true))
 	TObjectPtr<UPlayerAnimInstance> AnimInst;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, BlueprintGetter=K2_IsAttacking, meta=(AllowPrivateAccess=true))
@@ -85,7 +89,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, BlueprintGetter=K2_IsAiming, meta=(AllowPrivateAccess=true))
 	bool bIsAiming = false;
 
-	bool bCanDashing = false;
+	bool bCanDash = false;
 
 	bool bIsMoveKey = false;
 
@@ -93,28 +97,7 @@ protected:
 	float MouseXSensitivity = 1.0f;
 	float MouseYSensitivity = 1.0f;
 
-	// 1m 거리에서 탄이 퍼지는 반경
-	UPROPERTY(Transient, VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Combat|Shot")
-	float ShotSpreadRadius;
-
-	UPROPERTY(Transient, ReplicatedUsing=OnRep_CurrentShotSpreadRadius, VisibleAnywhere, BlueprintReadOnly,
-		meta=(AllowPrivateAccess=true), Category="Combat|Shot")
-	float CurrentShotSpreadRadius;
-
 	bool bASCReady = false;
-
-	UPROPERTY(EditAnywhere,BlueprintReadWrite)
-	FVector CameraPos;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FRotator CameraRot;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float TargetLength;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float CameraFieldView;
-
 
 	// 기본값 세팅
 	float TargetArmLength;
@@ -142,10 +125,11 @@ public:
 		return WeaponMeshComponent;
 	}
 
-	bool CanDashing()
+	bool CanDash()
 	{
-		return !IsDashing() && !IsAiming() && !IsAttacking() && AnimInst && bCanDashing;
+		return !IsDashing() && !IsAiming() && !IsAttacking() && AnimInst && bCanDash;
 	}
+
 	FORCEINLINE bool IsAttacking() const
 	{
 		return bIsAttacking;
@@ -172,6 +156,7 @@ public:
 			UpdatePlayerCameraState();
 			UpdatePlayerSpeedState();
 		}
+
 		OnIsAttackingChanged();
 	}
 
@@ -195,6 +180,7 @@ public:
 		}
 
 		bIsDashing = bNewIsDashing;
+
 		UpdatePlayerSpeedState();
 		UpdatePlayerCameraState();
 		OnIsDashingChanged();
@@ -212,53 +198,7 @@ public:
 	}
 
 	UFUNCTION(BlueprintCallable)
-	void SetIsAiming(bool bNewIsAiming)
-	{
-		if (bIsAiming == bNewIsAiming)
-		{
-			return;
-		}
-		bIsAiming = bNewIsAiming;
-		if (!AnimInst->GetIsInAir())
-		{
-			UpdatePlayerCameraState();
-			UpdatePlayerSpeedState();
-		}
-		OnIsAimingChanged();
-	}
-
-	FORCEINLINE float GetCurrentShotSpreadRadius() const
-	{
-		return CurrentShotSpreadRadius;
-	}
-
-	UFUNCTION(BlueprintGetter, DisplayName="Get Current Shot Spread Radius")
-	float K2_GetCurrentShotSpreadRadius() const
-	{
-		return GetCurrentShotSpreadRadius();
-	}
-
-	UFUNCTION(BlueprintCallable)
-	void SetCurrentShotSpreadRadius(float NewCurrentShotSpreadRadius)
-	{
-		if (CurrentShotSpreadRadius == NewCurrentShotSpreadRadius)
-		{
-			return;
-		}
-
-		if (HasAuthority())
-		{
-			CurrentShotSpreadRadius = NewCurrentShotSpreadRadius;
-			OnCurrentShotSpreadRadiusChanged();
-		}
-		else
-		{
-			Server_SetCurrentShotSpreadRadius(NewCurrentShotSpreadRadius);
-		}
-	}
-
-	UFUNCTION(Server, Reliable, BlueprintCallable, Category="Combat")
-	void Server_SetCurrentShotSpreadRadius(float NewCurrentShotSpreadRadius);
+	void SetIsAiming(bool bNewIsAiming);
 
 	FORCEINLINE UPlayerAttributeSet* GetAttributeSet()
 	{
@@ -307,10 +247,6 @@ protected:
 	void OnIsDashingChanged() const;
 	void OnIsAimingChanged() const;
 
-	UFUNCTION()
-	void OnRep_CurrentShotSpreadRadius() const;
-	void OnCurrentShotSpreadRadiusChanged() const;
-
 private:
 	// Input Function
 	void MoveKey(const FInputActionValue& Value);
@@ -323,8 +259,8 @@ private:
 	void AimKey(const FInputActionValue& Value);
 	void AimReleaseKey(const FInputActionValue& Value);
 	void RotationMouse(const FInputActionValue& Value);
-	// WeaponSkeleton Attatch
-	void AttatchWeapon();
+	// WeaponSkeleton Attach
+	void AttachWeapon();
 
 	void DebugKey0(const FInputActionValue& Value);
 	void DebugKey1(const FInputActionValue& Value);
@@ -348,6 +284,9 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
+	virtual void PossessedBy(AController* NewController) override;
+	virtual void OnRep_PlayerState() override;
+
 	virtual void OnConstruction(const FTransform& Transform) override;
 
 	// Called every frame
@@ -373,6 +312,18 @@ public:
 
 protected:
 	UFUNCTION(Server, Reliable)
-	void Apply_Damage_Server(AActor* TargetActor, FHitResult Hit);
+	void Server_ApplyDamage(AActor* TargetActor, FHitResult Hit);
 
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="GAS|Abilities")
+	TSubclassOf<UGameplayAbility> AimingAbilityClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="GAS|Effects")
+	TSubclassOf<UGameplayEffect> AimingEffectClass;
+
+private:
+	FActiveGameplayEffectHandle AimingEffectHandle;
+
+protected:
+	virtual void GiveAbilities();
 };

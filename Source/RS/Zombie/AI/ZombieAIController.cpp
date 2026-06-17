@@ -8,6 +8,7 @@
 #include "../ZombieBase.h"
 #include "BehaviorTree/BlackboardData.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "RS/LogCategory.h"
 
 AZombieAIController::AZombieAIController()
 {
@@ -87,15 +88,15 @@ void AZombieAIController::ActivateBT()
 {
 	if (!IsValid(BT))
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 30.f, FColor::Red, TEXT("NO BT!"));
+		RS_PRINT_SCREEN(30.f, FColor::Red, TEXT("NO BT!"));
 		return;
 	}
 
 	if (!RunBehaviorTree(BT))
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 30.f, FColor::Red, TEXT("BT Run Failed!"));
+		RS_PRINT_SCREEN(30.f, FColor::Red, TEXT("BT Run Failed!"));
 		return;
 	}
 
-	GEngine->AddOnScreenDebugMessage(-1, 30.f, FColor::Red, TEXT("BT Run Success!"));
+	RS_PRINT_SCREEN(30.f, FColor::Red, TEXT("BT Run Success!"));
 }

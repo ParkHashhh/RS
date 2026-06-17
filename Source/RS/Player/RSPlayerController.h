@@ -18,6 +18,7 @@ public:
 
 public:
 	virtual void OnRep_Pawn() override;
+	virtual void OnRep_PlayerState() override;
 
 protected:
 	virtual void BeginPlay() override;

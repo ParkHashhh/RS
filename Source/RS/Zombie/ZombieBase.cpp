@@ -43,7 +43,7 @@ AZombieBase::AZombieBase()
 	SetReplicateMovement(true);
 
 	SetGenericTeamId(FGenericTeamId(TeamMonster));
-		
+
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 }
 
@@ -181,7 +181,7 @@ void AZombieBase::CalcNextPointLocation()
 	{
 		return;
 	}
-		
+
 	//이동 가능한 무작위 위치를 만들어주는 함수를 호출하기 위해 네비게이션 시스템을 얻어온다.
 	UNavigationSystemV1* NavSystem = UNavigationSystemV1::GetCurrent(GetWorld());
 
@@ -235,7 +235,7 @@ void AZombieBase::CallBackHP(AActor* InstigatorActor)
 		//죽지 않은 경우
 		RS_LOG_DEBUG(LogRSBattle, Log, TEXT("좀비가 공격받음"));
 	}
-	
+
 }
 
 void AZombieBase::Death()

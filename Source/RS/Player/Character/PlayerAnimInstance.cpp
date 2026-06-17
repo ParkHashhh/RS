@@ -2,12 +2,11 @@
 
 
 #include "PlayerAnimInstance.h"
+
 #include "KismetAnimationLibrary.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "RS/LogCategory.h"
 #include "RS/Player/PlayerCharacterBase.h"
-
-
 
 void UPlayerAnimInstance::NativeBeginPlay()
 {
@@ -19,12 +18,10 @@ void UPlayerAnimInstance::NativeBeginPlay()
 void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 {
 	Super::NativeUpdateAnimation(DeltaSeconds);
-
-	TObjectPtr<APlayerCharacterBase> PlayerChar = Cast<APlayerCharacterBase>(TryGetPawnOwner());
-
-	if (IsValid(PlayerChar))
+	APlayerCharacterBase* PlayerChar = Cast<APlayerCharacterBase>(TryGetPawnOwner());
+	if (PlayerChar)
 	{
-		UCharacterMovementComponent* Movement = PlayerChar->GetCharacterMovement();
+		const UCharacterMovementComponent* Movement = PlayerChar->GetCharacterMovement();
 
 		MoveSpeed = Movement->Velocity.Length();
 
@@ -42,8 +39,8 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 			// 공중 상태 (IsFalling)
 			bIsInAir = Movement->IsFalling();
 		}
+
 		//  앉기 상태
-		bIsCrouching = Movement->IsCrouching();
 
 		bIsAiming = PlayerChar->IsAiming();
 
@@ -55,25 +52,22 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 		float Acceleration = Movement->GetCurrentAcceleration().Length();
 
-		Accelerating = Acceleration > 0.f;
-
-		RS_PRINT_SCREEN(0.f, FColor::Red, TEXT("Pitch : %.2f"), ViewPitch);
-		RS_PRINT_SCREEN(0.f, FColor::Red, TEXT("Direction : %.2f"), Direction);
-		RS_PRINT_SCREEN(0.f, FColor::Red, TEXT("Accelerating : %.2f"), Acceleration);
 
 	}
 }
 
 void UPlayerAnimInstance::PlayBaseAttackMontage()
 {
-	if (!BaseAttackMontage)
+	if (!IsValid(BaseAttackMontage))
 	{
 		return;
 	}
+
 	if (Montage_IsPlaying(BaseAttackMontage))
 	{
 		return;
 	}
+
 	Montage_Play(BaseAttackMontage, 1.f);
 }
 

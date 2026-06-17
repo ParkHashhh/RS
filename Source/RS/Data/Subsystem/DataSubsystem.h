@@ -50,10 +50,16 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Data", meta=(DisplayName = "Get Item Table Info"))
 	bool K2_GetItemTableInfo(FName Name, FItemTableInfo& OutItemInfo) const;
 
-	FORCEINLINE bool IsItemTableLoaded() const { return IsValid(ItemInfoTable); }
+	FORCEINLINE bool IsItemTableLoaded() const
+	{
+		return IsValid(ItemInfoTable);
+	}
 
 	UFUNCTION(BlueprintPure, Category = "Data", meta=(DisplayName = "Is Item Table Loaded"))
-	bool K2_IsItemTableLoaded() const { return IsItemTableLoaded(); }
+	bool K2_IsItemTableLoaded() const
+	{
+		return IsItemTableLoaded();
+	}
 
 	const FMiscTableInfo* GetMiscTableInfo() const;
 
@@ -70,10 +76,16 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Data", meta=(DisplayName = "Get Player Default Table Info"))
 	bool K2_GetPlayerDefaultTableInfo(FPlayerDefaultInfo& OutPlayerDefaultInfo) const;
 
-	FORCEINLINE bool IsPlayerDefaultTableLoaded() const { return IsValid(PlayerDefaultInfoTable); }
+	FORCEINLINE bool IsPlayerDefaultTableLoaded() const
+	{
+		return IsValid(PlayerDefaultInfoTable);
+	}
 
 	UFUNCTION(BlueprintPure, Category = "Data", meta=(DisplayName = "Is Player Default Table Loaded"))
-	bool K2_IsPlayerDefaultTableLoaded() const { return IsPlayerDefaultTableLoaded(); }
+	bool K2_IsPlayerDefaultTableLoaded() const
+	{
+		return IsPlayerDefaultTableLoaded();
+	}
 
 private:
 	void LoadItemInfoTable();

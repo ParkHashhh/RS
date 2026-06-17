@@ -3,6 +3,7 @@
 
 #include "PlayerCharacterBase.h"
 
+#include "RSTags.h"
 #include "Attribute/PlayerAttributeSet.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -121,8 +122,6 @@ void APlayerCharacterBase::BeginPlay()
 
 	SetMouseSensitivity(0.85f, 0.85f);
 
-	CurrentArmLength = SpringArm->TargetArmLength;
-	TargetArmLength = SpringArm->TargetArmLength;
 	AnimInst = Cast<UPlayerAnimInstance>(GetMesh()->GetAnimInstance());
 	UpdatePlayerSpeedState();
 	UpdatePlayerCameraState();
@@ -137,38 +136,46 @@ void APlayerCharacterBase::PossessedBy(AController* NewController)
 	{
 		ASC->InitAbilityActorInfo(this, this);
 
-		NotifyASCReady();
-
 		if (DefaultAttributeEffect)
 		{
 			FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
 			FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(DefaultAttributeEffect, 1.0f, Context);
 			if (SpecHandle.IsValid())
 			{
-				ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+				ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
 			}
 		}
-		for (TSubclassOf<UGameplayAbility> AbilityClass : Abilitys)
-		{
-			if (AbilityClass)
-			{
-				ASC->GiveAbility(FGameplayAbilitySpec(AbilityClass, 1, -1));
-			}
-		}
-	}
 
-	SetMouseSensitivity(0.7f, 0.7f);
-	AnimInst = Cast<UPlayerAnimInstance>(GetMesh()->GetAnimInstance());
-	UpdatePlayerSpeedState();
-	UpdatePlayerCameraState();
-	AttatchWeapon();
+		SetMouseSensitivity(0.7f, 0.7f);
+		AnimInst = Cast<UPlayerAnimInstance>(GetMesh()->GetAnimInstance());
+		UpdatePlayerSpeedState();
+		UpdatePlayerCameraState();
+		AttachWeapon();
+
+		if (HasAuthority())
+		{
+			GiveAbilities();
+		}
+
+		NotifyASCReady();
+	}
+}
+
+void APlayerCharacterBase::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+
+	if (IsValid(ASC))
+	{
+		ASC->InitAbilityActorInfo(this, this);
+
+		NotifyASCReady();
+	}
 }
 
 void APlayerCharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME(APlayerCharacterBase, CurrentShotSpreadRadius);
 }
 
 UAbilitySystemComponent* APlayerCharacterBase::GetASC() const
@@ -186,7 +193,7 @@ void APlayerCharacterBase::Tick(float DeltaTime)
 
 	float RelativePitch = FRotator::NormalizeAxis(CurrentControlRot.Pitch - ActorRot.Pitch);
 
-	AnimInst->ViewPitch= FMath::Clamp(RelativePitch, -40.0f, 40.0f);
+	AnimInst->ViewPitch = FMath::Clamp(RelativePitch, -40.0f, 40.0f);
 
 
 	float InterpSpeed = 10.f;
@@ -348,17 +355,22 @@ void APlayerCharacterBase::Server_SetMaxWalkSpeed_Implementation(float NewSpeed)
 	}
 }
 
-void APlayerCharacterBase::Server_SetCurrentShotSpreadRadius_Implementation(float NewCurrentShotSpreadRadius)
+void APlayerCharacterBase::SetIsAiming(bool bNewIsAiming)
 {
-	if (CurrentShotSpreadRadius == NewCurrentShotSpreadRadius)
+	if (bIsAiming == bNewIsAiming)
 	{
 		return;
 	}
 
-	CurrentShotSpreadRadius = NewCurrentShotSpreadRadius;
+	bIsAiming = bNewIsAiming;
 
-	// 리슨 서버용 OnRep 내부 로직 직접 호출
-	OnCurrentShotSpreadRadiusChanged();
+	if (GetCharacterMovement() && !GetCharacterMovement()->IsFalling())
+	{
+		UpdatePlayerCameraState();
+		UpdatePlayerSpeedState();
+	}
+
+	OnIsAimingChanged();
 }
 
 void APlayerCharacterBase::NotifyASCReady()
@@ -372,7 +384,6 @@ void APlayerCharacterBase::NotifyASCReady()
 
 	OnASCReady.Broadcast();
 }
-
 
 
 void APlayerCharacterBase::PlayBaseAttackMontage()
@@ -400,16 +411,6 @@ void APlayerCharacterBase::OnIsAimingChanged() const
 	OnAimingChanged.Broadcast(bIsAiming);
 }
 
-void APlayerCharacterBase::OnRep_CurrentShotSpreadRadius() const
-{
-	OnCurrentShotSpreadRadiusChanged();
-}
-
-void APlayerCharacterBase::OnCurrentShotSpreadRadiusChanged() const
-{
-	OnCurrentShotSpreadChanged.Broadcast(CurrentShotSpreadRadius);
-}
-
 void APlayerCharacterBase::MoveKey(const FInputActionValue& Value)
 {
 	FVector2D MovementVector = Value.Get<FVector2D>();
@@ -420,17 +421,15 @@ void APlayerCharacterBase::MoveKey(const FInputActionValue& Value)
 
 	bIsMoveKey = true;
 
-	bCanDashing = MovementVector.X > 0.9f && FMath::Abs(MovementVector.Y) < 0.1f;
+	bCanDash = MovementVector.X > 0.9f && FMath::Abs(MovementVector.Y) < 0.1f;
 
 	if (IsDashing())
 	{
-		if (!bCanDashing)
+		if (!bCanDash)
 		{
 			DashReleaseKey(Value);
 		}
 	}
-
-
 }
 
 void APlayerCharacterBase::MoveReleaseKey(const FInputActionValue& Value)
@@ -440,7 +439,7 @@ void APlayerCharacterBase::MoveReleaseKey(const FInputActionValue& Value)
 
 void APlayerCharacterBase::DashKey(const FInputActionValue& Value)
 {
-	if (CanDashing())
+	if (CanDash())
 	{
 		SetIsDashing(true);
 		
@@ -463,7 +462,7 @@ void APlayerCharacterBase::AttackKey(const FInputActionValue& Value)
 	SetIsAttacking(true);
 
 	// Bool 변수로 누르고 있는지 땠는지를 판단 한 후 공격속도마다 공격 함수를 호출하게 하고(이펙트 파티클 등등), 서버에서는 충돌처리 및 데미지 체크하기 => 완료
-	if (IsAttacking())
+	if (IsLocallyControlled() && IsAttacking())
 	{
 		if (IsValid(ASC))
 		{
@@ -475,6 +474,7 @@ void APlayerCharacterBase::AttackKey(const FInputActionValue& Value)
 			{
 				SetIsDashing(false);
 			}
+
 			ASC->HandleGameplayEvent(FGameplayTag::RequestGameplayTag(TEXT("Player.Battle.Attack")), &EventData);
 		}
 	}
@@ -505,18 +505,30 @@ void APlayerCharacterBase::JumpKey(const FInputActionValue& Value)
 }
 
 void APlayerCharacterBase::AimKey(const FInputActionValue& Value)
-{	
-	if (AnimInst && AnimInst->GetIsInAir())
+{
+	if (!GetMovementComponent() || GetMovementComponent()->IsFalling())
 	{
 		return;
 	}
+
+	//if (IsValid(ASC))
+	//{
+	//	FGameplayTag AimTag = FGameplayTag::RequestGameplayTag(RSTags::Player::AimTagName);
+	//	bool bResult = ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(AimTag));
+	//}
 	SetIsAiming(true);
 	SetIsDashing(false);
 }
 
 void APlayerCharacterBase::AimReleaseKey(const FInputActionValue& Value)
 {
-	SetIsAiming(false);
+	if (IsValid(ASC))
+	{
+		FGameplayTag AimTag = FGameplayTag::RequestGameplayTag(RSTags::Player::AimTagName);
+		FGameplayTagContainer TargetContainer(AimTag);
+
+		ASC->CancelAbilities(&TargetContainer);
+	}
 }
 
 void APlayerCharacterBase::RotationMouse(const FInputActionValue& Value)
@@ -619,7 +631,7 @@ void APlayerCharacterBase::DebugKey9(const FInputActionValue& Value)
 	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("DebugKey9"));
 }
 
-void APlayerCharacterBase::AttatchWeapon()
+void APlayerCharacterBase::AttachWeapon()
 {
 	if (WeaponMeshComponent)
 	{
@@ -627,11 +639,12 @@ void APlayerCharacterBase::AttatchWeapon()
 		WeaponMeshComponent->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, SocketName);
 	}
 }
-
 void APlayerCharacterBase::UpdatePlayerCameraState()
 {
+	UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+
 	// 1. 공중
-	if (AnimInst->GetIsInAir())
+	if (MovementComponent->IsFalling())
 	{
 		SetDefaultCameraPosition();
 		return;
@@ -658,7 +671,7 @@ void APlayerCharacterBase::UpdatePlayerCameraState()
 void APlayerCharacterBase::UpdatePlayerSpeedState()
 {
 	UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
-	if (AnimInst->GetIsInAir())
+	if (MovementComponent->IsFalling())
 	{
 		MovementComponent->MaxWalkSpeed = 400.f;
 		Server_SetMaxWalkSpeed(400.f);
@@ -761,7 +774,7 @@ void APlayerCharacterBase::ShootAttackRay()
 
 			if (TargetASC && ASC)
 			{
-				Apply_Damage_Server(TargetActor, Hit);
+				Server_ApplyDamage(TargetActor, Hit);
 			}
 		}
 	}
@@ -814,7 +827,23 @@ ETeamAttitude::Type APlayerCharacterBase::GetTeamAttitudeTowards(const AActor& O
 		       : ETeamAttitude::Hostile;
 }
 
-void APlayerCharacterBase::Apply_Damage_Server_Implementation(AActor* TargetActor, FHitResult Hit)
+void APlayerCharacterBase::GiveAbilities()
+{
+	for (TSubclassOf<UGameplayAbility>& AbilityClass : Abilities)
+	{
+		if (IsValid(AbilityClass))
+		{
+			ASC->GiveAbility(FGameplayAbilitySpec(AbilityClass, 1, -1));
+		}
+	}
+
+	if (IsValid(AimingAbilityClass))
+	{
+		ASC->GiveAbility(FGameplayAbilitySpec(AimingAbilityClass, 1, -1));
+	}
+}
+
+void APlayerCharacterBase::Server_ApplyDamage_Implementation(AActor* TargetActor, FHitResult Hit)
 {
 	AZombieBase* TargetChar = Cast<AZombieBase>(TargetActor);
 

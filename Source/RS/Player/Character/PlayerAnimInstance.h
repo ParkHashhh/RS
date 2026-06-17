@@ -16,20 +16,15 @@ class RS_API UPlayerAnimInstance : public UAnimInstance
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	float	MoveSpeed;
+	float MoveSpeed;
 
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	bool	bIsInAir;
+	bool bIsInAir;
+
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	bool	bIsCrouching;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	bool	Accelerating;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	float	Direction = 0.f;
+	float Direction = 0.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UAnimMontage> BaseAttackMontage;
@@ -53,10 +48,10 @@ protected:
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	float	ViewPitch;
+	float ViewPitch;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	float	ViewYaw;
+	float ViewYaw;
 
 protected:
 	UFUNCTION()
@@ -74,15 +69,8 @@ public:
 		return FMath::Abs(Direction) < 45.0f;
 	}
 
-	bool GetIsInAir()
-	{
-		return bIsInAir;
-	}
-
-
 public:
 	virtual void NativeBeginPlay();
 	virtual void NativeUpdateAnimation(float DeltaSeconds);
 	void PlayBaseAttackMontage();
-
 };

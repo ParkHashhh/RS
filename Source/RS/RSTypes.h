@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "AttributeSet.h"
 #include "GameplayTagContainer.h"
 
 class UGameplayEffect;
@@ -118,19 +119,13 @@ struct FPlayerDefaultInfo : public FTableRowBase
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Combat|Shot")
+	float AimShotSpreadRadius{};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Combat|Shot")
 	float BaseShotSpreadRadius{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Combat|Shot")
-	float AimShotSpreadModifier{};
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Combat|Shot")
-	float MoveShotSpreadModifier{};
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Combat|Shot")
 	float FireShotSpreadModifier{};
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Combat|Shot")
-	float ShotSpreadRecoveryTime{};
 };
 
 UENUM(BlueprintType)
@@ -141,4 +136,10 @@ enum class EZombieAnimType : uint8
 	Run,
 	Attack,
 	Death
+};
+
+struct FAttributeDelegateBinding
+{
+	FGameplayAttribute Attribute;
+	FDelegateHandle DelegateHandle;
 };

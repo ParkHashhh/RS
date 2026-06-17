@@ -8,7 +8,7 @@
 #include "GameplayAbility_Attack.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class RS_API UGameplayAbility_Attack : public UGameplayAbility_PlayerBase

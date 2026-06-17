@@ -37,6 +37,12 @@ public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 
+	ARSPlayerController* GetCachedPC() const { return CachedPC.Get(); }
+	ARSPlayerState* GetCachedPS() const { return CachedPS.Get(); }
+	APlayerCharacterBase* GetCachedCharacter() const { return CachedCharacter.Get(); }
+
+	class UAbilitySystemComponent* GetPlayerASC() const;
+
 	FORCEINLINE bool IsGameplayReady() const
 	{
 		return bGameplayReady;
