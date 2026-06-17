@@ -120,8 +120,7 @@ void APlayerCharacterBase::BeginPlay()
 		}
 	}
 
-	SetMouseSensitivity(0.85f, 0.85f);
-
+	SetMouseSensitivity(0.7f, 0.7f);
 	AnimInst = Cast<UPlayerAnimInstance>(GetMesh()->GetAnimInstance());
 	UpdatePlayerSpeedState();
 	UpdatePlayerCameraState();
@@ -146,17 +145,10 @@ void APlayerCharacterBase::PossessedBy(AController* NewController)
 			}
 		}
 
-		SetMouseSensitivity(0.7f, 0.7f);
-		AnimInst = Cast<UPlayerAnimInstance>(GetMesh()->GetAnimInstance());
-		UpdatePlayerSpeedState();
-		UpdatePlayerCameraState();
-		AttachWeapon();
-
 		if (HasAuthority())
 		{
 			GiveAbilities();
 		}
-
 		NotifyASCReady();
 	}
 }
@@ -511,17 +503,19 @@ void APlayerCharacterBase::AimKey(const FInputActionValue& Value)
 		return;
 	}
 
-	//if (IsValid(ASC))
-	//{
-	//	FGameplayTag AimTag = FGameplayTag::RequestGameplayTag(RSTags::Player::AimTagName);
-	//	bool bResult = ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(AimTag));
-	//}
-	SetIsAiming(true);
+	if (IsValid(ASC))
+	{
+		FGameplayTag AimTag = FGameplayTag::RequestGameplayTag(RSTags::Player::AimTagName);
+		bool bResult = ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(AimTag));
+	}
+	//SetIsAiming(true);
 	SetIsDashing(false);
 }
 
 void APlayerCharacterBase::AimReleaseKey(const FInputActionValue& Value)
 {
+	//SetIsAiming(false);
+
 	if (IsValid(ASC))
 	{
 		FGameplayTag AimTag = FGameplayTag::RequestGameplayTag(RSTags::Player::AimTagName);
