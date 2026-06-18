@@ -44,6 +44,8 @@ protected:
 	UPROPERTY(BlueprintReadWrite)
 	FTransform LeftHandTransform;
 
+	UPROPERTY(BlueprintReadWrite)
+	FTransform LeftElbowTransform;
 
 
 public:

@@ -41,6 +41,7 @@ void UGameplayAbility_Aim::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 	if (!ASC || !CommitAbility(Handle, ActorInfo, ActivationInfo))
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("Return Ability"));
 		return;
 	}
 
@@ -116,6 +117,8 @@ void UGameplayAbility_Aim::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 		if (auto* PlayerChar = Cast<APlayerCharacterBase>(ActorInfo->OwnerActor.Get()))
 		{
 			PlayerChar->SetIsAiming(true);
+			RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("Set Is Aiming in Ability"));
+
 		}
 	}
 }

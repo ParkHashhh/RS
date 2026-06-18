@@ -100,11 +100,50 @@ protected:
 	bool bASCReady = false;
 
 	// 기본값 세팅
-	float TargetArmLength;
-	FVector TargetCameraPos;
-	FRotator TargetCameraRot;
-	float TargetFOV;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Camera|Default")
+	float DefaultArmLength = 300.f;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Camera|Default")
+	FVector DefaultCameraPos = FVector(0.0, 50.0, 80.f);
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Camera|Default")
+	FRotator DefaultCameraRot = FRotator(0.0f, 0.0f, 0.0f);
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Camera|Default")
+	float DefaultFOV = 70.f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Camera|Aim")
+	float AimArmLength = 170.f;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Camera|Aim")
+	FVector AimCameraPos = FVector(0.0, 60.0, 70.f);
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Camera|Aim")
+	FRotator AimCameraRot = FRotator(0.0f, 0.0f, 0.0f);
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Camera|Aim")
+	float AimFOV = 50.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Camera|RunAndGun")
+	float RunAndGunArmLength = 310.f;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Camera|RunAndGun")
+	FVector RunAndGunCameraPos = FVector(0.0, 80.0, 80.f);
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Camera|RunAndGun")
+	FRotator RunAndGunCameraRot = FRotator(0.0f, 0.0f, 0.0f);
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Camera|RunAndGun")
+	float RunAndGunFOV = 70.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Camera|Dash")
+	float DashArmLength = 350.f;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Camera|Dash")
+	FVector DashCameraPos = FVector(0.0, 80.0, 150.f);
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Camera|Dash")
+	FRotator DashCameraRot = FRotator(-12.0f, 0.0f, 0.0f);
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Camera|Dash")
+	float DashFOV = 75.f;
+
+	UPROPERTY(Transient, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Camera|Current")
+	float TargetArmLength;
+	UPROPERTY(Transient, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Camera|Current")
+	FVector TargetCameraPos;
+	UPROPERTY(Transient, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Camera|Current")
+	FRotator TargetCameraRot;
+	UPROPERTY(Transient, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Camera|Current")
+	float TargetFOV;
 
 public:
 	FOnAttackingChangedDelegate OnAttackingChanged;
@@ -238,7 +277,6 @@ public:
 	void SetRunAndGunCameraPosition();
 	void SetDashingCameraPosition();
 
-
 protected:
 	UFUNCTION(Server, Reliable)
 	void Server_SetMaxWalkSpeed(float NewSpeed);
@@ -303,7 +341,6 @@ public:
 
 	TSubclassOf<UGameplayEffect> GetEffect(const FName TagName) const;
 	void PlayBaseAttackMontage();
-
 
 public:
 	virtual void SetGenericTeamId(const FGenericTeamId& ID) override;

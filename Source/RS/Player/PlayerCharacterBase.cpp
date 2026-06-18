@@ -149,6 +149,7 @@ void APlayerCharacterBase::PossessedBy(AController* NewController)
 		{
 			GiveAbilities();
 		}
+
 		NotifyASCReady();
 	}
 }
@@ -434,7 +435,6 @@ void APlayerCharacterBase::DashKey(const FInputActionValue& Value)
 	if (CanDash())
 	{
 		SetIsDashing(true);
-		
 	}
 }
 
@@ -498,7 +498,7 @@ void APlayerCharacterBase::JumpKey(const FInputActionValue& Value)
 
 void APlayerCharacterBase::AimKey(const FInputActionValue& Value)
 {
-	if (!GetMovementComponent() || GetMovementComponent()->IsFalling())
+	if (!GetCharacterMovement() || GetCharacterMovement()->IsFalling())
 	{
 		return;
 	}
@@ -506,16 +506,14 @@ void APlayerCharacterBase::AimKey(const FInputActionValue& Value)
 	if (IsValid(ASC))
 	{
 		FGameplayTag AimTag = FGameplayTag::RequestGameplayTag(RSTags::Player::AimTagName);
-		bool bResult = ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(AimTag));
+		ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(AimTag));
 	}
-	//SetIsAiming(true);
+
 	SetIsDashing(false);
 }
 
 void APlayerCharacterBase::AimReleaseKey(const FInputActionValue& Value)
 {
-	//SetIsAiming(false);
-
 	if (IsValid(ASC))
 	{
 		FGameplayTag AimTag = FGameplayTag::RequestGameplayTag(RSTags::Player::AimTagName);
@@ -535,34 +533,34 @@ void APlayerCharacterBase::RotationMouse(const FInputActionValue& Value)
 
 void APlayerCharacterBase::SetDefaultCameraPosition()
 {
-	TargetArmLength = 300.f;
-	TargetFOV = 70.f;
-	TargetCameraPos = (FVector(0.0, 50.0, 80.f));
-	TargetCameraRot = FRotator(0.0f, 0.0f, 0.0f);
+	TargetArmLength = DefaultArmLength;
+	TargetFOV = DefaultFOV;
+	TargetCameraPos = DefaultCameraPos;
+	TargetCameraRot = DefaultCameraRot;
 }
 
 void APlayerCharacterBase::SetAimCameraPosition()
 {
-	TargetArmLength = 190.f;
-	TargetFOV = 50.f;
-	TargetCameraPos = FVector(0.0, 60.0,70.f);
-	TargetCameraRot = FRotator(0.0f, 0.0f, 0.0f);
+	TargetArmLength = AimArmLength;
+	TargetFOV = AimFOV;
+	TargetCameraPos = AimCameraPos;
+	TargetCameraRot = AimCameraRot;
 }
 
 void APlayerCharacterBase::SetRunAndGunCameraPosition()
 {
-	TargetArmLength = 310.f;
-	TargetFOV = 70.f;
-	TargetCameraPos = FVector(0.0, 80.0, 80.f);
-	TargetCameraRot = FRotator(0.0f, 0.0f, 0.0f);
+	TargetArmLength = RunAndGunArmLength;
+	TargetFOV = RunAndGunFOV;
+	TargetCameraPos = RunAndGunCameraPos;
+	TargetCameraRot = RunAndGunCameraRot;
 }
 
 void APlayerCharacterBase::SetDashingCameraPosition()
 {
-	TargetArmLength = 350.f;
-	TargetFOV = 75.f;
-	TargetCameraPos = (FVector(0.0, 80.0, 150.f));
-	TargetCameraRot = (FRotator(-12.0f,0.0f, 0.0f));
+	TargetArmLength = DashArmLength;
+	TargetFOV = DashFOV;
+	TargetCameraPos = DashCameraPos;
+	TargetCameraRot = DashCameraRot;
 }
 
 void APlayerCharacterBase::DebugKey0(const FInputActionValue& Value)
@@ -629,7 +627,7 @@ void APlayerCharacterBase::AttachWeapon()
 {
 	if (WeaponMeshComponent)
 	{
-		FName SocketName = FName("Weapon_Socket");
+		FName SocketName = FName(TEXT("Weapon_Socket"));
 		WeaponMeshComponent->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, SocketName);
 	}
 }
@@ -728,42 +726,75 @@ void APlayerCharacterBase::OnConstruction(const FTransform& Transform)
 		RS_LOG_DEBUG(LogRSProperties, Error, TEXT("%s: SkeletalMeshAsset is invalid"), *LOG_LINE_INFO);
 	}
 }
-
-
-// 공격함수
 void APlayerCharacterBase::ShootAttackRay()
 {
 	FHitResult Hit;
 
-	FVector Start = GetActorLocation(); // 소켓이 들어가야함
-	if (IsValid(WeaponMeshComponent))
-	{
-		Start = WeaponMeshComponent->GetSocketLocation(FName("Muzzle"));
-	}
+	// 캐릭터 컨트롤러 가져오기
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	if (!IsValid(PlayerController))
+		return; 
 
+	// 사거리 가져오기
 	float Dist = AttributeSet->GetAttackDistance();
-	float HP = AttributeSet->GetHP();
 
-	FVector End = Start + (GetActorForwardVector() * Dist);
+	FVector CameraLocation;
+	FRotator CameraRotation;
 
+	// 카메라 위치가 어디있고 회전이 얼마나된지 가져오기.
+	PlayerController->GetPlayerViewPoint(CameraLocation, CameraRotation);
+
+	// 카메라 방향으로 Ray쏘기위해 카메라 위치에서 방향에 거리만큼 곱해주기
+	FVector CameraEnd = CameraLocation + (CameraRotation.Vector() * Dist);
+
+	FHitResult CameraHit;
 	FCollisionQueryParams Params(NAME_None, false, this);
 
-	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_GameTraceChannel1, Params);
+	// 카메라 시작점부터 카메라가 보는방향의 끝 점 까지 히트된게 있는지 확인
+	GetWorld()->LineTraceSingleByChannel(CameraHit, CameraLocation, CameraEnd, ECC_GameTraceChannel1, Params);
 
+	// 카메라가 조준한 물체가 있다면 그 맞은 지점을, 없다면 그냥 사거리 끝을 목표물 위치로 설정
+	FVector TargetLocation;
+	if (CameraHit.bBlockingHit)
+	{
+		TargetLocation = CameraHit.ImpactPoint;
+	}
+	else
+	{
+		TargetLocation = CameraEnd;
+	}
+	// 무기 메쉬에서 실제 총알이 나갈 총구소켓의 위치 가져오기
+	FVector MuzzleLocation = WeaponMeshComponent->GetSocketLocation(FName("Muzzle"));
+
+	// 카메라가 조준한 위치로 Muzzle에서부터 쏠 방향 구하기(Normalize) -> 방향만 구하기 때문에
+	FVector ShootDirection = (TargetLocation - MuzzleLocation).GetSafeNormal();
+
+	// Muzzle에서 카메라가 조준한 방향까지 구한 벡터에서 거리만큼 곱해주기
+	FVector FinalEnd = MuzzleLocation + (ShootDirection * Dist);
+
+	// 총구에서 카메라 조준점 끝까지의 히트를 확인하기 
+	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, MuzzleLocation, FinalEnd, ECC_GameTraceChannel1, Params);
+	int* array[3] = {}
 	if (bHit)
 	{
 		if (IsLocallyControlled())
 		{
-			DrawDebugLine(GetWorld(), Start, Hit.Location, FColor::Red, false, 0.2f, 0, 2.0f);
+			DrawDebugLine(GetWorld(), MuzzleLocation, Hit.Location, FColor::Red, false, 0.2f, 0, 2.0f);
 		}
+
+		// 맞은 액터(TargetActor) 가져오기
 		AActor* TargetActor = Hit.GetActor();
 		if (!TargetActor)
+		{
 			return;
+		}
 
+		// 적군인지 확인
 		ETeamAttitude::Type Attitude = GetTeamAttitudeTowards(*TargetActor);
 
 		if (Attitude == ETeamAttitude::Hostile)
 		{
+			// 적일경우 데미지를 주기 위해 ASC를 가져온다.
 			UAbilitySystemComponent* TargetASC = TargetActor->FindComponentByClass<UAbilitySystemComponent>();
 
 			if (TargetASC && ASC)
@@ -774,11 +805,11 @@ void APlayerCharacterBase::ShootAttackRay()
 	}
 	else
 	{
+		// 맞지 않았을때
 		if (IsLocallyControlled())
 		{
-			DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 0.2f, 0, 2.0f);
+			DrawDebugLine(GetWorld(), MuzzleLocation, FinalEnd, FColor::Green, false, 0.2f, 0, 2.0f);
 		}
-
 	}
 }
 
@@ -856,15 +887,11 @@ void APlayerCharacterBase::Server_ApplyDamage_Implementation(AActor* TargetActor
 		TSubclassOf<UGameplayEffect> Effect = GetEffect(TEXT("Damage"));
 
 		FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(Effect, 1.0f, EffectContext);
-			
-
-
 		SpecHandle.Data.Get()->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(TEXT("SetByCaller.State.HP")), -Damage);
 
 		ASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
 		float CurrentHP = TargetChar->GetAttributeSet()->GetHP();
 	}
-
 
 	FGameplayCueParameters CueParams;
 	CueParams.Location = Hit.Location;

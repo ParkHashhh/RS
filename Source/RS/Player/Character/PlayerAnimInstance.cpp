@@ -29,6 +29,7 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		if (PlayerChar && PlayerChar->GetWeaponComponent())
 		{
 			LeftHandTransform = PlayerChar->GetWeaponComponent()->GetSocketTransform(TEXT("b_LeftHand"), RTS_World);
+			LeftElbowTransform = PlayerChar->GetMesh()->GetSocketTransform(TEXT("lowerarm_l"), RTS_World);
 		}
 		// 캐릭터가 바라보는 방향과 실제 이동 속도 방향의 차이를 계산합니다.
 		// UAnimInstance::CalculateDirection는 Deprecated 되어 대신 UKismetAnimationLibrary 사용
@@ -51,7 +52,6 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		bIsMoveKey = PlayerChar->GetIsMovekey();
 
 		float Acceleration = Movement->GetCurrentAcceleration().Length();
-
 
 	}
 }
