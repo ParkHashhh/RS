@@ -36,8 +36,6 @@ protected:
 		bool bWasCancelled) override;
 
 protected:
-	FTimerHandle AttackTimerHandle;
-
 	void LoopAttackSequence();
 
 	UFUNCTION()

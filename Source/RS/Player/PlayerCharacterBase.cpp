@@ -124,14 +124,21 @@ void APlayerCharacterBase::BeginPlay()
 	UpdatePlayerCameraState();
 	AttachWeapon();
 
-	if (IsValid(AimAlphaCurve))
+	if (AimAlphaCurve)
 	{
 		FOnTimelineFloat OnTimelineFloat;
 		OnTimelineFloat.BindUFunction(this, GET_FUNCTION_NAME_CHECKED(APlayerCharacterBase, SetAimAlpha));
 		AimAlphaTimeline.AddInterpFloat(AimAlphaCurve, OnTimelineFloat);
 	}
 
-	OnASCReady.AddUObject(this, &ThisClass::BindGameplayTagDelegate);
+	if (IsASCReady())
+	{
+		BindGameplayTagDelegate();
+	}
+	else
+	{
+		OnASCReady.AddUObject(this, &ThisClass::BindGameplayTagDelegate);
+	}
 }
 
 void APlayerCharacterBase::PossessedBy(AController* NewController)
@@ -156,7 +163,7 @@ void APlayerCharacterBase::PossessedBy(AController* NewController)
 		{
 			GiveAbilities();
 		}
-
+		BindGameplayTagDelegate();
 		NotifyASCReady();
 	}
 }
@@ -417,15 +424,15 @@ void APlayerCharacterBase::MoveReleaseKey(const FInputActionValue& Value)
 
 void APlayerCharacterBase::DashKey(const FInputActionValue& Value)
 {
-	if (CanDash())
+	if (bCanDash)
 	{
-		SetIsDashing(true);
+		ASC->AbilityLocalInputPressed(static_cast<int32>(ERSInputID::Dash));
 	}
 }
 
 void APlayerCharacterBase::DashReleaseKey(const FInputActionValue& Value)
 {
-	SetIsDashing(false);
+	ASC->AbilityLocalInputReleased(static_cast<int32>(ERSInputID::Dash));
 }
 
 void APlayerCharacterBase::AttackKey(const FInputActionValue& Value)
@@ -471,7 +478,6 @@ void APlayerCharacterBase::AimKey(const FInputActionValue& Value)
 
 	ASC->AbilityLocalInputPressed(static_cast<int32>(ERSInputID::Aim));
 
-	SetIsDashing(false);
 }
 
 void APlayerCharacterBase::AimReleaseKey(const FInputActionValue& Value)
@@ -589,7 +595,8 @@ void APlayerCharacterBase::AttachWeapon()
 	if (WeaponMeshComponent)
 	{
 		FName SocketName = FName(TEXT("Weapon_Socket"));
-		WeaponMeshComponent->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, SocketName);
+		WeaponMeshComponent->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale,
+		                                       SocketName);
 	}
 }
 
@@ -831,6 +838,13 @@ void APlayerCharacterBase::GiveAbilities()
 		AttackSpec.InputID = static_cast<int32>(ERSInputID::Fire);
 		ASC->GiveAbility(AttackSpec);
 	}
+
+	if (IsValid(DashAbilityClass))
+	{
+		FGameplayAbilitySpec DashSpec(DashAbilityClass, 1);
+		DashSpec.InputID = static_cast<int32>(ERSInputID::Dash);
+		ASC->GiveAbility(DashSpec);
+	}
 }
 
 void APlayerCharacterBase::SetAimAlpha(float NewAimAlpha)
@@ -853,6 +867,8 @@ void APlayerCharacterBase::BindGameplayTagDelegate()
 	}
 
 	ASC->RegisterGameplayTagEvent(RSTags::Player::Aiming, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &ThisClass::OnAimingTagChanged);
+	ASC->RegisterGameplayTagEvent(RSTags::Player::Attacking, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &ThisClass::OnAttackingTagChanged);
+	ASC->RegisterGameplayTagEvent(RSTags::Player::Dashing, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &ThisClass::OnDashingTagChanged);
 }
 
 void APlayerCharacterBase::OnAimingTagChanged(const FGameplayTag Tag, int32 NewCount)
@@ -875,6 +891,27 @@ void APlayerCharacterBase::OnAimingTagChanged(const FGameplayTag Tag, int32 NewC
 		{
 			AimAlphaTimeline.Reverse();
 		}
+	}
+}
+
+void APlayerCharacterBase::OnAttackingTagChanged(const FGameplayTag Tag, int32 NewCount)
+{
+	if (GetCharacterMovement() && !GetCharacterMovement()->IsFalling())
+	{
+		UpdatePlayerCameraState();
+		UpdatePlayerSpeedState();
+	}
+}
+
+void APlayerCharacterBase::OnDashingTagChanged(const FGameplayTag Tag, int32 NewCount)
+{
+	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("OnDashingTagChanged IsDashing : %d"),IsDashing());
+
+
+	if (GetCharacterMovement() && !GetCharacterMovement()->IsFalling())
+	{
+		UpdatePlayerCameraState();
+		UpdatePlayerSpeedState();
 	}
 }
 
@@ -901,7 +938,8 @@ void APlayerCharacterBase::Server_ApplyDamage_Implementation(AActor* TargetActor
 	TSubclassOf<UGameplayEffect> Effect = GetEffect(TEXT("Damage"));
 
 	FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(Effect, 1.0f, EffectContext);
-	SpecHandle.Data.Get()->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(TEXT("SetByCaller.State.HP")), -Damage);
+	SpecHandle.Data.Get()->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(TEXT("SetByCaller.State.HP")),
+	                                               -Damage);
 
 	ASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
 	float CurrentHP = TargetChar->GetAttributeSet()->GetHP();

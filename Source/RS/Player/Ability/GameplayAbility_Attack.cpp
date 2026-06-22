@@ -5,15 +5,14 @@
 #include "AbilitySystemComponent.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitInputRelease.h"
-
 #include "RS/Player/PlayerCharacterBase.h"
 #include "RS/Player/Attribute/PlayerAttributeSet.h"
 #include "RS/LogCategory.h"
 
+
 UGameplayAbility_Attack::UGameplayAbility_Attack()
 {
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
-
 }
 
 void UGameplayAbility_Attack::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
@@ -72,10 +71,6 @@ void UGameplayAbility_Attack::LoopAttackSequence()
 	APlayerCharacterBase* PlayerChar = Cast<APlayerCharacterBase>(GetAvatarActorFromActorInfo());
 	if (PlayerChar)
 	{
-		//PlayerChar->GetAnimInst()->SetIsAttacking(true);
-		RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("Ability IsAttacking : %d"), PlayerChar->IsAttacking());
-		RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("Ability IsLocallyControlled : %d"), IsLocallyControlled());
-
 		// 캐릭터의 공격 애니메이션 몽타주 가져오기
 		TObjectPtr<UAnimMontage> AttackMontage = PlayerChar->GetBaseAttackMontage();
 
@@ -95,7 +90,6 @@ void UGameplayAbility_Attack::LoopAttackSequence()
 
 		UAbilityTask_PlayMontageAndWait* Task = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, NAME_None, AttackMontage);
 
-		// 2. 중요: 완료(OnCompleted) 및 중단(OnInterrupted) 델리게이트 바인딩
 		Task->OnCompleted.AddDynamic(this, &UGameplayAbility_Attack::OnAttackSequenceStep);
 
 		Task->ReadyForActivation();
@@ -109,7 +103,7 @@ void UGameplayAbility_Attack::EndAbility(const FGameplayAbilitySpecHandle Handle
 	const FGameplayAbilityActivationInfo ActivationInfo,
 	bool bReplicateEndAbility, bool bWasCancelled)
 {
-	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("EndAbility"));
+	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("EndAbility Attack"));
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }

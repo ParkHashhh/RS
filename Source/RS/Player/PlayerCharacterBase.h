@@ -75,6 +75,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "Combat|Attack")
 	TSubclassOf<UGameplayAbility> AttackAbilityClass;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "Combat|Attack")
+	TSubclassOf<UGameplayAbility> DashAbilityClass;
+
 	FGenericTeamId TeamID;
 
 	UPROPERTY(Transient, VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true))
@@ -161,10 +164,6 @@ public:
 		return WeaponMeshComponent;
 	}
 
-	bool CanDash()
-	{
-		return !IsDashing() && !IsAiming() && !IsAttacking() && AnimInst && bCanDash;
-	}
 
 	FORCEINLINE bool IsAttacking() const
 	{
@@ -179,28 +178,13 @@ public:
 
 	FORCEINLINE bool IsDashing() const
 	{
-		return bIsDashing;
+		return ASC && ASC->HasMatchingGameplayTag(RSTags::Player::Dashing);
 	}
 
 	UFUNCTION(BlueprintGetter, DisplayName="Is Dashing")
 	bool K2_IsDashing() const
 	{
 		return IsDashing();
-	}
-
-	UFUNCTION(BlueprintCallable)
-	void SetIsDashing(bool bNewIsDashing)
-	{
-		if (bIsDashing == bNewIsDashing)
-		{
-			return;
-		}
-
-		bIsDashing = bNewIsDashing;
-
-		UpdatePlayerSpeedState();
-		UpdatePlayerCameraState();
-		OnIsDashingChanged();
 	}
 
 	FORCEINLINE bool IsAiming() const
@@ -364,4 +348,6 @@ private:
 	void BindGameplayTagDelegate();
 
 	void OnAimingTagChanged(const FGameplayTag Tag, int32 NewCount);
+	void OnAttackingTagChanged(const FGameplayTag Tag, int32 NewCount);
+	void OnDashingTagChanged(const FGameplayTag Tag, int32 NewCount);
 };
