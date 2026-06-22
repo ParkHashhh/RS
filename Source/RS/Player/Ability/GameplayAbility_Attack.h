@@ -16,6 +16,12 @@ class RS_API UGameplayAbility_Attack : public UGameplayAbility_PlayerBase
 	GENERATED_BODY()
 public:
 	UGameplayAbility_Attack();
+
+private:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
+	TSubclassOf<UGameplayEffect> AttackGameplayEffectClass;
+
+	FActiveGameplayEffectHandle AttackEffectHandle;
 protected:
 	// 어빌리티가 BeginPlay 등에서 최초 실행될 때 발동하는 함수
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle,
@@ -23,8 +29,21 @@ protected:
 			const FGameplayAbilityActivationInfo ActivationInfo,
 			const FGameplayEventData* TriggerEventData) override;
 
+	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle,
+		const FGameplayAbilityActorInfo* ActorInfo,
+		const FGameplayAbilityActivationInfo ActivationInfo,
+		bool bReplicateEndAbility,
+		bool bWasCancelled) override;
+
 protected:
 	FTimerHandle AttackTimerHandle;
 
 	void LoopAttackSequence();
+
+	UFUNCTION()
+	void OnAttackSequenceStep();
+
+
+	UFUNCTION()
+	void OnInputReleased(float TimeHeld);
 };

@@ -57,6 +57,7 @@ EBTNodeResult::Type UBTTask_TraceNoneBoss::ExecuteTask(UBehaviorTreeComponent& O
 
 	//좀비가 유효하므로 애니메이션을 변경한다.
 	Zombie->ChangeAnim(EZombieAnimType::Run);
+	Zombie->ChangeSpeed_Run();
 
 	//추적중이므로 이동을 완료할 때 까지는 현상유지를 해야 한다.
 	//이 동안은 태스크의 Tick이 수행된다.
@@ -111,25 +112,7 @@ void UBTTask_TraceNoneBoss::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* N
 		return;
 	}
 
-	//이곳은 추적중인 상태이므로 추적을 계속 해야할지를 결정해야 한다.
-	//두 액터의 캡슐 중점을 지면으로 맞춘 후 거리를 계산한다.
-	FVector TargetLoc, ZombieLoc;
-
-	TargetLoc = Target->GetActorLocation();
-	UCapsuleComponent* Capsule = Cast<UCapsuleComponent>(Target->GetRootComponent());
-	if (Capsule)
-	{
-		TargetLoc.Z -= Capsule->GetScaledCapsuleHalfHeight();
-	}
-
-	ZombieLoc = Zombie->GetActorLocation();
-	Capsule = Cast<UCapsuleComponent>(Zombie->GetRootComponent());
-	if (Capsule)
-	{
-		ZombieLoc.Z -= Capsule->GetScaledCapsuleHalfHeight();
-	}
-
-	float Distance = FVector::Dist(TargetLoc, ZombieLoc);
+	float Distance = Zombie->CalcDistanceToTarget(Target);
 
 	//몬스터의 어트리뷰트 셋으로부터 몬스터의 사거리를 얻어와야 한다.
 	UBaseAttributeSet* ZombieAttri = Zombie->GetAttributeSet();
@@ -146,5 +129,11 @@ void UBTTask_TraceNoneBoss::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, ui
 {
 	AAIController* Ctrl = OwnerComp.GetAIOwner();
 	Ctrl->StopMovement();
+
+	AZombieBase* Zombie = Ctrl->GetOwner<AZombieBase>();
+	if (IsValid(Zombie))
+	{
+		Zombie->ChangeSpeed_Walk();
+	}
 }
 

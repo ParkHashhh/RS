@@ -53,7 +53,7 @@ EBTNodeResult::Type UBTTask_WaitCustom::ExecuteTask(UBehaviorTreeComponent& Owne
 	//2. 타이머를 세팅한다.
 	FWaitTimer* Timer = (FWaitTimer*)NodeMemory;
 	Timer->Finish = false;
-	float WaitTime = 1.f;
+	float WaitTime = 3.f;
 
 	OwnerComp.GetWorld()->GetTimerManager().SetTimer(Timer->WaitTimer,
 		FTimerDelegate::CreateUObject(this, &UBTTask_WaitCustom::WaitFinish, NodeMemory), WaitTime, false);

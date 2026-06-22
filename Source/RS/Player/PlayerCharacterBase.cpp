@@ -3,7 +3,6 @@
 
 #include "PlayerCharacterBase.h"
 
-#include "RSTags.h"
 #include "Attribute/PlayerAttributeSet.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -12,7 +11,6 @@
 #include "RS/LogCategory.h"
 #include "RS/Data/Subsystem/DataSubsystem.h"
 #include "RS/Input/InputData.h"
-#include "Engine/SkeletalMeshSocket.h"
 #include "RS/Zombie/ZombieBase.h"
 
 // Sets default values
@@ -125,6 +123,15 @@ void APlayerCharacterBase::BeginPlay()
 	UpdatePlayerSpeedState();
 	UpdatePlayerCameraState();
 	AttachWeapon();
+
+	if (IsValid(AimAlphaCurve))
+	{
+		FOnTimelineFloat OnTimelineFloat;
+		OnTimelineFloat.BindUFunction(this, GET_FUNCTION_NAME_CHECKED(APlayerCharacterBase, SetAimAlpha));
+		AimAlphaTimeline.AddInterpFloat(AimAlphaCurve, OnTimelineFloat);
+	}
+
+	OnASCReady.AddUObject(this, &ThisClass::BindGameplayTagDelegate);
 }
 
 void APlayerCharacterBase::PossessedBy(AController* NewController)
@@ -193,8 +200,18 @@ void APlayerCharacterBase::Tick(float DeltaTime)
 	// 현재의 위치에서 타겟위치까지 보간
 	SpringArm->TargetArmLength = FMath::FInterpTo(SpringArm->TargetArmLength, TargetArmLength, DeltaTime, InterpSpeed);
 	Camera->FieldOfView = FMath::FInterpTo(Camera->FieldOfView, TargetFOV, DeltaTime, InterpSpeed);
-	SpringArm->SetRelativeLocation(FMath::VInterpTo(SpringArm->GetRelativeLocation(), TargetCameraPos, DeltaTime, InterpSpeed));
-	Camera->SetRelativeRotation(FMath::RInterpTo(Camera->GetRelativeRotation(), TargetCameraRot, DeltaTime, InterpSpeed));
+	SpringArm->SetRelativeLocation(FMath::VInterpTo(SpringArm->GetRelativeLocation(), TargetCameraPos, DeltaTime,
+	                                                InterpSpeed));
+	Camera->SetRelativeRotation(
+		FMath::RInterpTo(Camera->GetRelativeRotation(), TargetCameraRot, DeltaTime, InterpSpeed));
+
+	if (IsLocallyControlled())
+	{
+		if (AimAlphaTimeline.IsPlaying())
+		{
+			AimAlphaTimeline.TickTimeline(DeltaTime);
+		}
+	}
 }
 
 // Called to bind functionality to input
@@ -348,24 +365,6 @@ void APlayerCharacterBase::Server_SetMaxWalkSpeed_Implementation(float NewSpeed)
 	}
 }
 
-void APlayerCharacterBase::SetIsAiming(bool bNewIsAiming)
-{
-	if (bIsAiming == bNewIsAiming)
-	{
-		return;
-	}
-
-	bIsAiming = bNewIsAiming;
-
-	if (GetCharacterMovement() && !GetCharacterMovement()->IsFalling())
-	{
-		UpdatePlayerCameraState();
-		UpdatePlayerSpeedState();
-	}
-
-	OnIsAimingChanged();
-}
-
 void APlayerCharacterBase::NotifyASCReady()
 {
 	if (bASCReady)
@@ -379,29 +378,15 @@ void APlayerCharacterBase::NotifyASCReady()
 }
 
 
-void APlayerCharacterBase::PlayBaseAttackMontage()
+TObjectPtr<UAnimMontage> APlayerCharacterBase::GetBaseAttackMontage()
 {
-	if (!AnimInst)
-	{
-		return;
-	}
-
-	AnimInst->PlayBaseAttackMontage();
-}
-
-void APlayerCharacterBase::OnIsAttackingChanged() const
-{
-	OnAttackingChanged.Broadcast(bIsAttacking);
+	
+	return AnimInst->GetBaseAttackMontage();
 }
 
 void APlayerCharacterBase::OnIsDashingChanged() const
 {
 	OnDashingChanged.Broadcast(bIsDashing);
-}
-
-void APlayerCharacterBase::OnIsAimingChanged() const
-{
-	OnAimingChanged.Broadcast(bIsAiming);
 }
 
 void APlayerCharacterBase::MoveKey(const FInputActionValue& Value)
@@ -446,36 +431,17 @@ void APlayerCharacterBase::DashReleaseKey(const FInputActionValue& Value)
 void APlayerCharacterBase::AttackKey(const FInputActionValue& Value)
 {
 	// Bool 변수로 누르고 있는지 땠는지를 판단 한 후 공격속도마다 공격 함수를 호출하게 하고(이펙트 파티클 등등), 서버에서는 충돌처리 및 데미지 체크하기 => 완료
-	if (!GetMovementComponent() || GetMovementComponent()->IsFalling())
+	if (!IsValid(ASC) || !GetMovementComponent() || GetMovementComponent()->IsFalling())
 	{
 		return;
 	}
-
-	SetIsAttacking(true);
-
-	// Bool 변수로 누르고 있는지 땠는지를 판단 한 후 공격속도마다 공격 함수를 호출하게 하고(이펙트 파티클 등등), 서버에서는 충돌처리 및 데미지 체크하기 => 완료
-	if (IsLocallyControlled() && IsAttacking())
-	{
-		if (IsValid(ASC))
-		{
-			FGameplayEventData EventData;
-			EventData.Instigator = this; // 이 스킬을 발동한 주체
-			EventData.Target = this; // 이 스킬이 꽂히는 대상
-
-			if (!IsAiming())
-			{
-				SetIsDashing(false);
-			}
-
-			ASC->HandleGameplayEvent(FGameplayTag::RequestGameplayTag(TEXT("Player.Battle.Attack")), &EventData);
-		}
-	}
+	ASC->AbilityLocalInputPressed(static_cast<int32>(ERSInputID::Fire));
 }
 
 
 void APlayerCharacterBase::AttackReleaseKey(const FInputActionValue& Value)
 {
-	SetIsAttacking(false);
+	ASC->AbilityLocalInputReleased(static_cast<int32>(ERSInputID::Fire));
 }
 
 
@@ -498,29 +464,24 @@ void APlayerCharacterBase::JumpKey(const FInputActionValue& Value)
 
 void APlayerCharacterBase::AimKey(const FInputActionValue& Value)
 {
-	if (!GetCharacterMovement() || GetCharacterMovement()->IsFalling())
+	if (!IsValid(ASC) || !GetMovementComponent() || GetMovementComponent()->IsFalling())
 	{
 		return;
 	}
 
-	if (IsValid(ASC))
-	{
-		FGameplayTag AimTag = FGameplayTag::RequestGameplayTag(RSTags::Player::AimTagName);
-		ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(AimTag));
-	}
+	ASC->AbilityLocalInputPressed(static_cast<int32>(ERSInputID::Aim));
 
 	SetIsDashing(false);
 }
 
 void APlayerCharacterBase::AimReleaseKey(const FInputActionValue& Value)
 {
-	if (IsValid(ASC))
+	if (!IsLocallyControlled() || !IsValid(ASC))
 	{
-		FGameplayTag AimTag = FGameplayTag::RequestGameplayTag(RSTags::Player::AimTagName);
-		FGameplayTagContainer TargetContainer(AimTag);
-
-		ASC->CancelAbilities(&TargetContainer);
+		return;
 	}
+
+	ASC->AbilityLocalInputReleased(static_cast<int32>(ERSInputID::Aim));
 }
 
 void APlayerCharacterBase::RotationMouse(const FInputActionValue& Value)
@@ -631,6 +592,7 @@ void APlayerCharacterBase::AttachWeapon()
 		WeaponMeshComponent->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, SocketName);
 	}
 }
+
 void APlayerCharacterBase::UpdatePlayerCameraState()
 {
 	UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
@@ -687,6 +649,7 @@ void APlayerCharacterBase::UpdatePlayerSpeedState()
 	MovementComponent->MaxWalkSpeed = TargetSpeed;
 	Server_SetMaxWalkSpeed(TargetSpeed);
 }
+
 void APlayerCharacterBase::LoadDefaultData()
 {
 	const UGameInstance* GameInstance = GetGameInstance();
@@ -726,6 +689,7 @@ void APlayerCharacterBase::OnConstruction(const FTransform& Transform)
 		RS_LOG_DEBUG(LogRSProperties, Error, TEXT("%s: SkeletalMeshAsset is invalid"), *LOG_LINE_INFO);
 	}
 }
+
 void APlayerCharacterBase::ShootAttackRay()
 {
 	FHitResult Hit;
@@ -733,7 +697,7 @@ void APlayerCharacterBase::ShootAttackRay()
 	// 캐릭터 컨트롤러 가져오기
 	APlayerController* PlayerController = Cast<APlayerController>(GetController());
 	if (!IsValid(PlayerController))
-		return; 
+		return;
 
 	// 사거리 가져오기
 	float Dist = AttributeSet->GetAttackDistance();
@@ -772,7 +736,7 @@ void APlayerCharacterBase::ShootAttackRay()
 	// Muzzle에서 카메라가 조준한 방향까지 구한 벡터에서 거리만큼 곱해주기
 	FVector FinalEnd = MuzzleLocation + (ShootDirection * Dist);
 
-	// 총구에서 카메라 조준점 끝까지의 히트를 확인하기 
+	// 총구에서 카메라 조준점 끝까지의 히트를 확인하기
 	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, MuzzleLocation, FinalEnd, ECC_GameTraceChannel1, Params);
 	if (bHit)
 	{
@@ -853,44 +817,94 @@ ETeamAttitude::Type APlayerCharacterBase::GetTeamAttitudeTowards(const AActor& O
 
 void APlayerCharacterBase::GiveAbilities()
 {
-	for (TSubclassOf<UGameplayAbility>& AbilityClass : Abilities)
-	{
-		if (IsValid(AbilityClass))
-		{
-			ASC->GiveAbility(FGameplayAbilitySpec(AbilityClass, 1, -1));
-		}
-	}
-
 	if (IsValid(AimingAbilityClass))
 	{
-		ASC->GiveAbility(FGameplayAbilitySpec(AimingAbilityClass, 1, -1));
+		FGameplayAbilitySpec AimSpec(AimingAbilityClass, 1);
+		AimSpec.InputID = static_cast<int32>(ERSInputID::Aim);
+		ASC->GiveAbility(AimSpec);
+	}
+
+
+	if (IsValid(AttackAbilityClass))
+	{
+		FGameplayAbilitySpec AttackSpec(AttackAbilityClass, 1);
+		AttackSpec.InputID = static_cast<int32>(ERSInputID::Fire);
+		ASC->GiveAbility(AttackSpec);
+	}
+}
+
+void APlayerCharacterBase::SetAimAlpha(float NewAimAlpha)
+{
+	if (AimAlpha == NewAimAlpha)
+	{
+		return;
+	}
+
+	AimAlpha = NewAimAlpha;
+
+	OnAimAlphaChanged.Broadcast(NewAimAlpha);
+}
+
+void APlayerCharacterBase::BindGameplayTagDelegate()
+{
+	if (!ASC)
+	{
+		return;
+	}
+
+	ASC->RegisterGameplayTagEvent(RSTags::Player::Aiming, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &ThisClass::OnAimingTagChanged);
+}
+
+void APlayerCharacterBase::OnAimingTagChanged(const FGameplayTag Tag, int32 NewCount)
+{
+	bool bNewIsAiming = NewCount > 0;
+
+	if (GetCharacterMovement() && !GetCharacterMovement()->IsFalling())
+	{
+		UpdatePlayerCameraState();
+		UpdatePlayerSpeedState();
+	}
+
+	if (AimAlphaCurve)
+	{
+		if (bNewIsAiming)
+		{
+			AimAlphaTimeline.Play();
+		}
+		else
+		{
+			AimAlphaTimeline.Reverse();
+		}
 	}
 }
 
 void APlayerCharacterBase::Server_ApplyDamage_Implementation(AActor* TargetActor, FHitResult Hit)
 {
-	AZombieBase* TargetChar = Cast<AZombieBase>(TargetActor);
-
-	UAbilitySystemComponent* TargetASC = TargetActor->FindComponentByClass<UAbilitySystemComponent>();
-
-	if (HasAuthority())
+	auto* TargetChar = Cast<AZombieBase>(TargetActor);
+	if (!TargetChar)
 	{
-		// Attribute 데미지 감소 처리 => 서버에서만 해야함
-
-		// 상대방 액터를 좀비로 형변환
-		float Damage = AttributeSet->GetAttack();
-
-		FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
-		EffectContext.AddHitResult(Hit);
-
-		TSubclassOf<UGameplayEffect> Effect = GetEffect(TEXT("Damage"));
-
-		FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(Effect, 1.0f, EffectContext);
-		SpecHandle.Data.Get()->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(TEXT("SetByCaller.State.HP")), -Damage);
-
-		ASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
-		float CurrentHP = TargetChar->GetAttributeSet()->GetHP();
+		return;
 	}
+
+	auto* TargetASC = TargetActor->FindComponentByClass<UAbilitySystemComponent>();
+	if (!TargetASC)
+	{
+		return;
+	}
+
+	// 상대방 액터를 좀비로 형변환
+	float Damage = AttributeSet->GetAttack();
+
+	FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
+	EffectContext.AddHitResult(Hit);
+
+	TSubclassOf<UGameplayEffect> Effect = GetEffect(TEXT("Damage"));
+
+	FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(Effect, 1.0f, EffectContext);
+	SpecHandle.Data.Get()->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(TEXT("SetByCaller.State.HP")), -Damage);
+
+	ASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
+	float CurrentHP = TargetChar->GetAttributeSet()->GetHP();
 
 	FGameplayCueParameters CueParams;
 	CueParams.Location = Hit.Location;

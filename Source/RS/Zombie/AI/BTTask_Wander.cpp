@@ -7,6 +7,7 @@
 #include "RS/Zombie/ZombieBase.h"
 #include "Navigation/PathFollowingComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "RS/LogCategory.h"
 
 
 UBTTask_Wander::UBTTask_Wander()
@@ -44,13 +45,15 @@ EBTNodeResult::Type UBTTask_Wander::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 		return EBTNodeResult::Failed;
 	}
 
+	Zombie->ChangeAnim(EZombieAnimType::Walk);
+
 	EPathFollowingRequestResult::Type MoveRequestResult = Ctrl->MoveToLocation(Zombie->GetNextPointLocation());
 	if (MoveRequestResult == EPathFollowingRequestResult::Failed)
 	{
+		Zombie->ChangeAnim(EZombieAnimType::Idle);
 		return EBTNodeResult::Failed;
 	}
-	Zombie->ChangeAnim(EZombieAnimType::Walk);
-
+	
 	return EBTNodeResult::InProgress;
 }
 

@@ -8,20 +8,20 @@
 #include "InputActionValue.h"
 #include "PlayerAbilitySystemComponent.h"
 #include "Components/CapsuleComponent.h"
+#include <Components/TimelineComponent.h>
 #include "RS/RSCharacter.h"
-#include "RS/LogCategory.h"
-#include "RS/Utils/ASCProvider.h"
+#include "RS/RSTags.h"
 #include "RS/Player/Character/PlayerAnimInstance.h"
+#include "RS/Utils/ASCProvider.h"
 #include "PlayerCharacterBase.generated.h"
 
 class USpringArmComponent;
 class UCameraComponent;
 class UInputData;
 class UPlayerAttributeSet;
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnAttackingChangedDelegate, bool);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnDashingChangedDelegate, bool);
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnAimingChangedDelegate, bool);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnCurrentShotSpreadChangedDelegate, float);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnAimAlphaChangedDelegate, float);
 
 DECLARE_MULTICAST_DELEGATE(FOnASCReadyDelegate);
 
@@ -72,22 +72,16 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "GAS")
 	TMap<FName, TSubclassOf<UGameplayEffect>> Effects;
 
-	UPROPERTY(EditDefaultsOnly, Category = "GAS")
-	TArray<TSubclassOf<UGameplayAbility>> Abilities;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "Combat|Attack")
+	TSubclassOf<UGameplayAbility> AttackAbilityClass;
 
 	FGenericTeamId TeamID;
 
 	UPROPERTY(Transient, VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true))
 	TObjectPtr<UPlayerAnimInstance> AnimInst;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, BlueprintGetter=K2_IsAttacking, meta=(AllowPrivateAccess=true))
-	bool bIsAttacking = false;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, BlueprintGetter=K2_IsDashing, meta=(AllowPrivateAccess=true))
 	bool bIsDashing = false;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, BlueprintGetter=K2_IsAiming, meta=(AllowPrivateAccess=true))
-	bool bIsAiming = false;
 
 	bool bCanDash = false;
 
@@ -146,14 +140,17 @@ protected:
 	float TargetFOV;
 
 public:
-	FOnAttackingChangedDelegate OnAttackingChanged;
 	FOnDashingChangedDelegate OnDashingChanged;
-	FOnAimingChangedDelegate OnAimingChanged;
 	FOnCurrentShotSpreadChangedDelegate OnCurrentShotSpreadChanged;
 
 	FOnASCReadyDelegate OnASCReady;
 
 public:
+	TObjectPtr<UPlayerAnimInstance> GetAnimInst()
+	{
+		return AnimInst;
+	}
+
 	bool GetIsMovekey()
 	{
 		return bIsMoveKey;
@@ -171,32 +168,13 @@ public:
 
 	FORCEINLINE bool IsAttacking() const
 	{
-		return bIsAttacking;
+		return ASC && ASC->HasMatchingGameplayTag(RSTags::Player::Attacking);
 	}
 
 	UFUNCTION(BlueprintGetter, DisplayName="Is Attacking")
 	bool K2_IsAttacking() const
 	{
 		return IsAttacking();
-	}
-
-	UFUNCTION(BlueprintCallable)
-	void SetIsAttacking(bool bNewIsAttacking)
-	{
-		if (bIsAttacking == bNewIsAttacking)
-		{
-			return;
-		}
-
-		bIsAttacking = bNewIsAttacking;
-
-		if (!IsAiming())
-		{
-			UpdatePlayerCameraState();
-			UpdatePlayerSpeedState();
-		}
-
-		OnIsAttackingChanged();
 	}
 
 	FORCEINLINE bool IsDashing() const
@@ -227,7 +205,7 @@ public:
 
 	FORCEINLINE bool IsAiming() const
 	{
-		return bIsAiming;
+		return ASC && ASC->HasMatchingGameplayTag(RSTags::Player::Aiming);
 	}
 
 	UFUNCTION(BlueprintGetter, DisplayName="Is Aiming")
@@ -235,9 +213,6 @@ public:
 	{
 		return IsAiming();
 	}
-
-	UFUNCTION(BlueprintCallable)
-	void SetIsAiming(bool bNewIsAiming);
 
 	FORCEINLINE UPlayerAttributeSet* GetAttributeSet()
 	{
@@ -283,7 +258,6 @@ protected:
 
 	void OnIsAttackingChanged() const;
 	void OnIsDashingChanged() const;
-	void OnIsAimingChanged() const;
 
 private:
 	// Input Function
@@ -340,7 +314,8 @@ public:
 	void ShootAttackRay();
 
 	TSubclassOf<UGameplayEffect> GetEffect(const FName TagName) const;
-	void PlayBaseAttackMontage();
+
+	TObjectPtr<UAnimMontage> GetBaseAttackMontage();
 
 public:
 	virtual void SetGenericTeamId(const FGenericTeamId& ID) override;
@@ -351,16 +326,42 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void Server_ApplyDamage(AActor* TargetActor, FHitResult Hit);
 
+public:
+	FOnAimAlphaChangedDelegate OnAimAlphaChanged;
+
 protected:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="GAS|Abilities")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Combat|Aim")
 	TSubclassOf<UGameplayAbility> AimingAbilityClass;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="GAS|Effects")
-	TSubclassOf<UGameplayEffect> AimingEffectClass;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Combat|Aim")
+	TObjectPtr<UCurveFloat> AimAlphaCurve;
 
 private:
-	FActiveGameplayEffectHandle AimingEffectHandle;
+	FTimeline AimAlphaTimeline;
+
+	UPROPERTY(Transient, BlueprintGetter=K2_GetAimAlpha, meta=(AllowPrivateAccess=true), Category="Combat|Aim")
+	float AimAlpha;
+
+public:
+	FORCEINLINE float GetAimAlpha() const
+	{
+		return AimAlpha;
+	}
+
+	UFUNCTION(BlueprintGetter, DisplayName="Get Aim Alpha")
+	float K2_GetAimAlpha() const
+	{
+		return GetAimAlpha();
+	}
 
 protected:
 	virtual void GiveAbilities();
+
+private:
+	UFUNCTION()
+	void SetAimAlpha(float NewAimAlpha);
+
+	void BindGameplayTagDelegate();
+
+	void OnAimingTagChanged(const FGameplayTag Tag, int32 NewCount);
 };

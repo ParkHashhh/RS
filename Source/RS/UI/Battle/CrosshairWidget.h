@@ -24,33 +24,57 @@ public:
 	UCrosshairWidget(const FObjectInitializer& ObjectInitializer);
 
 private:
-	UPROPERTY(meta=(BindWidget, AllowPrivateAccess=true), BlueprintReadOnly)
+	UPROPERTY(meta=(BindWidget, AllowPrivateAccess=true), BlueprintReadOnly, Category="Crosshair|Center|Asset")
 	TObjectPtr<UImage> Crosshair_C;
 
-	UPROPERTY(meta=(BindWidget, AllowPrivateAccess=true), BlueprintReadOnly)
+	UPROPERTY(meta=(BindWidget, AllowPrivateAccess=true), BlueprintReadOnly, Category="Crosshair|Top|Asset")
 	TObjectPtr<UImage> Crosshair_T;
 
-	UPROPERTY(meta=(BindWidget, AllowPrivateAccess=true), BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Crosshair|Top|Translation")
+	FVector2D Translation_T_Hip;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Crosshair|Top|Translation")
+	FVector2D Translation_T_Aim;
+
+	UPROPERTY(meta=(BindWidget, AllowPrivateAccess=true), BlueprintReadOnly, Category="Crosshair|Bottom|Asset")
 	TObjectPtr<UImage> Crosshair_B;
 
-	UPROPERTY(meta=(BindWidget, AllowPrivateAccess=true), BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Crosshair|Bottom|Translation")
+	FVector2D Translation_B_Hip;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Crosshair|Bottom|Translation")
+	FVector2D Translation_B_Aim;
+
+	UPROPERTY(meta=(BindWidget, AllowPrivateAccess=true), BlueprintReadOnly, Category="Crosshair|Left|Asset")
 	TObjectPtr<UImage> Crosshair_L;
 
-	UPROPERTY(meta=(BindWidget, AllowPrivateAccess=true), BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Crosshair|Left|Translation")
+	FVector2D Translation_L_Hip;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Crosshair|Left|Translation")
+	FVector2D Translation_L_Aim;
+
+	UPROPERTY(meta=(BindWidget, AllowPrivateAccess=true), BlueprintReadOnly, Category="Crosshair|Right|Asset")
 	TObjectPtr<UImage> Crosshair_R;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Crosshair|Right|Translation")
+	FVector2D Translation_R_Hip;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Crosshair|Right|Translation")
+	FVector2D Translation_R_Aim;
 
 	UPROPERTY(Transient)
 	TWeakObjectPtr<APlayerCharacterBase> CachedCharacter;
 
-	TArray<FAttributeDelegateBinding> AttributeDelegateBindings;
+	// TArray<FAttributeDelegateBinding> AttributeDelegateBindings;
 
 protected:
 	virtual void NativeOnInitialized() override;
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
 
-	UFUNCTION(BlueprintImplementableEvent, DisplayName="On Shot Spread Radius Changed", Category="Crosshair")
-	void K2_OnShotSpreadRadiusChanged(float Spread);
+	UFUNCTION(BlueprintImplementableEvent, DisplayName="On Aim Alpha Changed", Category="Crosshair")
+	void K2_OnAimAlphaChanged(float Alpha);
 
 private:
 	void OnGameplayReady(bool bIsReady);
@@ -59,4 +83,6 @@ private:
 	void UnbindCharacterDelegates();
 
 	void OnShotSpreadRadiusChanged(const FOnAttributeChangeData& Data);
+
+	void OnAimAlphaChanged(float Alpha);
 };

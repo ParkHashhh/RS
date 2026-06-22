@@ -5,6 +5,7 @@
 #include "RS/Zombie/ZombieBase.h"
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "RS/LogCategory.h"
 
 UZombieAnimInstance::UZombieAnimInstance()
 {
@@ -18,6 +19,14 @@ void UZombieAnimInstance::NativeBeginPlay()
 void UZombieAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 {
 	Super::NativeUpdateAnimation(DeltaSeconds);
+}
+
+void UZombieAnimInstance::PlayAttackMontage(int32 Number)
+{
+	FName Key = *FString::Printf(TEXT("Attack%d"), Number);
+	//만든 키로 몽타주를 찾는다.
+	UAnimMontage* Montage = *(MontageMap.Find(Key));
+	Montage_Play(Montage);
 }
 
 void UZombieAnimInstance::AnimNotify_Attack()

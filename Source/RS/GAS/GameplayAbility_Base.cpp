@@ -3,6 +3,8 @@
 
 #include "GameplayAbility_Base.h"
 
+#include "AbilitySystemComponent.h"
+
 UGameplayAbility_Base::UGameplayAbility_Base()
 {
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;

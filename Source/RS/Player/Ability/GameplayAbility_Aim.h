@@ -15,33 +15,14 @@ class RS_API UGameplayAbility_Aim : public UGameplayAbility_PlayerBase
 {
 	GENERATED_BODY()
 
-private:
-	static constexpr float ServerTickRate = 60.f;
-	static constexpr float ServerTickInterval = 1.f / ServerTickRate;
-	static constexpr float ClientTickRate = 120.f;
-	static constexpr float ClientTickInterval = 1.f / ClientTickRate;
-
 public:
 	UGameplayAbility_Aim();
 
 private:
-	UPROPERTY(EditDefaultsOnly, meta=(AllowPrivateAccess=true))
-	TObjectPtr<UCurveFloat> AimSpreadCurve;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta=(AllowPrivateAccess=true))
+	TSubclassOf<UGameplayEffect> AimGameplayEffectClass;
 
-	UPROPERTY(Transient, VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true))
-	float AimShotSpreadRadius;
-
-	UPROPERTY(Transient, VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true))
-	float BaseShotSpreadRadius;
-
-	FTimeline AimSpreadTimeline;
-	FTimerHandle TimelineTickTimerHandle;
-	FTimerHandle ServerInterpolationTimerHandle;
-
-	float ServerCurrentValue;
-	float ServerTargetValue;
-
-	FDelegateHandle AimTagChangedDelegateHandle;
+	FActiveGameplayEffectHandle AimingEffectHandle;
 
 public:
 	virtual bool CanActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
@@ -55,14 +36,6 @@ protected:
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
 		const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 
-private:
-	void OnAimTagChanged(const FGameplayTag Tag, int32 NewCount);
-
 	UFUNCTION()
-	void OnAimSpreadTimelineUpdate(float Value);
-
-	void StartTimelineTimer();
-	void TickTimeline();
-
-	void ServerInterpolateTimeline();
+	virtual void OnInputReleased(float TimeHeld);
 };

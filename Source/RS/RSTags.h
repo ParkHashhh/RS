@@ -1,12 +1,14 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
+#include "NativeGameplayTags.h"
 
 namespace RSTags
 {
 	namespace Player
 	{
-		inline static const FName AimTagName = FName(TEXT("Player.Combat.Aiming"));
+		UE_DECLARE_GAMEPLAY_TAG_EXTERN(Aiming);
+		UE_DECLARE_GAMEPLAY_TAG_EXTERN(Attacking);
 	}
 
 	namespace Zombie

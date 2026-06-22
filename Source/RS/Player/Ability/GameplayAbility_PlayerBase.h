@@ -7,17 +7,13 @@
 #include "GameplayAbility_PlayerBase.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class RS_API UGameplayAbility_PlayerBase : public UGameplayAbility_Base
 {
 	GENERATED_BODY()
+
 public:
 	UGameplayAbility_PlayerBase();
-
-protected:
-
-	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo,
-		const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 };

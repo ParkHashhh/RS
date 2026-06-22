@@ -143,3 +143,16 @@ struct FAttributeDelegateBinding
 	FGameplayAttribute Attribute;
 	FDelegateHandle DelegateHandle;
 };
+
+UENUM(BlueprintType)
+enum class ERSInputID : uint8
+{
+	None,
+	Confirm,
+	Cancel,
+	Fire,
+	Aim,
+	Reload,
+	Dash,
+	Interact,
+};

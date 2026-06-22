@@ -15,20 +15,26 @@ class RS_API AZombieNormal : public AZombieBase
 
 public:
 	AZombieNormal();
-
 protected:
-	//일반 좀비 프리셋 메쉬를 넣어둘 배열이다.
-	//이 클래스를 상속받아 블루프린트를 만든 뒤 
+	//좀비의 바디, 옷 배열을 담은 구조체를 블루프린트에서 지정한다.
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
-	TArray<TObjectPtr<USkeletalMesh>> MeshArray;
+	TArray<FZombieSkeletalMeshSet> ZombiePresetArray;
 
 	//부모는 관리의 편의성을 위해 Base로 들고 있으므로 사용 편의성을 위해 캐스팅을 미리 수행한다.
 	UPROPERTY()
 	TObjectPtr<UZombieStandardAttributeSet> NormalAttributeSet;
 
+	UPROPERTY(ReplicatedUsing = OnRep_ChangeMesh)
+	int32 MeshIndex = -1;
+
 protected:
 	virtual void BeginPlay() override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 public:
 	virtual void Attack();
+
+public:
+	UFUNCTION()
+	void OnRep_ChangeMesh();
 };

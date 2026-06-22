@@ -7,13 +7,12 @@
 #include "DefaultPlayerGameplayEffect.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class RS_API UDefaultPlayerGameplayEffect : public UGameplayEffect
 {
 	GENERATED_BODY()
-
 
 public:
 	UDefaultPlayerGameplayEffect();

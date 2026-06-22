@@ -15,6 +15,7 @@ void UPlayerAnimInstance::NativeBeginPlay()
 	//OnMontageEnded.AddDynamic(this, &UPlayerAnimInstance::MontageEnd);
 }
 
+// TODO: 추후 PlayerCharacter쪽에서 값이 변할 때 AnimInstance 값을 변경하는 쪽으로 로직 수정. Update 로직을 굳이?
 void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 {
 	Super::NativeUpdateAnimation(DeltaSeconds);
@@ -50,11 +51,9 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		bIsDashing = PlayerChar->IsDashing();
 
 		bIsMoveKey = PlayerChar->GetIsMovekey();
-
-		float Acceleration = Movement->GetCurrentAcceleration().Length();
-
 	}
 }
+
 
 void UPlayerAnimInstance::PlayBaseAttackMontage()
 {

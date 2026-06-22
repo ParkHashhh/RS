@@ -60,7 +60,10 @@ void AZombieAIController::OnTarget(AActor* Actor, FAIStimulus Stimulus)
 	if (!IsValid(Zombie))
 		return;
 
-	if (Stimulus.WasSuccessfullySensed())
+	AActor* Target = Cast<AActor>(GetBlackboardComponent()->GetValueAsObject(TEXT("Target")));
+
+	//현재 블랙보드에 타겟이 없을 경우에만 타겟으로 지정한다.
+	if (Stimulus.WasSuccessfullySensed() && !IsValid(Target))
 	{
 		Blackboard->SetValueAsObject(TEXT("Target"), Actor);
 	}

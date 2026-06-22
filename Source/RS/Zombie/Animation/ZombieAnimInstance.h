@@ -35,8 +35,17 @@ public:
 	}
 
 public:
+	int32 GetMontageNum()
+	{
+		return MontageMap.Num();
+	}
+
+public:
 	virtual void NativeBeginPlay();
 	virtual void NativeUpdateAnimation(float DeltaSeconds);
+
+public:
+	void PlayAttackMontage(int32 Number);
 
 public:
 	UFUNCTION()

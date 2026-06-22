@@ -49,6 +49,11 @@ protected:
 
 
 public:
+	TObjectPtr<UAnimMontage> GetBaseAttackMontage()
+	{
+		return BaseAttackMontage;
+	}
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	float ViewPitch;
 
@@ -72,6 +77,11 @@ public:
 	}
 
 public:
+	void SetIsAttacking(bool IsAttacking)
+	{
+		bIsAttacking = IsAttacking;
+	}
+
 	virtual void NativeBeginPlay();
 	virtual void NativeUpdateAnimation(float DeltaSeconds);
 	void PlayBaseAttackMontage();

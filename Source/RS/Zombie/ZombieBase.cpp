@@ -13,8 +13,8 @@
 #include "NavigationSystem.h"
 #include "RS/GAS/BaseAttributeSet.h"
 #include "BrainComponent.h"
-
 #include "RS/LogCategory.h"
+#include "BehaviorTree/BlackboardComponent.h"
 
 // Sets default values
 AZombieBase::AZombieBase()
@@ -22,16 +22,10 @@ AZombieBase::AZombieBase()
 	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	//필요한 부품들을 생성한다.
-	Body = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Body"));
-	Body->SetCollisionProfileName(ZombieCollisionName);
-
 	Mesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Mesh"));
-	Mesh->SetupAttachment(Body);
 	Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	Movement = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("Movement"));
-	Movement->SetUpdatedComponent(Body);
 
 	bUseControllerRotationYaw = true;
 
@@ -62,14 +56,11 @@ void AZombieBase::BeginPlay()
 		SpawnDefaultController();
 	}
 
-	//AnimInstance = Cast<UZombieAnimInstance>(Mesh->GetAnimInstance());
-
 	ASC->InitAbilityActorInfo(this, this);
-	if (AttackAbility)
+	if (AttackAbility && HasAuthority())
 	{
 		ASC->GiveAbility(FGameplayAbilitySpec(AttackAbility, 1));
 	}
-	//ASC->GiveAbility(FGameplayAbilitySpec(UGameplayAbility_ZombieAttack::StaticClass(), 1));
 }
 
 void AZombieBase::PostInitProperties()
@@ -83,13 +74,31 @@ void AZombieBase::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 	//Beginplay는 상황에 따라 확실하지 않을 수 있으므로 확실한 타이밍인 이곳에서 멤버 변수에 넣어준다.
-	AnimInstance = Cast<UZombieAnimInstance>(Mesh->GetAnimInstance());
+	//AnimInstance = Cast<UZombieAnimInstance>(Mesh->GetAnimInstance());
 }
 
 // Called every frame
 void AZombieBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	//디졸브 수치를 변경한다.
+	if (bDissolveEnable)
+	{
+		//디졸브가 지정된 시간동안 총 1이 감소되어야 한다.
+		Dissolve -= DeltaTime / DissolveTime;
+
+		//디졸브 연출이 끝나면 서버에서 액터를 Destroy 시킨다.
+		if (Dissolve <= -0.5f && HasAuthority())
+		{
+			Destroy();
+		}
+
+		for (auto& Mtrl : MaterialArray)
+		{
+			Mtrl->SetScalarParameterValue(TEXT("Dissolve"), Dissolve);
+		}
+	}
 }
 
 // Called to bind functionality to input
@@ -113,6 +122,7 @@ void AZombieBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AZombieBase, AnimType);
+	DOREPLIFETIME(AZombieBase, bDissolveEnable)
 }
 
 void AZombieBase::SetGenericTeamId(const FGenericTeamId& ID)
@@ -170,6 +180,15 @@ void AZombieBase::ChangeAnim(EZombieAnimType Type)
 		{
 			return;
 		}
+
+		//공격 신호가 들어왔다면 몽타주를 재생하라고 한 뒤 바로 탈출한다.
+		if (Type == EZombieAnimType::Attack)
+		{
+			AtkMontageIndex = FMath::RandRange(1, AnimInstance->GetMontageNum());
+			AnimInstance->PlayAttackMontage(AtkMontageIndex);
+			return;
+		}
+
 		AnimInstance->SetAnim(Type);
 	}
 }
@@ -227,15 +246,26 @@ void AZombieBase::CallBackHP(AActor* InstigatorActor)
 		Movement->Deactivate();
 		Movement->SetComponentTickEnabled(false);
 
+		//디졸브 기능 활성화
+		bDissolveEnable = true;
+
 		//좀비가 죽어서 플레이어의 GAS를 변화시켜야 한다면 (골드 증가 등)
 		//서버에서 해야 할 작업이므로 이곳에서 처리한다.
 	}
 	else
 	{
-		//죽지 않은 경우
-		RS_LOG_DEBUG(LogRSBattle, Log, TEXT("좀비가 공격받음"));
+		//사거리 밖에서 날 공격한 경우 타겟으로 넣는다.
+		//이때 기존에 추적중이던 타겟이 없어야 한다.
+		AAIController* Ctrl = GetController<AAIController>();
+		UBlackboardComponent* BB = Ctrl->GetBlackboardComponent();
+		if (Ctrl && BB)
+		{
+			if (BB->GetValueAsObject(TEXT("Target")) == nullptr)
+			{
+				Ctrl->GetBlackboardComponent()->SetValueAsObject(TEXT("Target"), InstigatorActor);
+			}
+		}
 	}
-
 }
 
 void AZombieBase::Death()
@@ -243,7 +273,11 @@ void AZombieBase::Death()
 	//랙돌 처리를 위한 함수
 	ApplyRagdoll();
 
-	//디졸브 처리
+	//클라에서는 디졸브를 위한 머티리얼 연산을 해야 하므로 파라미터를 ON으로 바꿔준다.
+	for (auto& Mtrl : MaterialArray)
+	{
+		Mtrl->SetScalarParameterValue(TEXT("DissolveEnable"), 1.f);
+	}
 
 	//랙돌 처리를 서버에서도 하도록 요청한다.
 	Death_Server();
@@ -279,6 +313,32 @@ void AZombieBase::ApplyRagdoll()
 	Mesh->bBlendPhysics = true;
 }
 
+void AZombieBase::ChangeSpeed_Walk()
+{
+	Movement->MaxSpeed = AttributeSet->GetWalkSpeed();
+}
+
+void AZombieBase::ChangeSpeed_Run()
+{
+	Movement->MaxSpeed= AttributeSet->GetRunSpeed();
+}
+
+float AZombieBase::CalcDistanceToTarget(AActor* Target)
+{
+	FVector TargetLoc = Target->GetActorLocation();
+	FVector ZombieLoc;
+
+	//타겟과 가장 가까운 좀비의 셰이프 위의 좌표를 구한다.
+	Body->GetClosestPointOnCollision(TargetLoc, ZombieLoc);
+
+	//두 좌표의 Z값을 일치시킨다 (계산에 영향을 주지 않도록 한다)
+	TargetLoc.Z = ZombieLoc.Z;
+
+	float Distance = FVector::Dist(TargetLoc, ZombieLoc);
+
+	return Distance;
+}
+
 void AZombieBase::OnRep_ChangeAnimType()
 {
 	//서버는 애니메이션을 재생할 필요가 없기 때문이다.
@@ -293,12 +353,18 @@ void AZombieBase::OnRep_ChangeAnimType()
 		AnimInstance = Cast<UZombieAnimInstance>(Mesh->GetAnimInstance());
 	}
 
+	//애님 타입이 Attack으로 변경되었다면 공격 몽타주를 재생하고 바로 탈출한다.
+	if (AnimType == EZombieAnimType::Attack)
+	{
+		AnimInstance->PlayAttackMontage(AtkMontageIndex);
+		return;
+	}
+
 	//클라이언트의 애님 인스턴스에게 애니메이션 타입 변환 함수를 호출하도록 신호를 보낸다.
 	if (IsValid(AnimInstance))
 	{
 		AnimInstance->SetAnim(AnimType);
 	}
-
 }
 
 bool AZombieBase::Death_Server_Validate()

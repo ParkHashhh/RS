@@ -88,22 +88,23 @@ void UCrosshairWidget::BindCharacterDelegates(APlayerCharacterBase* Character)
 	CachedCharacter = Character;
 
 	// 1. 일반 델리게이트 바인딩
+	CachedCharacter->OnAimAlphaChanged.AddUObject(this, &ThisClass::OnAimAlphaChanged);
 	// GetDelegateHandles().Emplace(Character->델리게이트변수.AddUObject(this, &ThisClass::콜백));
 
-	// 2. GAS 속성 변경 바인딩
-	if (UAbilitySystemComponent* ASC = Character->GetAbilitySystemComponent())
-	{
-		FGameplayAttribute Attribute = UPlayerAttributeSet::GetShotSpreadRadiusAttribute();
-		FDelegateHandle Handle = ASC->GetGameplayAttributeValueChangeDelegate(Attribute)
-		                            .AddUObject(this, &ThisClass::OnShotSpreadRadiusChanged);
-		AttributeDelegateBindings.Emplace(Attribute, Handle);
-
-		FOnAttributeChangeData InitialData;
-		InitialData.Attribute = Attribute;
-		InitialData.NewValue = ASC->GetNumericAttribute(Attribute);
-		InitialData.OldValue = InitialData.NewValue;
-		OnShotSpreadRadiusChanged(InitialData);
-	}
+	// // 2. GAS 속성 변경 바인딩
+	// if (UAbilitySystemComponent* ASC = Character->GetAbilitySystemComponent())
+	// {
+	// 	FGameplayAttribute Attribute = UPlayerAttributeSet::GetShotSpreadRadiusAttribute();
+	// 	FDelegateHandle Handle = ASC->GetGameplayAttributeValueChangeDelegate(Attribute)
+	// 	                            .AddUObject(this, &ThisClass::OnShotSpreadRadiusChanged);
+	// 	AttributeDelegateBindings.Emplace(Attribute, Handle);
+	//
+	// 	FOnAttributeChangeData InitialData;
+	// 	InitialData.Attribute = Attribute;
+	// 	InitialData.NewValue = ASC->GetNumericAttribute(Attribute);
+	// 	InitialData.OldValue = InitialData.NewValue;
+	// 	OnShotSpreadRadiusChanged(InitialData);
+	// }
 }
 
 void UCrosshairWidget::UnbindCharacterDelegates()
@@ -111,23 +112,23 @@ void UCrosshairWidget::UnbindCharacterDelegates()
 	if (CachedCharacter.IsValid())
 	{
 		// 1. 일반 델리게이트 해제
-		// CachedCharacter->델리게이트변수.RemoveAll(this);
+		CachedCharacter->OnAimAlphaChanged.RemoveAll(this);
 
-		// 2. GAS 속성 변경 해제
-		if (UAbilitySystemComponent* ASC = CachedCharacter->GetAbilitySystemComponent())
-		{
-			for (auto& [Attribute, Handle] : AttributeDelegateBindings)
-			{
-				ASC->GetGameplayAttributeValueChangeDelegate(Attribute).Remove(Handle);
-			}
-		}
+		// // 2. GAS 속성 변경 해제
+		// if (UAbilitySystemComponent* ASC = CachedCharacter->GetAbilitySystemComponent())
+		// {
+		// 	for (auto& [Attribute, Handle] : AttributeDelegateBindings)
+		// 	{
+		// 		ASC->GetGameplayAttributeValueChangeDelegate(Attribute).Remove(Handle);
+		// 	}
+		// }
 	}
 
-	AttributeDelegateBindings.Empty();
+	// AttributeDelegateBindings.Empty();
 	CachedCharacter.Reset();
 }
 
-void UCrosshairWidget::OnShotSpreadRadiusChanged(const FOnAttributeChangeData& Data)
+void UCrosshairWidget::OnAimAlphaChanged(float Alpha)
 {
-	K2_OnShotSpreadRadiusChanged(Data.NewValue);
+	K2_OnAimAlphaChanged(Alpha);
 }
