@@ -774,7 +774,6 @@ void APlayerCharacterBase::ShootAttackRay()
 
 	// 총구에서 카메라 조준점 끝까지의 히트를 확인하기 
 	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, MuzzleLocation, FinalEnd, ECC_GameTraceChannel1, Params);
-	int* array[3] = {}
 	if (bHit)
 	{
 		if (IsLocallyControlled())
