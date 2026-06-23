@@ -18,14 +18,15 @@ public:
 	UGameplayCueNotify_StaticBase();
 
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effect")
-	TObjectPtr<class UParticleSystem>		mParticle;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "FX")
+	TObjectPtr<class UParticleSystem>		Particle;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effect")
-	TObjectPtr<class UNiagaraSystem>		mNiagara;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "FX")
+	TObjectPtr<class UNiagaraSystem>		Niagara;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effect")
-	TObjectPtr<class USoundBase>			mSound;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sound")
+	TObjectPtr<class USoundBase>			Sound;
+
 
 public:
 	bool OnExecute_Implementation(AActor* Target,

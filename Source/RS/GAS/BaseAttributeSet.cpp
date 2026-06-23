@@ -25,6 +25,8 @@ void UBaseAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 
 	if (Data.EvaluatedData.Attribute == GetHPAttribute())
 	{
+		RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("OnHpChanged"));
+
 		OnHpChanged(Instigator);
 	}
 }
@@ -33,6 +35,7 @@ void UBaseAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 
 void UBaseAttributeSet::OnHpChanged(AActor* Instigator)
 {
+
 }
 
 void UBaseAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -49,7 +52,6 @@ void UBaseAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 void UBaseAttributeSet::OnRep_Attack(const FGameplayAttributeData& OldValue)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UBaseAttributeSet, Attack, OldValue);
-
 }
 
 void UBaseAttributeSet::OnRep_Defense(const FGameplayAttributeData& OldValue)

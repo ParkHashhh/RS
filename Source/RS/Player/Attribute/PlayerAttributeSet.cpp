@@ -30,8 +30,18 @@ void UPlayerAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCall
 			Instigator = Context.GetInstigator();
 		}
 	}
+
+	if (Data.EvaluatedData.Attribute == GetHPAttribute())
+	{
+		OnHpChanged(Instigator);
+	}
 }
 
+
+void UPlayerAttributeSet::OnHpChanged(AActor* Instigator)
+{
+
+}
 void UPlayerAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue)
 {
 	Super::PostAttributeChange(Attribute, OldValue, NewValue);

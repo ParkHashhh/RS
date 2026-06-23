@@ -6,6 +6,9 @@
 #include "NiagaraFunctionLibrary.h"       
 #include "Sound/SoundBase.h"              
 #include "Particles/ParticleSystem.h"     
+#include "Materials/MaterialInterface.h"
+#include "PhysicalMaterials/PhysicalMaterial.h"
+#include "RS/LogCategory.h"
 
 UGameplayCueNotify_StaticBase::UGameplayCueNotify_StaticBase()
 {
@@ -14,22 +17,23 @@ UGameplayCueNotify_StaticBase::UGameplayCueNotify_StaticBase()
 bool UGameplayCueNotify_StaticBase::OnExecute_Implementation(AActor* Target,
 	const FGameplayCueParameters& Parameters) const
 {
-	if (IsValid(mParticle))
+
+	FVector SpawnLocation = Target->GetActorLocation();
+
+	if (IsValid(Particle))
 	{
-		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), mParticle,
-			Target->GetActorLocation());
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Particle, SpawnLocation);
 	}
 
-	if (IsValid(mNiagara))
+	if (IsValid(Niagara))
 	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), mNiagara,
-			Target->GetActorLocation());
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), Niagara, SpawnLocation);
+
 	}
 
-	if (IsValid(mSound))
+	if (IsValid(Sound))
 	{
-		UGameplayStatics::SpawnSoundAtLocation(GetWorld(), mSound,
-			Target->GetActorLocation());
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), Niagara, SpawnLocation);
 	}
 
 	return true;

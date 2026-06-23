@@ -697,91 +697,6 @@ void APlayerCharacterBase::OnConstruction(const FTransform& Transform)
 	}
 }
 
-void APlayerCharacterBase::ShootAttackRay()
-{
-	FHitResult Hit;
-
-	// 캐릭터 컨트롤러 가져오기
-	APlayerController* PlayerController = Cast<APlayerController>(GetController());
-	if (!IsValid(PlayerController))
-		return;
-
-	// 사거리 가져오기
-	float Dist = AttributeSet->GetAttackDistance();
-
-	FVector CameraLocation;
-	FRotator CameraRotation;
-
-	// 카메라 위치가 어디있고 회전이 얼마나된지 가져오기.
-	PlayerController->GetPlayerViewPoint(CameraLocation, CameraRotation);
-
-	// 카메라 방향으로 Ray쏘기위해 카메라 위치에서 방향에 거리만큼 곱해주기
-	FVector CameraEnd = CameraLocation + (CameraRotation.Vector() * Dist);
-
-	FHitResult CameraHit;
-	FCollisionQueryParams Params(NAME_None, false, this);
-
-	// 카메라 시작점부터 카메라가 보는방향의 끝 점 까지 히트된게 있는지 확인
-	GetWorld()->LineTraceSingleByChannel(CameraHit, CameraLocation, CameraEnd, ECC_GameTraceChannel1, Params);
-
-	// 카메라가 조준한 물체가 있다면 그 맞은 지점을, 없다면 그냥 사거리 끝을 목표물 위치로 설정
-	FVector TargetLocation;
-	if (CameraHit.bBlockingHit)
-	{
-		TargetLocation = CameraHit.ImpactPoint;
-	}
-	else
-	{
-		TargetLocation = CameraEnd;
-	}
-	// 무기 메쉬에서 실제 총알이 나갈 총구소켓의 위치 가져오기
-	FVector MuzzleLocation = WeaponMeshComponent->GetSocketLocation(FName("Muzzle"));
-
-	// 카메라가 조준한 위치로 Muzzle에서부터 쏠 방향 구하기(Normalize) -> 방향만 구하기 때문에
-	FVector ShootDirection = (TargetLocation - MuzzleLocation).GetSafeNormal();
-
-	// Muzzle에서 카메라가 조준한 방향까지 구한 벡터에서 거리만큼 곱해주기
-	FVector FinalEnd = MuzzleLocation + (ShootDirection * Dist);
-
-	// 총구에서 카메라 조준점 끝까지의 히트를 확인하기
-	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, MuzzleLocation, FinalEnd, ECC_GameTraceChannel1, Params);
-	if (bHit)
-	{
-		if (IsLocallyControlled())
-		{
-			DrawDebugLine(GetWorld(), MuzzleLocation, Hit.Location, FColor::Red, false, 0.2f, 0, 2.0f);
-		}
-
-		// 맞은 액터(TargetActor) 가져오기
-		AActor* TargetActor = Hit.GetActor();
-		if (!TargetActor)
-		{
-			return;
-		}
-
-		// 적군인지 확인
-		ETeamAttitude::Type Attitude = GetTeamAttitudeTowards(*TargetActor);
-
-		if (Attitude == ETeamAttitude::Hostile)
-		{
-			// 적일경우 데미지를 주기 위해 ASC를 가져온다.
-			UAbilitySystemComponent* TargetASC = TargetActor->FindComponentByClass<UAbilitySystemComponent>();
-
-			if (TargetASC && ASC)
-			{
-				Server_ApplyDamage(TargetActor, Hit);
-			}
-		}
-	}
-	else
-	{
-		// 맞지 않았을때
-		if (IsLocallyControlled())
-		{
-			DrawDebugLine(GetWorld(), MuzzleLocation, FinalEnd, FColor::Green, false, 0.2f, 0, 2.0f);
-		}
-	}
-}
 
 TSubclassOf<UGameplayEffect> APlayerCharacterBase::GetEffect(const FName TagName) const
 {
@@ -915,6 +830,125 @@ void APlayerCharacterBase::OnDashingTagChanged(const FGameplayTag Tag, int32 New
 	}
 }
 
+
+void APlayerCharacterBase::ShootAttackRay()
+{
+	FHitResult Hit;
+
+	// 캐릭터 컨트롤러 가져오기
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	if (!IsValid(PlayerController))
+		return;
+
+	// 사거리 가져오기
+	float Dist = AttributeSet->GetAttackDistance();
+
+	FVector CameraLocation;
+	FRotator CameraRotation;
+
+	// 카메라 위치가 어디있고 회전이 얼마나된지 가져오기.
+	PlayerController->GetPlayerViewPoint(CameraLocation, CameraRotation);
+
+	// 카메라 방향으로 Ray쏘기위해 카메라 위치에서 방향에 거리만큼 곱해주기
+	FVector CameraEnd = CameraLocation + (CameraRotation.Vector() * Dist);
+
+	FHitResult CameraHit;
+	FCollisionQueryParams Params(NAME_None, false, this);
+	Params.bReturnPhysicalMaterial = true;
+
+	// 카메라 시작점부터 카메라가 보는방향의 끝 점 까지 히트된게 있는지 확인
+	GetWorld()->LineTraceSingleByChannel(CameraHit, CameraLocation, CameraEnd, ECC_GameTraceChannel1, Params);
+
+	// 카메라가 조준한 물체가 있다면 그 맞은 지점을, 없다면 그냥 사거리 끝을 목표물 위치로 설정
+	FVector TargetLocation;
+	if (CameraHit.bBlockingHit)
+	{
+		TargetLocation = CameraHit.ImpactPoint;
+	}
+	else
+	{
+		TargetLocation = CameraEnd;
+	}
+	// 무기 메쉬에서 실제 총알이 나갈 총구소켓의 위치 가져오기
+	FVector MuzzleLocation = WeaponMeshComponent->GetSocketLocation(FName("Muzzle"));
+	FRotator MuzzleRotation = WeaponMeshComponent->GetSocketRotation(FName("Muzzle"));
+
+	// 카메라가 조준한 위치로 Muzzle에서부터 쏠 방향 구하기(Normalize) -> 방향만 구하기 때문에
+	FVector ShootDirection = (TargetLocation - MuzzleLocation).GetSafeNormal();
+
+	// Muzzle에서 카메라가 조준한 방향까지 구한 벡터에서 거리만큼 곱해주기
+	FVector FinalEnd = MuzzleLocation + (ShootDirection * Dist);
+
+	// 총구에서 카메라 조준점 끝까지의 히트를 확인하기
+	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, MuzzleLocation, FinalEnd, ECC_GameTraceChannel1, Params);
+
+	// MuzzleLocation 에서 Cue 소환하여 Flash 이루기
+	FGameplayEffectContextHandle MuzzleContext = ASC->MakeEffectContext();
+
+	FGameplayCueParameters MuzzleCueParams;
+	MuzzleCueParams.EffectContext = MuzzleContext;
+	MuzzleCueParams.Location = MuzzleLocation;
+	MuzzleCueParams.Normal = MuzzleRotation.Vector();
+
+
+	FGameplayTag MuzzleCueTag = FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Weapon.Muzzle"));
+
+	ASC->ExecuteGameplayCue(MuzzleCueTag, MuzzleCueParams);
+
+	if (bHit)
+	{
+		if (IsLocallyControlled())
+		{
+			DrawDebugLine(GetWorld(), MuzzleLocation, Hit.Location, FColor::Red, false, 0.2f, 0, 2.0f);
+		}
+
+		// 맞은 액터(TargetActor) 가져오기
+		AActor* TargetActor = Hit.GetActor();
+		if (!TargetActor)
+		{
+			return;
+		}
+
+		// 적군인지 확인
+		ETeamAttitude::Type Attitude = GetTeamAttitudeTowards(*TargetActor);
+
+		if (Attitude == ETeamAttitude::Hostile)
+		{
+			// 적일경우 데미지를 주기 위해 ASC를 가져온다.
+			UAbilitySystemComponent* TargetASC = TargetActor->FindComponentByClass<UAbilitySystemComponent>();
+
+			if (TargetASC && ASC)
+			{
+				Server_ApplyDamage(TargetActor, Hit);
+			}
+		}
+		// 아닐경우 벽으로 판정
+		else
+		{
+			FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
+			Context.AddHitResult(Hit);
+
+			FGameplayCueParameters CueParams;
+			CueParams.EffectContext = Context;
+			CueParams.Location = Hit.ImpactPoint;
+			CueParams.Normal = Hit.ImpactNormal;
+
+			RS_PRINT_SCREEN(1.f, FColor::Red, TEXT("Impact Cue 2222222222222"));
+
+			FGameplayTag CueTag = FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Weapon.Impact"));
+			ASC->ExecuteGameplayCue(CueTag, CueParams);
+		}
+	}
+	else
+	{
+		// 맞지 않았을때
+		if (IsLocallyControlled())
+		{
+			DrawDebugLine(GetWorld(), MuzzleLocation, FinalEnd, FColor::Green, false, 0.2f, 0, 2.0f);
+		}
+	}
+}
+
 void APlayerCharacterBase::Server_ApplyDamage_Implementation(AActor* TargetActor, FHitResult Hit)
 {
 	auto* TargetChar = Cast<AZombieBase>(TargetActor);
@@ -937,6 +971,7 @@ void APlayerCharacterBase::Server_ApplyDamage_Implementation(AActor* TargetActor
 
 	TSubclassOf<UGameplayEffect> Effect = GetEffect(TEXT("Damage"));
 
+
 	FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(Effect, 1.0f, EffectContext);
 	SpecHandle.Data.Get()->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(TEXT("SetByCaller.State.HP")),
 	                                               -Damage);
@@ -945,7 +980,8 @@ void APlayerCharacterBase::Server_ApplyDamage_Implementation(AActor* TargetActor
 	float CurrentHP = TargetChar->GetAttributeSet()->GetHP();
 
 	FGameplayCueParameters CueParams;
-	CueParams.Location = Hit.Location;
+	CueParams.EffectContext = EffectContext;
+	CueParams.Location = Hit.ImpactPoint;
 	CueParams.Normal = Hit.ImpactNormal;
 
 	FGameplayTag CueTag = FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Damage"));
