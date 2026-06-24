@@ -224,7 +224,13 @@ void AZombieBase::CalcNextPointLocation()
 
 void AZombieBase::CallBackHP(AActor* InstigatorActor)
 {
-	if (AttributeSet->GetHP() <= 0)
+	if (!InstigatorActor)
+	{
+		RS_LOG_DEBUG(LogRSCommon, Error, TEXT("%s: InstigatorActor is nullptr"), *LOG_LINE_INFO);
+		return;
+	}
+
+	if (AttributeSet->GetCurrentHP() <= 0)
 	{
 		//좀비의 사망 애니메이션을 동작시킨다
 		//이 함수를 호출해야 클라이언트에서도 애니메이션을 사망 애니메이션으로 변경한다.
@@ -369,7 +375,7 @@ void AZombieBase::OnRep_ChangeAnimType()
 
 bool AZombieBase::Death_Server_Validate()
 {
-	if (AttributeSet->GetHP() > 0)
+	if (AttributeSet->GetCurrentHP() > 0)
 	{
 		return false;
 	}

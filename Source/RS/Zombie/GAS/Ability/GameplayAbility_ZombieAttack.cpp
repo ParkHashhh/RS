@@ -74,8 +74,8 @@ void UGameplayAbility_ZombieAttack::ActivateAbility(const FGameplayAbilitySpecHa
 
 	//데미지를 계산한다
 	//최솟값 1 보정이 들어간다.
-	float Attack = SourceAttri->GetAttack();
-	float Defense = TargetAttri->GetDefense();
+	float Attack = SourceAttri->GetAttackPower();
+	float Defense = TargetAttri->GetDefensePower();
 	float Damage = Attack - Defense;
 	Damage = FMath::Max(1.f, Damage);
 

@@ -7,7 +7,7 @@
 #include "ZombieStandardAttributeSet.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class RS_API UZombieStandardAttributeSet : public UBaseAttributeSet
@@ -22,6 +22,6 @@ public:
 	ATTRIBUTE_ACCESSORS_BASIC(UZombieStandardAttributeSet, DetectRange_Sight)
 
 public:
-	virtual void OnHpChanged(AActor* Instigator);
-	
+	virtual void OnHpChanged(AActor* Instigator) override;
+
 };

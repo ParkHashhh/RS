@@ -3,6 +3,7 @@
 
 #include "PlayerCharacterBase.h"
 
+#include "RSPlayerState.h"
 #include "Attribute/PlayerAttributeSet.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -81,14 +82,7 @@ void APlayerCharacterBase::BeginPlay()
 	auto* DataSubsystem = GameInstance->GetSubsystem<UDataSubsystem>();
 	check(DataSubsystem);
 
-	if (!DataSubsystem->IsPlayerDefaultTableLoaded())
-	{
-		DataSubsystem->OnPlayerDefaultInfoLoaded.AddDynamic(this, &APlayerCharacterBase::LoadDefaultData);
-	}
-	else
-	{
-		LoadDefaultData();
-	}
+	DataSubsystem->ExecuteOrBindOnPlayerDefaultInfoLoaded(this, &ThisClass::LoadDefaultData);
 
 	APlayerController* PlayerController = Cast<APlayerController>(GetController());
 
@@ -153,22 +147,20 @@ void APlayerCharacterBase::PossessedBy(AController* NewController)
 	{
 		ASC->InitAbilityActorInfo(this, this);
 
-		if (DefaultAttributeEffect)
-		{
-			FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
-			FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(DefaultAttributeEffect, 1.0f, Context);
-			if (SpecHandle.IsValid())
-			{
-				ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
-			}
-		}
-
 		if (HasAuthority())
 		{
 			GiveAbilities();
+
+			if (UGameInstance* GI = GetGameInstance())
+			{
+				if (auto* DataSubsystem = GI->GetSubsystem<UDataSubsystem>())
+				{
+					DataSubsystem->ExecuteOrBindOnPlayerDefaultInfoLoaded(this, &ThisClass::OnPlayerDefaultInfoLoaded);
+				}
+			}
 		}
+
 		BindGameplayTagDelegate();
-		NotifyASCReady();
 	}
 }
 
@@ -180,7 +172,15 @@ void APlayerCharacterBase::OnRep_PlayerState()
 	{
 		ASC->InitAbilityActorInfo(this, this);
 
-		NotifyASCReady();
+		if (UGameInstance* GI = GetGameInstance())
+		{
+			if (auto* DataSubsystem = GI->GetSubsystem<UDataSubsystem>())
+			{
+				DataSubsystem->ExecuteOrBindOnPlayerDefaultInfoLoaded(this, &ThisClass::OnPlayerDefaultInfoLoaded);
+			}
+		}
+
+		BindGameplayTagDelegate();
 	}
 }
 
@@ -406,7 +406,6 @@ void APlayerCharacterBase::NotifyASCReady()
 
 TObjectPtr<UAnimMontage> APlayerCharacterBase::GetBaseAttackMontage()
 {
-	
 	return AnimInst->GetBaseAttackMontage();
 }
 
@@ -496,7 +495,6 @@ void APlayerCharacterBase::AimKey(const FInputActionValue& Value)
 	}
 
 	ASC->AbilityLocalInputPressed(static_cast<int32>(ERSInputID::Aim));
-
 }
 
 void APlayerCharacterBase::AimReleaseKey(const FInputActionValue& Value)
@@ -813,9 +811,12 @@ void APlayerCharacterBase::BindGameplayTagDelegate()
 		return;
 	}
 
-	ASC->RegisterGameplayTagEvent(RSTags::Player::Aiming, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &ThisClass::OnAimingTagChanged);
-	ASC->RegisterGameplayTagEvent(RSTags::Player::Attacking, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &ThisClass::OnAttackingTagChanged);
-	ASC->RegisterGameplayTagEvent(RSTags::Player::Dashing, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &ThisClass::OnDashingTagChanged);
+	ASC->RegisterGameplayTagEvent(RSTags::Player::Aiming, EGameplayTagEventType::NewOrRemoved).AddUObject(
+		this, &ThisClass::OnAimingTagChanged);
+	ASC->RegisterGameplayTagEvent(RSTags::Player::Attacking, EGameplayTagEventType::NewOrRemoved).AddUObject(
+		this, &ThisClass::OnAttackingTagChanged);
+	ASC->RegisterGameplayTagEvent(RSTags::Player::Dashing, EGameplayTagEventType::NewOrRemoved).AddUObject(
+		this, &ThisClass::OnDashingTagChanged);
 }
 
 void APlayerCharacterBase::OnAimingTagChanged(const FGameplayTag Tag, int32 NewCount)
@@ -1092,13 +1093,12 @@ void APlayerCharacterBase::Server_ApplyDamage_Implementation(AActor* TargetActor
 	}
 
 	// 상대방 액터를 좀비로 형변환
-	float Damage = AttributeSet->GetAttack();
+	float Damage = AttributeSet->GetAttackPower();
 
 	FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
 	EffectContext.AddHitResult(Hit);
 
 	TSubclassOf<UGameplayEffect> Effect = GetEffect(TEXT("Damage"));
-
 
 	FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(Effect, 1.0f, EffectContext);
 	SpecHandle.Data.Get()->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(TEXT("SetByCaller.State.HP")),
@@ -1106,4 +1106,53 @@ void APlayerCharacterBase::Server_ApplyDamage_Implementation(AActor* TargetActor
 
 	ASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
 
+}
+
+
+void APlayerCharacterBase::OnPlayerDefaultInfoLoaded()
+{
+	if (!ASC || !AttributeSet)
+	{
+		RS_LOG_DEBUG(LogRSInit, Error, TEXT("%s: ASC or AttributeSet is nullptr"), *LOG_LINE_INFO);
+		return;
+	}
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (auto* DataSubsystem = GI->GetSubsystem<UDataSubsystem>())
+		{
+			if (const FPlayerDefaultInfo* Info = DataSubsystem->GetPlayerDefaultTableInfo())
+			{
+				FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
+				FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(BaseStatEffectClass, 1.0f, Context);
+
+				if (SpecHandle.IsValid() && SpecHandle.Data.IsValid())
+				{
+					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::AttackPower, Info->AttackPower);
+					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::MaxHP, Info->MaxHP);
+					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::CurrentHP, Info->MaxHP);
+					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::WalkSpeed, Info->WalkSpeed);
+					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::DashSpeed, Info->DashSpeed);
+					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::MaxRange, Info->MaxRange);
+					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::AttackPower, Info->AttackPower);
+					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::DefensePower, Info->DefensePower);
+
+					ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
+				}
+
+				// if (AttributeSet)
+				// {
+				// 	AttributeSet->SetHPMax(Info->MaxHP);
+				// 	AttributeSet->SetHP(Info->MaxHP);
+				// }
+
+				FString NetContext = HasAuthority() ? TEXT("Server") : TEXT("Client");
+				RS_LOG_DEBUG(LogRSCommon, Log,
+					TEXT("[%s] OnPlayerDefaultInfoLoaded: MaxHP(%.2f) Applied Successfully."), *NetContext,
+					Info->MaxHP);
+
+				NotifyASCReady();
+			}
+		}
+	}
 }

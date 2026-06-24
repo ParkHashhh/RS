@@ -54,13 +54,13 @@ public:
 		return IsGameplayReady();
 	}
 
-	void OnPawnChanged(const APawn* NewPawn);
+	void OnPawnChanged(APawn* NewPawn);
 
 private:
 	void Bind();
 
 	void BindPlayerState();
-	void BindPawn();
+	void BindPawn(APawn* NewPawn);
 
 	void OnPlayerStateReadyCallback();
 	void OnASCReadyCallback();

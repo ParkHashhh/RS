@@ -9,10 +9,13 @@
 #include "RS/Utils/ASCProvider.h"
 #include "InventoryComponent.generated.h"
 
+struct FInventoryItem;
 class UInventoryComponent;
 struct FInventoryArray;
 class UDataSubsystem;
 struct FItemTableInfo;
+
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnItemChanged, FName, int32);
 
 USTRUCT(BlueprintType)
 struct FInventoryItem : public FFastArraySerializerItem
@@ -40,8 +43,8 @@ struct FInventoryItem : public FFastArraySerializerItem
 
 	friend bool operator==(const FInventoryItem& Lhs, const FInventoryItem& RHS)
 	{
-		return Lhs.ItemRowName == RHS.ItemRowName
-			&& Lhs.AppliedEffectHandle == RHS.AppliedEffectHandle;
+		// 모든 아이템은 중첩 가능하거나 1개만 획득 가능 -> ItemRowName만으로 구분 가능
+		return Lhs.ItemRowName == RHS.ItemRowName;
 	}
 
 	friend bool operator!=(const FInventoryItem& Lhs, const FInventoryItem& RHS)
@@ -89,6 +92,9 @@ public:
 	// Sets default values for this component's properties
 	UInventoryComponent();
 
+public:
+	FOnItemChanged OnItemChanged;
+
 protected:
 	UPROPERTY(Replicated, BlueprintReadOnly, Category="Inventory", meta=(AllowPrivateAccess=true))
 	FInventoryArray InventoryArray;
@@ -113,6 +119,13 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	FORCEINLINE const FInventoryArray& GetInventoryArray() const { return InventoryArray; }
-	FORCEINLINE const TArray<FInventoryItem>& GetInventoryItems() const { return InventoryArray.Items; }
+	FORCEINLINE const FInventoryArray& GetInventoryArray() const
+	{
+		return InventoryArray;
+	}
+
+	FORCEINLINE const TArray<FInventoryItem>& GetInventoryItems() const
+	{
+		return InventoryArray.Items;
+	}
 };

@@ -11,11 +11,16 @@ namespace RSTags
 
 	namespace Zombie
 	{
-
 	}
 
 	namespace Common
 	{
-
+		UE_DEFINE_GAMEPLAY_TAG(AttackPower, "SetByCaller.Stat.AttackPower");
+		UE_DEFINE_GAMEPLAY_TAG(CurrentHP, "SetByCaller.Stat.CurrentHP");
+		UE_DEFINE_GAMEPLAY_TAG(DashSpeed, "SetByCaller.Stat.DashSpeed");
+		UE_DEFINE_GAMEPLAY_TAG(DefensePower, "SetByCaller.Stat.DefensePower");
+		UE_DEFINE_GAMEPLAY_TAG(MaxHP, "SetByCaller.Stat.MaxHP");
+		UE_DEFINE_GAMEPLAY_TAG(MaxRange, "SetByCaller.Stat.MaxRange");
+		UE_DEFINE_GAMEPLAY_TAG(WalkSpeed, "SetByCaller.Stat.WalkSpeed");
 	}
 }

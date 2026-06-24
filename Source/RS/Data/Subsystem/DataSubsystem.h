@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "RS/RSUtils.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "DataSubsystem.generated.h"
 
@@ -10,7 +11,7 @@ struct FMiscTableInfo;
 struct FItemTableInfo;
 struct FPlayerDefaultInfo;
 class UDataTable;
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnItemInfoLoadedSignature);
+DECLARE_MULTICAST_DELEGATE(FOnTableInfoLoaded);
 
 /**
  * 게임의 아이템 정보를 관리하는 서브시스템입니다.
@@ -20,29 +21,44 @@ class RS_API UDataSubsystem : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
 
+public:
+	UDataSubsystem();
+
 private:
 	inline static const FName DefaultItemRowName = TEXT("Default");
 
-	UPROPERTY()
+	UPROPERTY(Transient)
 	TObjectPtr<UDataTable> ItemInfoTable;
 
-	UPROPERTY()
+	UPROPERTY(Transient)
 	TObjectPtr<UDataTable> MiscInfoTable;
 
-	UPROPERTY()
+	UPROPERTY(Transient)
 	TObjectPtr<UDataTable> PlayerDefaultInfoTable;
 
-public:
-	UPROPERTY(BlueprintAssignable, Category = "Data")
-	FOnItemInfoLoadedSignature OnItemInfoLoaded;
-
-	UPROPERTY(BlueprintAssignable, Category = "Data")
-	FOnItemInfoLoadedSignature OnMiscInfoLoaded;
-
-	UPROPERTY(BlueprintAssignable, Category = "Data")
-	FOnItemInfoLoadedSignature OnPlayerDefaultInfoLoaded;
+	FOnTableInfoLoaded OnItemInfoLoadedDelegate;
+	FOnTableInfoLoaded OnMiscInfoLoadedDelegate;
+	FOnTableInfoLoaded OnPlayerDefaultInfoLoadedDelegate;
 
 public:
+	template <typename T>
+	void ExecuteOrBindOnItemInfoLoaded(T* Object, void (T::*Callback)())
+	{
+		RSUtils::ExecuteOrBind(IsItemTableLoaded(), OnItemInfoLoadedDelegate, Object, Callback);
+	}
+
+	template <typename T>
+	void ExecuteOrBindOnMiscInfoLoaded(T* Object, void (T::*Callback)())
+	{
+		RSUtils::ExecuteOrBind(IsMiscTableLoaded(), OnMiscInfoLoadedDelegate, Object, Callback);
+	}
+
+	template <typename T>
+	void ExecuteOrBindOnPlayerDefaultInfoLoaded(T* Object, void (T::*Callback)())
+	{
+		RSUtils::ExecuteOrBind(IsPlayerDefaultTableLoaded(), OnPlayerDefaultInfoLoadedDelegate, Object, Callback);
+	}
+
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
 	const FItemTableInfo* GetItemTableInfo(FName Name) const;

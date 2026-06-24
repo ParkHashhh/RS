@@ -19,58 +19,62 @@ class RS_API UBaseAttributeSet : public UAttributeSet
 	GENERATED_BODY()
 
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing = OnRep_Attack, Category = "Attribute", meta = (AllowPrivateAccess = true))
-	FGameplayAttributeData	Attack;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing=OnRep_AttackPower, Category="Attribute", meta=(AllowPrivateAccess = true))
+	FGameplayAttributeData	AttackPower;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing = OnRep_Defense, Category = "Attribute", meta = (AllowPrivateAccess = true))
-	FGameplayAttributeData	Defense;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing=OnRep_DefensePower, Category="Attribute", meta=(AllowPrivateAccess = true))
+	FGameplayAttributeData	DefensePower;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing = OnRep_HP, Category = "Attribute", meta = (AllowPrivateAccess = true))
-	FGameplayAttributeData	HP;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing=OnRep_CurrentHP, Category="Attribute", meta=(AllowPrivateAccess = true))
+	FGameplayAttributeData	CurrentHP;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute", meta = (AllowPrivateAccess = true))
-	FGameplayAttributeData	HPMax;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing=OnRep_MaxHP, Category="Attribute", meta=(AllowPrivateAccess = true))
+	FGameplayAttributeData	MaxHP;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing = OnRep_WalkSpeed, Category = "Attribute", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing=OnRep_WalkSpeed, Category="Attribute", meta=(AllowPrivateAccess = true))
 	FGameplayAttributeData	WalkSpeed;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing = OnRep_RunSpeed, meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing=OnRep_DashSpeed, Category="Attribute", meta=(AllowPrivateAccess=true))
 	FGameplayAttributeData	RunSpeed;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing = OnRep_AttackDistance, Category = "Attribute", meta = (AllowPrivateAccess = true))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing=OnRep_AttackDistance, Category="Attribute", meta=(AllowPrivateAccess = true))
 	FGameplayAttributeData	AttackDistance;
 
 
 public:
-	ATTRIBUTE_ACCESSORS_BASIC(UBaseAttributeSet, Attack)
-	ATTRIBUTE_ACCESSORS_BASIC(UBaseAttributeSet, Defense)
-	ATTRIBUTE_ACCESSORS_BASIC(UBaseAttributeSet, HP)
-	ATTRIBUTE_ACCESSORS_BASIC(UBaseAttributeSet, HPMax)
+	ATTRIBUTE_ACCESSORS_BASIC(UBaseAttributeSet, AttackPower)
+	ATTRIBUTE_ACCESSORS_BASIC(UBaseAttributeSet, DefensePower)
+	ATTRIBUTE_ACCESSORS_BASIC(UBaseAttributeSet, CurrentHP)
+	ATTRIBUTE_ACCESSORS_BASIC(UBaseAttributeSet, MaxHP)
 	ATTRIBUTE_ACCESSORS_BASIC(UBaseAttributeSet, WalkSpeed)
 	ATTRIBUTE_ACCESSORS_BASIC(UBaseAttributeSet, RunSpeed)
 	ATTRIBUTE_ACCESSORS_BASIC(UBaseAttributeSet, AttackDistance)
 
 
 	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	virtual void OnHpChanged(AActor* Instigator);
+
 protected:
 
 	UFUNCTION()
-	virtual void OnRep_Attack(const FGameplayAttributeData& OldValue);
+	virtual void OnRep_AttackPower(const FGameplayAttributeData& OldValue);
 
 	UFUNCTION()
-	virtual void OnRep_Defense(const FGameplayAttributeData& OldValue);
+	virtual void OnRep_DefensePower(const FGameplayAttributeData& OldValue);
 
 	UFUNCTION()
-	virtual void OnRep_HP(const FGameplayAttributeData& OldValue);
+	virtual void OnRep_CurrentHP(const FGameplayAttributeData& OldValue);
+
+	UFUNCTION()
+	virtual void OnRep_MaxHP(const FGameplayAttributeData& OldValue);
 
 	UFUNCTION()
 	virtual void OnRep_WalkSpeed(const FGameplayAttributeData& OldValue);
 
 	UFUNCTION()
-	virtual void OnRep_RunSpeed(const FGameplayAttributeData& OldValue);
+	virtual void OnRep_DashSpeed(const FGameplayAttributeData& OldValue);
 
 	UFUNCTION()
 	virtual void OnRep_AttackDistance(const FGameplayAttributeData& OldValue);

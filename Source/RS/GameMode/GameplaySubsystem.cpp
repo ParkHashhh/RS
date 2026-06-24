@@ -28,11 +28,11 @@ UAbilitySystemComponent* UGameplaySubsystem::GetPlayerASC() const
 	return nullptr;
 }
 
-void UGameplaySubsystem::OnPawnChanged(const APawn* NewPawn)
+void UGameplaySubsystem::OnPawnChanged(APawn* NewPawn)
 {
 	Bind();
 
-	BindPawn();
+	BindPawn(NewPawn);
 
 	CheckGameplayReady();
 }
@@ -89,9 +89,9 @@ void UGameplaySubsystem::BindPlayerState()
 	}
 }
 
-void UGameplaySubsystem::BindPawn()
+void UGameplaySubsystem::BindPawn(APawn* NewPawn)
 {
-	auto* Character = Cast<APlayerCharacterBase>(CachedPC.IsValid() ? CachedPC.Get()->GetPawn() : nullptr);
+	auto* Character = Cast<APlayerCharacterBase>(NewPawn);
 
 	if (CachedCharacter == Character)
 	{

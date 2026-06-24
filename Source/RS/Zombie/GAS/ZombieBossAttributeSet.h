@@ -7,7 +7,7 @@
 #include "ZombieBossAttributeSet.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class RS_API UZombieBossAttributeSet : public UBaseAttributeSet
@@ -18,6 +18,6 @@ public:
 	UZombieBossAttributeSet();
 
 public:
-	virtual void OnHpChanged(AActor* Instigator);
-	
+	virtual void OnHpChanged(AActor* Instigator) override;
+
 };

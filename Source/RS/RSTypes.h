@@ -118,14 +118,32 @@ struct FPlayerDefaultInfo : public FTableRowBase
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Combat|Shot")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Stat|Shot")
 	float AimShotSpreadRadius{};
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Combat|Shot")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Stat|Shot")
 	float BaseShotSpreadRadius{};
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Combat|Shot")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Stat|Shot")
 	float FireShotSpreadModifier{};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Stat|HP")
+	float MaxHP{};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Stat|Range")
+	float MaxRange{};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Stat|Move")
+	float WalkSpeed{};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Stat|Move")
+	float DashSpeed{};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Stat|Damage")
+	float AttackPower;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Stat|Damage")
+	float DefensePower;
 };
 
 UENUM(BlueprintType)

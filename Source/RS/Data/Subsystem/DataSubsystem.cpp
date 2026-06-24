@@ -12,6 +12,10 @@
 #include "RS/Data/DataAsset/MiscInfoTableAsset.h"
 #include "RS/Data/DataAsset/PlayerDefaultInfoTableAsset.h"
 
+UDataSubsystem::UDataSubsystem()
+{
+}
+
 void UDataSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
@@ -23,7 +27,7 @@ void UDataSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 const FItemTableInfo* UDataSubsystem::GetItemTableInfo(FName Name) const
 {
-	if (!IsValid(ItemInfoTable))
+	if (!ItemInfoTable)
 	{
 		RS_LOG_DEBUG(LogRSData, Warning, TEXT("%s: ItemInfoTable is NOT valid when getting row %s. It might still be loading."), *LOG_LINE_INFO, *Name.ToString());
 		return nullptr;
@@ -34,6 +38,7 @@ const FItemTableInfo* UDataSubsystem::GetItemTableInfo(FName Name) const
 	{
 		RS_LOG_DEBUG(LogRSData, Warning, TEXT("%s: Failed to find row %s in ItemInfoTable"), *LOG_LINE_INFO, *Name.ToString());
 	}
+
 	return Row;
 }
 
@@ -51,7 +56,7 @@ bool UDataSubsystem::K2_GetItemTableInfo(FName Name, FItemTableInfo& OutItemInfo
 
 const FMiscTableInfo* UDataSubsystem::GetMiscTableInfo() const
 {
-	if (!IsValid(MiscInfoTable))
+	if (!MiscInfoTable)
 	{
 		RS_LOG_DEBUG(LogRSData, Warning, TEXT("%s: MiscInfoTable is NOT valid when getting row %s. It might still be loading."), *LOG_LINE_INFO, *DefaultItemRowName.ToString());
 		return nullptr;
@@ -62,6 +67,7 @@ const FMiscTableInfo* UDataSubsystem::GetMiscTableInfo() const
 	{
 		RS_LOG_DEBUG(LogRSData, Warning, TEXT("%s: Failed to find row %s in MiscInfoTable"), *LOG_LINE_INFO, *DefaultItemRowName.ToString());
 	}
+
 	return Row;
 }
 
@@ -79,7 +85,7 @@ bool UDataSubsystem::K2_GetMiscTableInfo(FMiscTableInfo& OutItemInfo) const
 
 const FPlayerDefaultInfo* UDataSubsystem::GetPlayerDefaultTableInfo() const
 {
-	if (!IsValid(PlayerDefaultInfoTable))
+	if (!PlayerDefaultInfoTable)
 	{
 		RS_LOG_DEBUG(LogRSData, Warning, TEXT("%s: PlayerDefaultInfoTable is NOT valid when getting row %s. It might still be loading."), *LOG_LINE_INFO, *DefaultItemRowName.ToString());
 		return nullptr;
@@ -90,6 +96,7 @@ const FPlayerDefaultInfo* UDataSubsystem::GetPlayerDefaultTableInfo() const
 	{
 		RS_LOG_DEBUG(LogRSData, Warning, TEXT("%s: Failed to find row %s in PlayerDefaultInfoTable"), *LOG_LINE_INFO, *DefaultItemRowName.ToString());
 	}
+
 	return Row;
 }
 
@@ -143,7 +150,7 @@ void UDataSubsystem::OnItemInfoTableLoaded(FPrimaryAssetId LoadedAssetID)
 
 	RS_LOG_DEBUG(LogRSData, Log, TEXT("%s: ItemInfoTable loaded successfully: %s"), *LOG_LINE_INFO, *ItemInfoTable->GetName());
 
-	OnItemInfoLoaded.Broadcast();
+	OnItemInfoLoadedDelegate.Broadcast();
 }
 
 void UDataSubsystem::LoadMiscInfoTable()
@@ -184,7 +191,7 @@ void UDataSubsystem::OnMiscInfoTableLoaded(FPrimaryAssetId LoadedAssetID)
 
 	RS_LOG_DEBUG(LogRSData, Log, TEXT("%s: MiscInfoTable loaded successfully: %s"), *LOG_LINE_INFO, *MiscInfoTable->GetName());
 
-	OnMiscInfoLoaded.Broadcast();
+	OnMiscInfoLoadedDelegate.Broadcast();
 }
 
 void UDataSubsystem::LoadPlayerDefaultInfoTable()
@@ -225,5 +232,5 @@ void UDataSubsystem::OnPlayerDefaultInfoTableLoaded(FPrimaryAssetId LoadedAssetI
 
 	RS_LOG_DEBUG(LogRSData, Log, TEXT("%s: PlayerDefaultInfoTable loaded successfully: %s"), *LOG_LINE_INFO, *PlayerDefaultInfoTable->GetName());
 
-	OnPlayerDefaultInfoLoaded.Broadcast();
+	OnPlayerDefaultInfoLoadedDelegate.Broadcast();
 }

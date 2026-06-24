@@ -23,7 +23,7 @@ void UBaseAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 		}
 	}
 
-	if (Data.EvaluatedData.Attribute == GetHPAttribute())
+	if (Data.EvaluatedData.Attribute == GetCurrentHPAttribute())
 	{
 		RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("OnHpChanged"));
 
@@ -35,35 +35,41 @@ void UBaseAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 
 void UBaseAttributeSet::OnHpChanged(AActor* Instigator)
 {
-
 }
 
 void UBaseAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(UBaseAttributeSet, Attack)
-	DOREPLIFETIME(UBaseAttributeSet, Defense)
-	DOREPLIFETIME(UBaseAttributeSet, HP)
+	DOREPLIFETIME(UBaseAttributeSet, AttackPower)
+	DOREPLIFETIME(UBaseAttributeSet, DefensePower)
+	DOREPLIFETIME(UBaseAttributeSet, CurrentHP)
 	DOREPLIFETIME(UBaseAttributeSet, WalkSpeed)
 	DOREPLIFETIME(UBaseAttributeSet, RunSpeed)
 	DOREPLIFETIME(UBaseAttributeSet, AttackDistance)
 }
-void UBaseAttributeSet::OnRep_Attack(const FGameplayAttributeData& OldValue)
-{
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UBaseAttributeSet, Attack, OldValue);
-}
 
-void UBaseAttributeSet::OnRep_Defense(const FGameplayAttributeData& OldValue)
+void UBaseAttributeSet::OnRep_AttackPower(const FGameplayAttributeData& OldValue)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UBaseAttributeSet, Defense, OldValue);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UBaseAttributeSet, AttackPower, OldValue);
 
 }
 
-void UBaseAttributeSet::OnRep_HP(const FGameplayAttributeData& OldValue)
+void UBaseAttributeSet::OnRep_DefensePower(const FGameplayAttributeData& OldValue)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UBaseAttributeSet, HP, OldValue);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UBaseAttributeSet, DefensePower, OldValue);
 
+}
+
+void UBaseAttributeSet::OnRep_CurrentHP(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UBaseAttributeSet, CurrentHP, OldValue);
+
+}
+
+void UBaseAttributeSet::OnRep_MaxHP(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UBaseAttributeSet, MaxHP, OldValue);
 }
 
 void UBaseAttributeSet::OnRep_WalkSpeed(const FGameplayAttributeData& OldValue)
@@ -72,7 +78,7 @@ void UBaseAttributeSet::OnRep_WalkSpeed(const FGameplayAttributeData& OldValue)
 
 }
 
-void UBaseAttributeSet::OnRep_RunSpeed(const FGameplayAttributeData& OldValue)
+void UBaseAttributeSet::OnRep_DashSpeed(const FGameplayAttributeData& OldValue)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UBaseAttributeSet, RunSpeed, OldValue);
 

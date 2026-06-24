@@ -3,129 +3,33 @@
 
 #include "CrosshairWidget.h"
 
-#include "AbilitySystemComponent.h"
-#include "RS/GameMode/GameplaySubsystem.h"
 #include "RS/Player/PlayerCharacterBase.h"
-#include "RS/Player/Attribute/PlayerAttributeSet.h"
 
 UCrosshairWidget::UCrosshairWidget(const FObjectInitializer& ObjectInitializer) :
 	Super(ObjectInitializer)
 {
 }
 
-void UCrosshairWidget::NativeOnInitialized()
+bool UCrosshairWidget::TryBindCharacterDelegates(APlayerCharacterBase* Character)
 {
-	Super::NativeOnInitialized();
-
-	if (ULocalPlayer* LP = GetOwningLocalPlayer())
+	if (!Super::TryBindCharacterDelegates(Character))
 	{
-		if (auto* GameplaySubsystem = LP->GetSubsystem<UGameplaySubsystem>())
-		{
-			GameplaySubsystem->OnGameplayReady.AddUObject(this, &ThisClass::OnGameplayReady);
-		}
-	}
-}
-
-void UCrosshairWidget::NativeConstruct()
-{
-	Super::NativeConstruct();
-
-	if (ULocalPlayer* LP = GetOwningLocalPlayer())
-	{
-		if (auto* GameplaySubsystem = LP->GetSubsystem<UGameplaySubsystem>())
-		{
-			if (GameplaySubsystem->IsGameplayReady())
-			{
-				OnGameplayReady(true);
-			}
-		}
-	}
-}
-
-void UCrosshairWidget::NativeDestruct()
-{
-	if (ULocalPlayer* LP = GetOwningLocalPlayer())
-	{
-		if (auto* GameplaySubsystem = LP->GetSubsystem<UGameplaySubsystem>())
-		{
-			GameplaySubsystem->OnGameplayReady.RemoveAll(this);
-		}
+		return false;
 	}
 
-	UnbindCharacterDelegates();
+	GetCachedCharacter()->OnAimAlphaChanged.AddUObject(this, &ThisClass::OnAimAlphaChanged);
 
-	Super::NativeDestruct();
-}
-
-void UCrosshairWidget::OnGameplayReady(bool bIsReady)
-{
-	if (bIsReady)
-	{
-		if (const ULocalPlayer* LP = GetOwningLocalPlayer())
-		{
-			if (const auto* GameplaySubsystem = LP->GetSubsystem<UGameplaySubsystem>())
-			{
-				BindCharacterDelegates(GameplaySubsystem->GetCachedCharacter());
-			}
-		}
-	}
-	else
-	{
-		UnbindCharacterDelegates();
-	}
-}
-
-void UCrosshairWidget::BindCharacterDelegates(APlayerCharacterBase* Character)
-{
-	if (!Character || CachedCharacter == Character)
-	{
-		return;
-	}
-
-	// 기존 바인딩 해제
-	UnbindCharacterDelegates();
-
-	CachedCharacter = Character;
-
-	// 1. 일반 델리게이트 바인딩
-	CachedCharacter->OnAimAlphaChanged.AddUObject(this, &ThisClass::OnAimAlphaChanged);
-	// GetDelegateHandles().Emplace(Character->델리게이트변수.AddUObject(this, &ThisClass::콜백));
-
-	// // 2. GAS 속성 변경 바인딩
-	// if (UAbilitySystemComponent* ASC = Character->GetAbilitySystemComponent())
-	// {
-	// 	FGameplayAttribute Attribute = UPlayerAttributeSet::GetShotSpreadRadiusAttribute();
-	// 	FDelegateHandle Handle = ASC->GetGameplayAttributeValueChangeDelegate(Attribute)
-	// 	                            .AddUObject(this, &ThisClass::OnShotSpreadRadiusChanged);
-	// 	AttributeDelegateBindings.Emplace(Attribute, Handle);
-	//
-	// 	FOnAttributeChangeData InitialData;
-	// 	InitialData.Attribute = Attribute;
-	// 	InitialData.NewValue = ASC->GetNumericAttribute(Attribute);
-	// 	InitialData.OldValue = InitialData.NewValue;
-	// 	OnShotSpreadRadiusChanged(InitialData);
-	// }
+	return true;
 }
 
 void UCrosshairWidget::UnbindCharacterDelegates()
 {
-	if (CachedCharacter.IsValid())
+	if (GetCachedCharacter())
 	{
-		// 1. 일반 델리게이트 해제
-		CachedCharacter->OnAimAlphaChanged.RemoveAll(this);
-
-		// // 2. GAS 속성 변경 해제
-		// if (UAbilitySystemComponent* ASC = CachedCharacter->GetAbilitySystemComponent())
-		// {
-		// 	for (auto& [Attribute, Handle] : AttributeDelegateBindings)
-		// 	{
-		// 		ASC->GetGameplayAttributeValueChangeDelegate(Attribute).Remove(Handle);
-		// 	}
-		// }
+		GetCachedCharacter()->OnAimAlphaChanged.RemoveAll(this);
 	}
 
-	// AttributeDelegateBindings.Empty();
-	CachedCharacter.Reset();
+	Super::UnbindCharacterDelegates();
 }
 
 void UCrosshairWidget::OnAimAlphaChanged(float Alpha)

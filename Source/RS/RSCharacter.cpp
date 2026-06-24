@@ -3,6 +3,8 @@
 
 #include "RSCharacter.h"
 
+#include "LogCategory.h"
+
 // Sets default values
 ARSCharacter::ARSCharacter()
 {
@@ -15,7 +17,6 @@ ARSCharacter::ARSCharacter()
 void ARSCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
 }
 
 // Called every frame

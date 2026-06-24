@@ -15,6 +15,7 @@
 #include "RS/Utils/ASCProvider.h"
 #include "PlayerCharacterBase.generated.h"
 
+class UDataSubsystem;
 class USpringArmComponent;
 class UCameraComponent;
 class UInputData;
@@ -69,7 +70,7 @@ protected:
 	TObjectPtr<UPlayerAttributeSet> AttributeSet;
 
 	UPROPERTY(EditDefaultsOnly, Category = "GAS")
-	TSubclassOf<UGameplayEffect> DefaultAttributeEffect;
+	TSubclassOf<UGameplayEffect> BaseStatEffectClass;
 
 	UPROPERTY(EditDefaultsOnly, Category = "GAS")
 	TMap<FName, TSubclassOf<UGameplayEffect>> Effects;
@@ -382,4 +383,7 @@ private:
 	void OnAimingTagChanged(const FGameplayTag Tag, int32 NewCount);
 	void OnAttackingTagChanged(const FGameplayTag Tag, int32 NewCount);
 	void OnDashingTagChanged(const FGameplayTag Tag, int32 NewCount);
+
+	UFUNCTION()
+	void OnPlayerDefaultInfoLoaded();
 };

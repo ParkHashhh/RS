@@ -3,8 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "RS/RSTypes.h"
-#include "RS/UI/RSUserWidget.h"
+#include "RS/UI/CharacterBoundUserWidget.h"
 #include "CrosshairWidget.generated.h"
 
 struct FOnAttributeChangeData;
@@ -16,7 +15,7 @@ class UImage;
  * WB_Crosshair의 RadiusModifier 기본값 설정하여 Crosshair의 크기를 조절할 수 있도록 함
  */
 UCLASS()
-class RS_API UCrosshairWidget : public URSUserWidget
+class RS_API UCrosshairWidget : public UCharacterBoundUserWidget
 {
 	GENERATED_BODY()
 
@@ -63,26 +62,15 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Crosshair|Right|Translation")
 	FVector2D Translation_R_Aim;
 
-	UPROPERTY(Transient)
-	TWeakObjectPtr<APlayerCharacterBase> CachedCharacter;
-
 	// TArray<FAttributeDelegateBinding> AttributeDelegateBindings;
 
 protected:
-	virtual void NativeOnInitialized() override;
-	virtual void NativeConstruct() override;
-	virtual void NativeDestruct() override;
+	virtual bool TryBindCharacterDelegates(APlayerCharacterBase* Character) override;
+	virtual void UnbindCharacterDelegates() override;
 
 	UFUNCTION(BlueprintImplementableEvent, DisplayName="On Aim Alpha Changed", Category="Crosshair")
 	void K2_OnAimAlphaChanged(float Alpha);
 
 private:
-	void OnGameplayReady(bool bIsReady);
-
-	void BindCharacterDelegates(APlayerCharacterBase* Character);
-	void UnbindCharacterDelegates();
-
-	void OnShotSpreadRadiusChanged(const FOnAttributeChangeData& Data);
-
 	void OnAimAlphaChanged(float Alpha);
 };

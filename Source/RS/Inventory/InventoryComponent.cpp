@@ -16,7 +16,7 @@
 
 const FItemTableInfo* FInventoryItem::GetRowInfo(const UDataSubsystem* Subsystem) const
 {
-	if (!IsValid(Subsystem) || ItemRowName.IsNone())
+	if (!Subsystem || ItemRowName.IsNone())
 	{
 		return nullptr;
 	}
@@ -31,6 +31,9 @@ void FInventoryItem::PreReplicatedRemove(const FInventoryArray& InArraySerialize
 		&& InArraySerializer.OwningInventoryComponent->GetOwner()->HasAuthority())
 	{
 		RemoveItemEffect(InArraySerializer.OwningInventoryComponent);
+
+		RS_LOG_DEBUG(LogRSItem, Log, TEXT("%s: Item removed. key: %s"), *LOG_LINE_INFO, *ItemRowName.ToString());
+		InArraySerializer.OwningInventoryComponent->OnItemChanged.Broadcast(ItemRowName, 0);
 	}
 }
 
@@ -41,6 +44,9 @@ void FInventoryItem::PostReplicatedAdd(const FInventoryArray& InArraySerializer)
 		&& InArraySerializer.OwningInventoryComponent->GetOwner()->HasAuthority())
 	{
 		ApplyItemEffect(InArraySerializer.OwningInventoryComponent);
+
+		RS_LOG_DEBUG(LogRSItem, Log, TEXT("%s: Item added. key: %s, count: %d"), *LOG_LINE_INFO, *ItemRowName.ToString(), Count);
+		InArraySerializer.OwningInventoryComponent->OnItemChanged.Broadcast(ItemRowName, Count);
 	}
 }
 
@@ -52,19 +58,22 @@ void FInventoryItem::PostReplicatedChange(const FInventoryArray& InArraySerializ
 	{
 		RemoveItemEffect(InArraySerializer.OwningInventoryComponent);
 		ApplyItemEffect(InArraySerializer.OwningInventoryComponent);
+
+		RS_LOG_DEBUG(LogRSItem, Log, TEXT("%s: Item changed. key: %s, count: %d"), *LOG_LINE_INFO, *ItemRowName.ToString(), Count);
+		InArraySerializer.OwningInventoryComponent->OnItemChanged.Broadcast(ItemRowName, Count);
 	}
 }
 
 void FInventoryItem::ApplyItemEffect(UInventoryComponent* InventoryComponent)
 {
-	if (!IsValid(InventoryComponent))
+	if (!InventoryComponent)
 	{
 		RS_LOG_DEBUG(LogRSItem, Error, TEXT("%s: Invalid inventory component"), *LOG_LINE_INFO);
 		return;
 	}
 
 	auto* ASC = InventoryComponent->GetASC();
-	if (!IsValid(ASC))
+	if (!ASC)
 	{
 		RS_LOG_DEBUG(LogRSItem, Log, TEXT("%s: Invalid ability system component"), *LOG_LINE_INFO);
 		return;
@@ -116,18 +125,18 @@ void FInventoryItem::ApplyItemEffect(UInventoryComponent* InventoryComponent)
 
 void FInventoryItem::RemoveItemEffect(UInventoryComponent* InventoryComponent)
 {
-	if (!IsValid(InventoryComponent) || !AppliedEffectHandle.IsValid())
+	if (!InventoryComponent || !AppliedEffectHandle.IsValid())
 	{
 		RS_LOG_DEBUG(LogRSItem, Error, TEXT("%s: Invalid inventory component or applied effect handle"),
 		             *LOG_LINE_INFO);
 		return;
 	}
 
-	auto* ASC = InventoryComponent->GetASC();
-	if (IsValid(ASC))
+	if (auto* ASC = InventoryComponent->GetASC())
 	{
 		ASC->RemoveActiveGameplayEffect(AppliedEffectHandle);
 	}
+
 	AppliedEffectHandle.Invalidate();
 }
 
@@ -204,6 +213,8 @@ UInventoryComponent::UInventoryComponent()
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
+
+	InventoryArray.OwningInventoryComponent = this;
 
 	SetIsReplicatedByDefault(true);
 }

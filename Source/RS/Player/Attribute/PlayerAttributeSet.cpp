@@ -31,7 +31,7 @@ void UPlayerAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCall
 		}
 	}
 
-	if (Data.EvaluatedData.Attribute == GetHPAttribute())
+	if (Data.EvaluatedData.Attribute == GetCurrentHPAttribute())
 	{
 		OnHpChanged(Instigator);
 	}
@@ -53,6 +53,14 @@ void UPlayerAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribut
 		//
 		// (10.F, FColor::Red, TEXT("%s: 탄착군이 변경됨! 현재 값: %.2f"), *LOG_LINE_INFO, NewValue);
 		// RS_LOG_DEBUG(LogRSBattle, Log, TEXT("%s: 탄착군이 변경됨! 현재 값: %.2f"), *LOG_LINE_INFO, NewValue);
+	}
+	else if (Attribute == GetCurrentHPAttribute())
+	{
+		RS_LOG_DEBUG(LogRSBattle, Log, TEXT("%s: HP가 변경됨! 현재 값: %.2f"), *LOG_LINE_INFO, NewValue);
+	}
+	else if (Attribute == GetMaxHPAttribute())
+	{
+		RS_LOG_DEBUG(LogRSBattle, Log, TEXT("%s: Max HP가 변경됨! 현재 값: %.2f"), *LOG_LINE_INFO, NewValue);
 	}
 }
 

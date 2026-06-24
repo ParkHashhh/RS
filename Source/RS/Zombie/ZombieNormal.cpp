@@ -20,10 +20,10 @@ AZombieNormal::AZombieNormal()
 		ASC->AddAttributeSetSubobject<UZombieStandardAttributeSet>(NormalAttributeSet);
 
 		//테스트를 위해 공격 사거리를 이곳에서 임시로 어트리뷰트셋에 넣어준다.
-		NormalAttributeSet->InitAttack(30.f);
-		NormalAttributeSet->InitDefense(0.f);
-		NormalAttributeSet->InitHP(150.f);
-		NormalAttributeSet->InitHPMax(150.f);
+		NormalAttributeSet->InitAttackPower(30.f);
+		NormalAttributeSet->InitDefensePower(0.f);
+		NormalAttributeSet->InitCurrentHP(150.f);
+		NormalAttributeSet->InitMaxHP(150.f);
 		NormalAttributeSet->InitAttackDistance(200.f);
 	}
 }

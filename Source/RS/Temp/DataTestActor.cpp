@@ -25,15 +25,7 @@ void ADataTestActor::BeginPlay()
 
 	auto* DataSubsystem = GameInstance->GetSubsystem<UDataSubsystem>();
 	check(DataSubsystem);
-
-	if (DataSubsystem->IsItemTableLoaded())
-	{
-		OnItemInfoLoaded();
-	}
-	else
-	{
-		DataSubsystem->OnItemInfoLoaded.AddDynamic(this, &ADataTestActor::OnItemInfoLoaded);
-	}
+	DataSubsystem->ExecuteOrBindOnItemInfoLoaded(this, &ThisClass::OnItemInfoLoaded);
 }
 
 // Called every frame
