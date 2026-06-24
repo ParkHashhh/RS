@@ -504,11 +504,7 @@ void APlayerCharacterBase::AimReleaseKey(const FInputActionValue& Value)
 		return;
 	}
 
-	//ASC->AbilityLocalInputReleased(static_cast<int32>(ERSInputID::Aim));
-
-	FGameplayEventData EventData;
-	ASC->HandleGameplayEvent(
-		FGameplayTag::RequestGameplayTag(TEXT("Player.Combat.Aiming")), &EventData);
+	ASC->AbilityLocalInputReleased(static_cast<int32>(ERSInputID::Aim));
 
 }
 
