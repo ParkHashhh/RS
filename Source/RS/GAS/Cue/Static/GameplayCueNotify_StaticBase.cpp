@@ -19,7 +19,6 @@ bool UGameplayCueNotify_StaticBase::OnExecute_Implementation(AActor* Target,
 {
 
 	FVector SpawnLocation = Target->GetActorLocation();
-
 	if (IsValid(Particle))
 	{
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Particle, SpawnLocation);

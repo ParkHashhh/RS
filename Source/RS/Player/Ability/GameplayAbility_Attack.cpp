@@ -23,7 +23,7 @@ void UGameplayAbility_Attack::ActivateAbility(const FGameplayAbilitySpecHandle H
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	
+	bStop = false;
 	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
 
 	{
@@ -67,17 +67,28 @@ void UGameplayAbility_Attack::ActivateAbility(const FGameplayAbilitySpecHandle H
 void UGameplayAbility_Attack::LoopAttackSequence()
 
 {
-
 	APlayerCharacterBase* PlayerChar = Cast<APlayerCharacterBase>(GetAvatarActorFromActorInfo());
+
 	if (PlayerChar)
 	{
+		if (bStop)
+		{
+			UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+			if (ASC && AttackEffectHandle.IsValid())
+			{
+				ASC->RemoveActiveGameplayEffect(AttackEffectHandle);
+				AttackEffectHandle.Invalidate();
+			}
+			EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+			return;
+
+		}
 		// 캐릭터의 공격 애니메이션 몽타주 가져오기
 		TObjectPtr<UAnimMontage> AttackMontage = PlayerChar->GetBaseAttackMontage();
 
 		if (!AttackMontage)
 		{
-			RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("Have Not AttackMontage"));
-
+			return;
 		}
 		float DefaultAttackSpeed = 1.0f;
 
@@ -111,22 +122,10 @@ void UGameplayAbility_Attack::EndAbility(const FGameplayAbilitySpecHandle Handle
 void UGameplayAbility_Attack::OnAttackSequenceStep()
 {
 	LoopAttackSequence();
-
 }
 
 void UGameplayAbility_Attack::OnInputReleased(float TimeHeld)
 {
-
-	APlayerCharacterBase* PlayerChar = Cast<APlayerCharacterBase>(GetAvatarActorFromActorInfo());
-
-	if (PlayerChar)
-	{
-		UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
-		if (ASC && AttackEffectHandle.IsValid())
-		{
-			ASC->RemoveActiveGameplayEffect(AttackEffectHandle);
-			AttackEffectHandle.Invalidate();
-		}
-	}
-	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+	RS_PRINT_SCREEN(1.f, FColor::Red, TEXT("OnInputReleased 호출됨"));
+	bStop = true;
 }

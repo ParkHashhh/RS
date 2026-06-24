@@ -144,6 +144,20 @@ protected:
 	UPROPERTY(Transient, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Camera|Current")
 	float TargetFOV;
 
+	UPROPERTY(EditAnywhere, Category = "Recoil")
+	float RecoilPitch = 1.5f; 
+
+	UPROPERTY(EditAnywhere, Category = "Recoil")
+	float RecoilYawRange = 0.5f;
+
+	// 보간 속도
+	UPROPERTY(EditAnywhere, Category = "Recoil")
+	float RecoilInterpSpeed = 10.f;
+
+	// Tick에서 보간을 위한 변수
+	float RecoilPitchCurrent = 0.f;
+	float RecoilYawCurrent = 0.f;
+	
 public:
 	FOnDashingChangedDelegate OnDashingChanged;
 	FOnCurrentShotSpreadChangedDelegate OnCurrentShotSpreadChanged;
@@ -241,8 +255,6 @@ public:
 protected:
 	UFUNCTION(Server, Reliable)
 	void Server_SetMaxWalkSpeed(float NewSpeed);
-
-	void OnIsAttackingChanged() const;
 	void OnIsDashingChanged() const;
 
 private:
@@ -277,9 +289,20 @@ private:
 	UFUNCTION()
 	void LoadDefaultData();
 
+	void ApplyRecoil();
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+	void ExecuteMuzzleEffect();
+
+	void ExecuteDecalEffect(const FHitResult& Hit);
+
+
+	void ExecuteHitEffect(const FHitResult& Hit);
+
+
 
 public:
 	virtual void PossessedBy(AController* NewController) override;
@@ -312,6 +335,13 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void Server_ApplyDamage(AActor* TargetActor, FHitResult Hit);
 
+	UFUNCTION(Server, Reliable)
+	void Server_ShootAttackRay();
+
+	bool CalculateHit(FHitResult& Hit);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_ExecuteVisualEffect(const FHitResult& Hit, bool bIsHit);
 public:
 	FOnAimAlphaChangedDelegate OnAimAlphaChanged;
 

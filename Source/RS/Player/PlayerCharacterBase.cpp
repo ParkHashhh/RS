@@ -12,6 +12,7 @@
 #include "RS/Data/Subsystem/DataSubsystem.h"
 #include "RS/Input/InputData.h"
 #include "RS/Zombie/ZombieBase.h"
+#include "GameplayCueManager.h"
 
 // Sets default values
 APlayerCharacterBase::APlayerCharacterBase()
@@ -141,6 +142,7 @@ void APlayerCharacterBase::BeginPlay()
 	}
 }
 
+
 void APlayerCharacterBase::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
@@ -219,6 +221,21 @@ void APlayerCharacterBase::Tick(float DeltaTime)
 			AimAlphaTimeline.TickTimeline(DeltaTime);
 		}
 	}
+
+	if (!FMath::IsNearlyZero(RecoilPitchCurrent))
+	{
+		float PitchDelta = FMath::FInterpTo(0.f, RecoilPitchCurrent, DeltaTime, RecoilInterpSpeed);
+		AddControllerPitchInput(-PitchDelta);
+		RecoilPitchCurrent -= PitchDelta;
+	}
+
+	if (!FMath::IsNearlyZero(RecoilYawCurrent))
+	{
+		float YawDelta = FMath::FInterpTo(0.f, RecoilYawCurrent, DeltaTime, RecoilInterpSpeed);
+		AddControllerYawInput(YawDelta);
+		RecoilYawCurrent -= YawDelta;
+	}
+
 }
 
 // Called to bind functionality to input
@@ -482,12 +499,17 @@ void APlayerCharacterBase::AimKey(const FInputActionValue& Value)
 
 void APlayerCharacterBase::AimReleaseKey(const FInputActionValue& Value)
 {
-	if (!IsLocallyControlled() || !IsValid(ASC))
+	if (!IsValid(ASC))
 	{
 		return;
 	}
 
-	ASC->AbilityLocalInputReleased(static_cast<int32>(ERSInputID::Aim));
+	//ASC->AbilityLocalInputReleased(static_cast<int32>(ERSInputID::Aim));
+
+	FGameplayEventData EventData;
+	ASC->HandleGameplayEvent(
+		FGameplayTag::RequestGameplayTag(TEXT("Player.Combat.Aiming")), &EventData);
+
 }
 
 void APlayerCharacterBase::RotationMouse(const FInputActionValue& Value)
@@ -675,6 +697,13 @@ void APlayerCharacterBase::LoadDefaultData()
 	// TODO: 실제 데이터 처리
 }
 
+void APlayerCharacterBase::ApplyRecoil()
+{
+	// Yaw범위만큼 랜덤
+	RecoilPitchCurrent += RecoilPitch;
+	RecoilYawCurrent += FMath::RandRange(-RecoilYawRange, RecoilYawRange);
+}
+
 void APlayerCharacterBase::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
@@ -736,6 +765,11 @@ ETeamAttitude::Type APlayerCharacterBase::GetTeamAttitudeTowards(const AActor& O
 		       ? ETeamAttitude::Friendly
 		       : ETeamAttitude::Hostile;
 }
+
+
+
+
+
 
 void APlayerCharacterBase::GiveAbilities()
 {
@@ -820,7 +854,6 @@ void APlayerCharacterBase::OnAttackingTagChanged(const FGameplayTag Tag, int32 N
 
 void APlayerCharacterBase::OnDashingTagChanged(const FGameplayTag Tag, int32 NewCount)
 {
-	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("OnDashingTagChanged IsDashing : %d"),IsDashing());
 
 
 	if (GetCharacterMovement() && !GetCharacterMovement()->IsFalling())
@@ -830,24 +863,76 @@ void APlayerCharacterBase::OnDashingTagChanged(const FGameplayTag Tag, int32 New
 	}
 }
 
-
-void APlayerCharacterBase::ShootAttackRay()
+void APlayerCharacterBase::ExecuteMuzzleEffect()
 {
-	FHitResult Hit;
-
-	// 캐릭터 컨트롤러 가져오기
-	APlayerController* PlayerController = Cast<APlayerController>(GetController());
-	if (!IsValid(PlayerController))
+	if (!WeaponMeshComponent)
 		return;
 
-	// 사거리 가져오기
+	FVector MuzzleLocation = WeaponMeshComponent->GetSocketLocation(FName("Muzzle"));
+	FRotator MuzzleRotation = WeaponMeshComponent->GetSocketRotation(FName("Muzzle"));
+
+	// 로컬 전용 GameplayCue 파라미터 구성
+	FGameplayCueParameters CueParams;
+	CueParams.Location = MuzzleLocation;
+	CueParams.Normal = MuzzleRotation.Vector();
+
+	if (ASC)
+	{
+		ASC->ExecuteGameplayCue(FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Weapon.MuzzleFlash")), CueParams);
+		ASC->ExecuteGameplayCue(FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Weapon.MuzzleSmoke")), CueParams);
+	}
+}
+
+void APlayerCharacterBase::ExecuteDecalEffect(const FHitResult& Hit)
+{
+	FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
+	Context.AddHitResult(Hit);
+
+	FGameplayCueParameters CueParams;
+	CueParams.EffectContext = Context;
+	CueParams.Location = Hit.ImpactPoint;
+	CueParams.Normal = Hit.ImpactNormal;
+
+	FGameplayTag CueTag = FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Weapon.Impact"));
+	ASC->ExecuteGameplayCue(CueTag, CueParams);
+}
+
+void APlayerCharacterBase::ExecuteHitEffect(const FHitResult& Hit)
+{
+	FGameplayEffectContextHandle ParticleEffectContext = ASC->MakeEffectContext();
+	ParticleEffectContext.AddHitResult(Hit); 
+
+	FGameplayCueParameters CueParams;
+	CueParams.EffectContext = ParticleEffectContext;
+	CueParams.Location = Hit.ImpactPoint;
+	CueParams.Normal = Hit.ImpactNormal;
+
+	FGameplayTag CueTag = FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Damage"));
+
+	ASC->ExecuteGameplayCue(CueTag, CueParams);
+}
+
+bool APlayerCharacterBase::CalculateHit(FHitResult& Hit)
+{
+	// 캐릭터 컨트롤러 가져오기
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+		// 사거리 가져오기
 	float Dist = AttributeSet->GetAttackDistance();
 
 	FVector CameraLocation;
 	FRotator CameraRotation;
-
-	// 카메라 위치가 어디있고 회전이 얼마나된지 가져오기.
-	PlayerController->GetPlayerViewPoint(CameraLocation, CameraRotation);
+	if (IsValid(PlayerController))
+	{
+		// 로컬 클라이언트: 카메라 기준
+		// 카메라 위치가 어디있고 회전이 얼마나된지 가져오기.
+		PlayerController->GetPlayerViewPoint(CameraLocation, CameraRotation);
+	}
+	else
+	{
+		// 서버에서 원격 캐릭터: 캐릭터 눈 위치 + 컨트롤 로테이션으로 대체
+		CameraLocation = GetPawnViewLocation();
+		CameraRotation = GetBaseAimRotation();
+	}
 
 	// 카메라 방향으로 Ray쏘기위해 카메라 위치에서 방향에 거리만큼 곱해주기
 	FVector CameraEnd = CameraLocation + (CameraRotation.Vector() * Dist);
@@ -880,84 +965,122 @@ void APlayerCharacterBase::ShootAttackRay()
 	FVector FinalEnd = MuzzleLocation + (ShootDirection * Dist);
 
 	// 총구에서 카메라 조준점 끝까지의 히트를 확인하기
-	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, MuzzleLocation, FinalEnd, ECC_GameTraceChannel1, Params);
+	return GetWorld()->LineTraceSingleByChannel(Hit, MuzzleLocation, FinalEnd, ECC_GameTraceChannel1, Params);
+}
 
-	// MuzzleLocation 에서 Cue 소환하여 Flash 이루기
-	FGameplayEffectContextHandle MuzzleContext = ASC->MakeEffectContext();
+void APlayerCharacterBase::Multicast_ExecuteVisualEffect_Implementation(const FHitResult& Hit, bool bIsHit)
+{
+	FGameplayCueParameters CueParams;
+	CueParams.Location = Hit.ImpactPoint;
+	CueParams.Normal = Hit.ImpactNormal;
+	CueParams.PhysicalMaterial = Hit.PhysMaterial;	
 
-	FGameplayCueParameters MuzzleCueParams;
-	MuzzleCueParams.EffectContext = MuzzleContext;
-	MuzzleCueParams.Location = MuzzleLocation;
-	MuzzleCueParams.Normal = MuzzleRotation.Vector();
+	// 타격인지 데칼(벽)인지 태그로 구분하여 실행
+	FGameplayTag Tag = bIsHit
+		? FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Damage"))
+		: FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Weapon.Impact"));
 
+	UGameplayCueManager::ExecuteGameplayCue_NonReplicated(this, Tag, CueParams);
+}
 
-	FGameplayTag MuzzleCueTag = FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Weapon.Muzzle"));
-
-	ASC->ExecuteGameplayCue(MuzzleCueTag, MuzzleCueParams);
-
-	if (bHit)
+void APlayerCharacterBase::Server_ShootAttackRay_Implementation()
+{
+	// 충돌결과를 받을 구조체
+	FHitResult Hit;
+	
+	if (CalculateHit(Hit))
 	{
-		if (IsLocallyControlled())
-		{
-			DrawDebugLine(GetWorld(), MuzzleLocation, Hit.Location, FColor::Red, false, 0.2f, 0, 2.0f);
-		}
+		AActor* TargetActor = Hit.GetActor();
+		ETeamAttitude::Type Attitude = GetTeamAttitudeTowards(*TargetActor);
 
 		// 맞은 액터(TargetActor) 가져오기
-		AActor* TargetActor = Hit.GetActor();
 		if (!TargetActor)
 		{
 			return;
 		}
-
 		// 적군인지 확인
-		ETeamAttitude::Type Attitude = GetTeamAttitudeTowards(*TargetActor);
-
 		if (Attitude == ETeamAttitude::Hostile)
 		{
-			// 적일경우 데미지를 주기 위해 ASC를 가져온다.
-			UAbilitySystemComponent* TargetASC = TargetActor->FindComponentByClass<UAbilitySystemComponent>();
+			Server_ApplyDamage(TargetActor, Hit);
+			Multicast_ExecuteVisualEffect(Hit, true);
 
-			if (TargetASC && ASC)
-			{
-				Server_ApplyDamage(TargetActor, Hit);
-			}
 		}
 		// 아닐경우 벽으로 판정
 		else
 		{
-			FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
-			Context.AddHitResult(Hit);
-
-			FGameplayCueParameters CueParams;
-			CueParams.EffectContext = Context;
-			CueParams.Location = Hit.ImpactPoint;
-			CueParams.Normal = Hit.ImpactNormal;
-
-			RS_PRINT_SCREEN(1.f, FColor::Red, TEXT("Impact Cue 2222222222222"));
-
-			FGameplayTag CueTag = FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Weapon.Impact"));
-			ASC->ExecuteGameplayCue(CueTag, CueParams);
+			Multicast_ExecuteVisualEffect(Hit, false);
 		}
 	}
 	else
 	{
-		// 맞지 않았을때
-		if (IsLocallyControlled())
-		{
-			DrawDebugLine(GetWorld(), MuzzleLocation, FinalEnd, FColor::Green, false, 0.2f, 0, 2.0f);
-		}
+	}
+}
+
+//디버그용 ShootRay
+void APlayerCharacterBase::ShootAttackRay()
+{
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+
+	if (!IsValid(PlayerController))
+		return;
+
+	ApplyRecoil();
+	ExecuteMuzzleEffect();
+
+	FHitResult Hit;
+
+	FVector CameraLocation;
+	FRotator CameraRotation;
+
+
+	PlayerController->GetPlayerViewPoint(CameraLocation, CameraRotation);
+	float Dist = AttributeSet->GetAttackDistance();
+
+	FVector CameraEnd = CameraLocation + (CameraRotation.Vector() * Dist);
+	FHitResult CameraHit;
+	FCollisionQueryParams Params(NAME_None, false, this);
+	Params.bReturnPhysicalMaterial = true;
+
+	GetWorld()->LineTraceSingleByChannel(CameraHit, CameraLocation, CameraEnd, ECC_GameTraceChannel1, Params);
+
+	FVector TargetLocation;
+	if (CameraHit.bBlockingHit)
+	{
+		TargetLocation = CameraHit.ImpactPoint;
+	}
+	else
+	{
+		TargetLocation = CameraEnd;
+	}
+
+	FVector MuzzleLocation = WeaponMeshComponent->GetSocketLocation(FName("Muzzle"));
+	FRotator MuzzleRotation = WeaponMeshComponent->GetSocketRotation(FName("Muzzle"));
+
+	FVector ShootDirection = (TargetLocation - MuzzleLocation).GetSafeNormal();
+
+	FVector FinalEnd = MuzzleLocation + (ShootDirection * Dist);
+
+	if (CalculateHit(Hit))
+	{
+		Server_ShootAttackRay();
+		DrawDebugLine(GetWorld(), MuzzleLocation, Hit.Location, FColor::Red, false, 0.2f, 0, 2.0f);
+	}
+	else
+	{
+		DrawDebugLine(GetWorld(), MuzzleLocation, FinalEnd, FColor::Green, false, 0.2f, 0, 2.0f);
 	}
 }
 
 void APlayerCharacterBase::Server_ApplyDamage_Implementation(AActor* TargetActor, FHitResult Hit)
 {
 	auto* TargetChar = Cast<AZombieBase>(TargetActor);
+
 	if (!TargetChar)
 	{
 		return;
 	}
 
-	auto* TargetASC = TargetActor->FindComponentByClass<UAbilitySystemComponent>();
+	UAbilitySystemComponent* TargetASC = TargetActor->FindComponentByClass<UAbilitySystemComponent>();
 	if (!TargetASC)
 	{
 		return;
@@ -977,14 +1100,5 @@ void APlayerCharacterBase::Server_ApplyDamage_Implementation(AActor* TargetActor
 	                                               -Damage);
 
 	ASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
-	float CurrentHP = TargetChar->GetAttributeSet()->GetHP();
 
-	FGameplayCueParameters CueParams;
-	CueParams.EffectContext = EffectContext;
-	CueParams.Location = Hit.ImpactPoint;
-	CueParams.Normal = Hit.ImpactNormal;
-
-	FGameplayTag CueTag = FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Damage"));
-
-	TargetASC->ExecuteGameplayCue(CueTag, CueParams);
 }

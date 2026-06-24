@@ -18,6 +18,7 @@ bool UGameplayCueNotify_PlayerStatic::OnExecute_Implementation(AActor* Target,
 	const FGameplayCueParameters& Parameters) const
 {
 
+
 	FVector SpawnLocation = Target->GetActorLocation();
 	FRotator SpawnRotation = FRotator::ZeroRotator;
 
@@ -36,7 +37,7 @@ bool UGameplayCueNotify_PlayerStatic::OnExecute_Implementation(AActor* Target,
 
 	if (IsValid(Particle))
 	{
-		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Particle, SpawnLocation, SpawnRotation);
+		UGameplayStatics::SpawnEmitterAtLocation(Target->GetWorld(), Particle, SpawnLocation, SpawnRotation);
 	}
 
 	if (IsValid(Niagara))
@@ -45,25 +46,26 @@ bool UGameplayCueNotify_PlayerStatic::OnExecute_Implementation(AActor* Target,
 
 		NiagaraRotation.Yaw += FMath::RandRange(-NiagaraRandomYawRange, NiagaraRandomYawRange);
 		NiagaraRotation.Pitch += FMath::RandRange(-NiagaraRandomPitchRange, NiagaraRandomPitchRange);
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), Niagara, SpawnLocation, NiagaraRotation + NiagaraRotationOffset);
+
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(Target->GetWorld(), Niagara, SpawnLocation, NiagaraRotation + NiagaraRotationOffset);
+
 
 	}
 
 
 	if (IsValid(Sound))
 	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), Niagara, SpawnLocation, SpawnRotation);
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(Target->GetWorld(), Niagara, SpawnLocation, SpawnRotation);
 	}
 
 	if (IsValid(Decal))
 	{
-		UGameplayStatics::SpawnDecalAtLocation(GetWorld(), Decal, FVector(5.f, 5.f, 5.f), SpawnLocation, SpawnRotation);
-		RS_PRINT_SCREEN(1.f, FColor::Red, TEXT("Decal Is Valid"));
+		UGameplayStatics::SpawnDecalAtLocation(Target->GetWorld(), Decal, FVector(5.f, 5.f, 5.f), SpawnLocation, SpawnRotation);
 	}
 
 	if (IsValid(Splash))
 	{
-		UGameplayStatics::SpawnDecalAtLocation(GetWorld(), Splash, FVector(15.f, 15.f, 15.f), SpawnLocation, SpawnRotation);
+		UGameplayStatics::SpawnDecalAtLocation(Target->GetWorld(), Splash, FVector(15.f, 15.f, 15.f), SpawnLocation, SpawnRotation);
 	}
 
 	EPhysicalSurface Surface = SurfaceType_Default;
@@ -72,8 +74,10 @@ bool UGameplayCueNotify_PlayerStatic::OnExecute_Implementation(AActor* Target,
 	{
 		SurfaceName = Hit->PhysMaterial->GetFName();
 	}
-
-	RS_PRINT_SCREEN(1.f, FColor::Yellow, TEXT("SurfaceName: %s"), *SurfaceName.ToString());
+	else if (Parameters.PhysicalMaterial.IsValid())
+	{
+		SurfaceName = Parameters.PhysicalMaterial->GetFName();
+	}
 
 	UMaterialInterface* SurfaceDecal = SurfaceDecalMap.FindRef(SurfaceName);
 	UMaterialInterface* SurfaceSplash = SurfaceSplashMap.FindRef(SurfaceName);
@@ -84,11 +88,11 @@ bool UGameplayCueNotify_PlayerStatic::OnExecute_Implementation(AActor* Target,
 		SplashRotation = (-Hit->ImpactNormal).Rotation();
 
 	if (IsValid(SurfaceSplash))
-		UGameplayStatics::SpawnDecalAtLocation(GetWorld(), SurfaceSplash,
+		UGameplayStatics::SpawnDecalAtLocation(Target->GetWorld(), SurfaceSplash,
 			SurfaceSplashSize, SpawnLocation, SplashRotation, 4.f);
 
 	if (IsValid(SurfaceDecal))
-		UGameplayStatics::SpawnDecalAtLocation(GetWorld(), SurfaceDecal,
+		UGameplayStatics::SpawnDecalAtLocation(Target->GetWorld(), SurfaceDecal,
 			SurfaceDecalSize, SpawnLocation, SpawnRotation, 4.f);
 
 
