@@ -124,7 +124,7 @@ void APlayerCharacterBase::BeginPlay()
 	UpdatePlayerSpeedState();
 	UpdatePlayerCameraState();
 	AttachWeapon();
-
+	WeaponMeshComponent->SetIsReplicated(true);
 	if (AimAlphaCurve)
 	{
 		FOnTimelineFloat OnTimelineFloat;
@@ -140,6 +140,8 @@ void APlayerCharacterBase::BeginPlay()
 	{
 		OnASCReady.AddUObject(this, &ThisClass::BindGameplayTagDelegate);
 	}
+
+
 }
 
 
@@ -863,6 +865,7 @@ void APlayerCharacterBase::ExecuteMuzzleEffect()
 {
 	if (!WeaponMeshComponent)
 		return;
+	WeaponMeshComponent->UpdateComponentToWorld();
 
 	FVector MuzzleLocation = WeaponMeshComponent->GetSocketLocation(FName("Muzzle"));
 	FRotator MuzzleRotation = WeaponMeshComponent->GetSocketRotation(FName("Muzzle"));
@@ -1023,17 +1026,23 @@ void APlayerCharacterBase::ShootAttackRay()
 	ApplyRecoil();
 	ExecuteMuzzleEffect();
 
+	if (!IsLocallyControlled())
+		return;
+
 	FHitResult Hit;
 
-	FVector CameraLocation;
+	FVector CameraLocation;	
 	FRotator CameraRotation;
 
 
 	PlayerController->GetPlayerViewPoint(CameraLocation, CameraRotation);
+
 	float Dist = AttributeSet->GetAttackDistance();
 
 	FVector CameraEnd = CameraLocation + (CameraRotation.Vector() * Dist);
+
 	FHitResult CameraHit;
+
 	FCollisionQueryParams Params(NAME_None, false, this);
 	Params.bReturnPhysicalMaterial = true;
 

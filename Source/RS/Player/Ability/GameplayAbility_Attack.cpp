@@ -1,6 +1,5 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "GameplayAbility_Attack.h"
 #include "AbilitySystemComponent.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
@@ -23,7 +22,7 @@ void UGameplayAbility_Attack::ActivateAbility(const FGameplayAbilitySpecHandle H
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	bStop = false;
+
 	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
 
 	{
@@ -31,6 +30,7 @@ void UGameplayAbility_Attack::ActivateAbility(const FGameplayAbilitySpecHandle H
 		return;
 	}
 
+	bStop = false;
 	UAbilityTask_WaitInputRelease* WaitRelease = UAbilityTask_WaitInputRelease::WaitInputRelease(this);
 
 	if (WaitRelease)
@@ -67,30 +67,18 @@ void UGameplayAbility_Attack::ActivateAbility(const FGameplayAbilitySpecHandle H
 void UGameplayAbility_Attack::LoopAttackSequence()
 
 {
-	APlayerCharacterBase* PlayerChar = Cast<APlayerCharacterBase>(GetAvatarActorFromActorInfo());
 
+	APlayerCharacterBase* PlayerChar = Cast<APlayerCharacterBase>(GetAvatarActorFromActorInfo());
 	if (PlayerChar)
 	{
-		if (bStop)
-		{
-			UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
-			if (ASC && AttackEffectHandle.IsValid())
-			{
-				ASC->RemoveActiveGameplayEffect(AttackEffectHandle);
-				AttackEffectHandle.Invalidate();
-			}
-			EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
-			return;
-
-		}
-		// 캐릭터의 공격 애니메이션 몽타주 가져오기
 		TObjectPtr<UAnimMontage> AttackMontage = PlayerChar->GetBaseAttackMontage();
 
 		if (!AttackMontage)
 		{
+			RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("Have Not AttackMontage"));
 			return;
 		}
-		float DefaultAttackSpeed = 1.0f;
+		float DefaultAttackSpeed = 0.1f;
 
 		if (PlayerChar->GetAttributeSet())
 		{
@@ -99,9 +87,14 @@ void UGameplayAbility_Attack::LoopAttackSequence()
 
 		DefaultAttackSpeed = FMath::Max(DefaultAttackSpeed, 0.01f);
 
-		UAbilityTask_PlayMontageAndWait* Task = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, NAME_None, AttackMontage);
+		UAbilityTask_PlayMontageAndWait* Task =
+			UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, NAME_None, AttackMontage, 0.7f);
+
 
 		Task->OnCompleted.AddDynamic(this, &UGameplayAbility_Attack::OnAttackSequenceStep);
+		Task->OnBlendOut.AddDynamic(this, &UGameplayAbility_Attack::OnAttackSequenceStep);
+		Task->OnCancelled.AddDynamic(this, &UGameplayAbility_Attack::OnAttackSequenceStep);
+		Task->OnInterrupted.AddDynamic(this, &UGameplayAbility_Attack::OnAttackSequenceStep);
 
 		Task->ReadyForActivation();
 	}
@@ -116,16 +109,34 @@ void UGameplayAbility_Attack::EndAbility(const FGameplayAbilitySpecHandle Handle
 {
 	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("EndAbility Attack"));
 
+	if (ActorInfo->AnimInstance.IsValid())
+	{
+		ActorInfo->AnimInstance->Montage_Stop(0.2f);
+	}
+
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
 void UGameplayAbility_Attack::OnAttackSequenceStep()
 {
-	LoopAttackSequence();
+	if (bStop)
+	{
+		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+	}
+	else
+	{
+		LoopAttackSequence();
+	}
 }
 
 void UGameplayAbility_Attack::OnInputReleased(float TimeHeld)
 {
-	RS_PRINT_SCREEN(1.f, FColor::Red, TEXT("OnInputReleased 호출됨"));
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+	if (ASC)
+	{
+		FGameplayTag AttackTag = FGameplayTag::RequestGameplayTag(TEXT("Player.Combat.Attacking"));
+		ASC->RemoveLooseGameplayTag(AttackTag); // 혹은 ActiveGE 제거
+	}
 	bStop = true;
 }
+

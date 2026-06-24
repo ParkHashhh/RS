@@ -21,6 +21,7 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	bool bIsInAir;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	float Direction = 0.f;
 
@@ -75,10 +76,6 @@ public:
 	}
 
 public:
-	void SetIsAttacking(bool IsAttacking)
-	{
-		bIsAttacking = IsAttacking;
-	}
 
 	virtual void NativeBeginPlay();
 	virtual void NativeUpdateAnimation(float DeltaSeconds);
