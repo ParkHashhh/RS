@@ -45,12 +45,17 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		//  앉기 상태
 
 		bIsAiming = PlayerChar->IsAiming();
+		RS_PRINT_SCREEN(0.f, FColor::Black, TEXT("bIsAiming : %d"), bIsAiming);
 
 		bIsAttacking = PlayerChar->IsAttacking();
+		RS_PRINT_SCREEN(0.f, FColor::Black, TEXT("bIsAttacking : %d"), bIsAttacking);
 
 		bIsDashing = PlayerChar->IsDashing();
 
 		bIsMoveKey = PlayerChar->IsMoveKeyPressed();
+
+		bIsReloading = PlayerChar->IsReloading();
+		RS_PRINT_SCREEN(0.f, FColor::Black, TEXT("bIsReloading : %d"), bIsReloading);
 	}
 }
 
@@ -73,11 +78,13 @@ void UPlayerAnimInstance::PlayBaseAttackMontage()
 
 void UPlayerAnimInstance::MontageEnd(UAnimMontage* Montage, bool bInterrupted)
 {
+
 }
 
 
 void UPlayerAnimInstance::AnimNotify_AttackEnd()
 {
+	
 }
 
 void UPlayerAnimInstance::AnimNotify_AttackRay()
@@ -87,5 +94,21 @@ void UPlayerAnimInstance::AnimNotify_AttackRay()
 	if (IsValid(PlayerChar) && PlayerChar->IsAttacking())
 	{
 		PlayerChar->ShootAttackRay();
+	}
+}
+
+void UPlayerAnimInstance::AnimNotify_ReloadFinish()
+{
+	// 플레이어 캐릭터에 인풋 release Reloading 보내기
+}
+
+void UPlayerAnimInstance::AnimNotify_Reload()
+{
+	// 플레이어 총알 가는 함수
+	TObjectPtr<APlayerCharacterBase> PlayerChar = Cast<APlayerCharacterBase>(TryGetPawnOwner());
+
+	if (IsValid(PlayerChar) && PlayerChar->IsReloading())
+	{
+		PlayerChar->ReloadFinish();
 	}
 }

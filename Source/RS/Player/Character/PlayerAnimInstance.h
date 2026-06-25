@@ -28,6 +28,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UAnimMontage> BaseAttackMontage;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UAnimMontage> ReloadMontage;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	bool bIsAiming;
 
@@ -39,6 +42,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	bool bIsMoveKey;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	bool bIsReloading;
 
 	UPROPERTY(BlueprintReadWrite)
 	FTransform LeftHandTransform;
@@ -53,6 +59,10 @@ public:
 		return BaseAttackMontage;
 	}
 
+	TObjectPtr<UAnimMontage> GetReloadMontage()
+	{
+		return ReloadMontage;
+	}
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	float ViewPitch;
 
@@ -68,6 +78,14 @@ protected:
 
 	UFUNCTION()
 	void AnimNotify_AttackRay();
+
+
+	UFUNCTION()
+	void AnimNotify_ReloadFinish();
+
+
+	UFUNCTION()
+	void AnimNotify_Reload();
 
 public:
 	bool GetDirectionFoward()

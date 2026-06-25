@@ -309,6 +309,12 @@ void APlayerCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		EnhancedInput->BindAction(Action, ETriggerEvent::Canceled, this, &APlayerCharacterBase::AimReleaseKey);
 	}
 
+	Action = InputData->FindAction(FInputKeyNames::Reload);
+
+	if (Action)
+	{
+		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::ReloadKey);
+	}
 #if !UE_BUILD_SHIPPING
 	Action = InputData->FindAction(FInputKeyNames::Debug_00);
 	if (Action)
@@ -380,7 +386,6 @@ void APlayerCharacterBase::Server_SetMaxWalkSpeed_Implementation(float NewSpeed)
 		MovementComponent->MaxWalkSpeed = NewSpeed;
 	}
 }
-
 void APlayerCharacterBase::NotifyASCReady()
 {
 	if (bASCReady)
@@ -397,6 +402,11 @@ void APlayerCharacterBase::NotifyASCReady()
 TObjectPtr<UAnimMontage> APlayerCharacterBase::GetBaseAttackMontage()
 {
 	return AnimInst->GetBaseAttackMontage();
+}
+
+TObjectPtr<UAnimMontage> APlayerCharacterBase::GetReloadMontage()
+{
+	return AnimInst->GetReloadMontage();
 }
 
 void APlayerCharacterBase::MoveKey(const FInputActionValue& Value)
@@ -491,6 +501,21 @@ void APlayerCharacterBase::AimReleaseKey(const FInputActionValue& Value)
 
 	ASC->AbilityLocalInputReleased(static_cast<int32>(ERSInputID::Aim));
 }
+
+void APlayerCharacterBase::ReloadKey(const FInputActionValue& Value)
+{
+	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("ReloadKey"));
+	ASC->AbilityLocalInputPressed(static_cast<int32>(ERSInputID::Reload));
+
+}
+
+
+
+void APlayerCharacterBase::ReloadFinish()
+{
+	ASC->AbilityLocalInputReleased(static_cast<int32>(ERSInputID::Reload));
+}
+
 
 void APlayerCharacterBase::RotationMouse(const FInputActionValue& Value)
 {
@@ -769,6 +794,13 @@ void APlayerCharacterBase::GiveAbilities()
 		DashSpec.InputID = static_cast<int32>(ERSInputID::Dash);
 		ASC->GiveAbility(DashSpec);
 	}
+
+	if (IsValid(ReloadAbilityClass))
+	{
+		FGameplayAbilitySpec ReloadSpec(ReloadAbilityClass, 1);
+		ReloadSpec.InputID = static_cast<int32>(ERSInputID::Reload);
+		ASC->GiveAbility(ReloadSpec);
+	}
 }
 
 void APlayerCharacterBase::SetAimAlpha(float NewAimAlpha)
@@ -796,6 +828,8 @@ void APlayerCharacterBase::BindGameplayTagDelegate()
 		this, &ThisClass::OnAttackingTagChanged);
 	ASC->RegisterGameplayTagEvent(RSTags::Player::Dashing, EGameplayTagEventType::NewOrRemoved).AddUObject(
 		this, &ThisClass::OnDashingTagChanged);
+	ASC->RegisterGameplayTagEvent(RSTags::Player::Reloading, EGameplayTagEventType::NewOrRemoved).AddUObject(
+		this, &ThisClass::OnReloadingTagChanged);
 }
 
 void APlayerCharacterBase::OnAimingTagChanged(const FGameplayTag Tag, int32 NewCount)
@@ -831,6 +865,15 @@ void APlayerCharacterBase::OnAttackingTagChanged(const FGameplayTag Tag, int32 N
 }
 
 void APlayerCharacterBase::OnDashingTagChanged(const FGameplayTag Tag, int32 NewCount)
+{
+	if (GetCharacterMovement() && !GetCharacterMovement()->IsFalling())
+	{
+		UpdatePlayerCameraState();
+		UpdatePlayerSpeedState();
+	}
+}
+
+void APlayerCharacterBase::OnReloadingTagChanged(const FGameplayTag Tag, int32 NewCount)
 {
 	if (GetCharacterMovement() && !GetCharacterMovement()->IsFalling())
 	{

@@ -105,7 +105,12 @@ void UGameplayAbility_Attack::EndAbility(const FGameplayAbilitySpecHandle Handle
 	bool bReplicateEndAbility, bool bWasCancelled)
 {
 	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("EndAbility Attack"));
-
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+	if (ASC)
+	{
+		FGameplayTag AttackTag = FGameplayTag::RequestGameplayTag(TEXT("Player.Combat.Attacking"));
+		ASC->RemoveLooseGameplayTag(AttackTag);
+	}
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
@@ -116,8 +121,6 @@ void UGameplayAbility_Attack::OnAttackSequenceStep()
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 		return;
 	}
-	
-	
 	else
 	{
 		LoopAttackSequence();

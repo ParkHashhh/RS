@@ -90,6 +90,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "Combat|Attack")
 	TSubclassOf<UGameplayAbility> DashAbilityClass;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "Combat|Attack")
+	TSubclassOf<UGameplayAbility> ReloadAbilityClass;	
 
 	FGenericTeamId TeamID;
 
@@ -172,6 +174,9 @@ protected:
 	FOnASCReadyDelegate OnASCReady;
 
 public:
+	void ReloadFinish();
+
+
 	template <typename T>
 	void ExecuteOrBindOnASCReady(T* Object, void (T::*Callback)())
 	{
@@ -212,6 +217,7 @@ public:
 		return IsAttacking();
 	}
 
+
 	FORCEINLINE bool IsDashing() const
 	{
 		return ASC && ASC->HasMatchingGameplayTag(RSTags::Player::Dashing);
@@ -232,6 +238,17 @@ public:
 	bool K2_IsAiming() const
 	{
 		return IsAiming();
+	}
+
+	FORCEINLINE bool IsReloading() const
+	{
+		return ASC && ASC->HasMatchingGameplayTag(RSTags::Player::Reloading);
+	}
+
+	UFUNCTION(BlueprintGetter, DisplayName = "Is Reloading")
+	bool K2_IsReloading() const
+	{
+		return IsReloading();
 	}
 
 	FORCEINLINE UPlayerAttributeSet* GetAttributeSet()
@@ -287,6 +304,7 @@ private:
 	void JumpKey(const FInputActionValue& Value);
 	void AimKey(const FInputActionValue& Value);
 	void AimReleaseKey(const FInputActionValue& Value);
+	void ReloadKey(const FInputActionValue& Value);
 	void RotationMouse(const FInputActionValue& Value);
 	// WeaponSkeleton Attach
 	void AttachWeapon();
@@ -345,6 +363,7 @@ public:
 	TSubclassOf<UGameplayEffect> GetEffect(const FName TagName) const;
 
 	TObjectPtr<UAnimMontage> GetBaseAttackMontage();
+	TObjectPtr<UAnimMontage> GetReloadMontage();
 
 public:
 	virtual void SetGenericTeamId(const FGenericTeamId& ID) override;
@@ -402,6 +421,7 @@ private:
 	void OnAimingTagChanged(const FGameplayTag Tag, int32 NewCount);
 	void OnAttackingTagChanged(const FGameplayTag Tag, int32 NewCount);
 	void OnDashingTagChanged(const FGameplayTag Tag, int32 NewCount);
+	void OnReloadingTagChanged(const FGameplayTag Tag, int32 NewCount);
 
 	UFUNCTION()
 	void OnPlayerDefaultInfoLoaded();
