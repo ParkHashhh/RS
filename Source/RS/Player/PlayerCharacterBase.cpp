@@ -869,8 +869,10 @@ void APlayerCharacterBase::ExecuteBulletTrailEffect(const FVector& MuzzleLocatio
 		SpawnParams.Instigator = this;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-		// 3. 월드에 총알 스폰! (스폰되자마자 총알 안의 ProjectileMovement가 앞으로 날려보냄)
+
+		// 3. 월드에 총알 스폰
 		GetWorld()->SpawnActor<ABulletProjectile>(ProjectileClass, MuzzleLocation, BulletRoation, SpawnParams);
+
 	}
 }
 
@@ -1065,11 +1067,9 @@ void APlayerCharacterBase::ShootAttackRay()
 	{
 		TrailEnd = Hit.ImpactPoint;
 		Server_ShootAttackRay();
-		DrawDebugLine(GetWorld(), MuzzleLocation, Hit.Location, FColor::Red, false, 0.2f, 0, 2.0f);
 	}
 	else
 	{
-		DrawDebugLine(GetWorld(), MuzzleLocation, FinalEnd, FColor::Green, false, 0.2f, 0, 2.0f);
 	}
 	ExecuteBulletTrailEffect(MuzzleLocation, TrailEnd);
 

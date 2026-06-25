@@ -13,6 +13,8 @@ ABulletProjectile::ABulletProjectile()
 
 	CollisionComp = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComp"));
 	CollisionComp->SetCollisionProfileName("Player");
+	// 플레이어 자신 무시
+	CollisionComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 	CollisionComp->SetNotifyRigidBodyCollision(true);
 	CollisionComp->OnComponentHit.AddDynamic(this, &ABulletProjectile::OnHit);
 	CollisionComp->InitSphereRadius(5.0f);
@@ -44,7 +46,7 @@ void ABulletProjectile::Tick(float DeltaTime)
 
 void ABulletProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	if (OtherActor == nullptr || OtherActor == this || OtherActor == GetInstigator())
+	if (!OtherActor || OtherActor == this || OtherActor == GetInstigator())
 	{
 		return;
 	}

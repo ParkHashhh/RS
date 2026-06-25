@@ -75,6 +75,11 @@ void AZombieBase::PostInitializeComponents()
 	Super::PostInitializeComponents();
 	//Beginplay는 상황에 따라 확실하지 않을 수 있으므로 확실한 타이밍인 이곳에서 멤버 변수에 넣어준다.
 	//AnimInstance = Cast<UZombieAnimInstance>(Mesh->GetAnimInstance());
+
+	if (Movement && Body)
+	{
+		Movement->SetUpdatedComponent(Body);
+	}
 }
 
 // Called every frame

@@ -12,19 +12,14 @@ AZombieNormal_Crawler::AZombieNormal_Crawler()
 	Body = CreateDefaultSubobject<UBoxComponent>(TEXT("Body"));
 	Body->SetCollisionProfileName(ZombieCollisionName);
 	Mesh->SetupAttachment(Body);
-	Movement->SetUpdatedComponent(Body);
 
-	Cast<UBoxComponent>(Body)->SetBoxExtent(FVector(70.0, 30.0, 30.0));
-
-	//박스는 네비메쉬와의 보정치가 캡슐만큼 크지 않다.
-	Mesh->SetRelativeLocation(FVector(0.0, 0.0, -35.f));
-	Mesh->SetRelativeRotation(FRotator(0.0, -90.0, 0.0));
-
-	if (IsValid(NormalAttributeSet))
+	double BoxHeight = 30.0;
+	if (auto* Box = Cast<UBoxComponent>(Body))
 	{
-		NormalAttributeSet->InitWalkSpeed(50.f);
-		NormalAttributeSet->InitRunSpeed(75.f);
+		BoxHeight = Box->GetUnscaledBoxExtent().Z;
 	}
+
+	Mesh->SetRelativeLocationAndRotation(FVector(0.0, 0.0, -BoxHeight), FRotator(0.0, -90.0, 0.0));
 }
 
 void AZombieNormal_Crawler::BeginPlay()
@@ -38,4 +33,3 @@ void AZombieNormal_Crawler::Attack()
 {
 	Super::Attack();
 }
-

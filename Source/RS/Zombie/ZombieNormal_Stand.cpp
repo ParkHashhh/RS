@@ -12,20 +12,14 @@ AZombieNormal_Stand::AZombieNormal_Stand()
 	Body = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Body"));
 	Body->SetCollisionProfileName(ZombieCollisionName);
 	Mesh->SetupAttachment(Body);
-	Movement->SetUpdatedComponent(Body);
 
-	Cast<UCapsuleComponent>(Body)->SetCapsuleHalfHeight(75.f);
-	Cast<UCapsuleComponent>(Body)->SetCapsuleRadius(30.f);
-
-	//캡슐은 무브먼트와 네비 메쉬의 보정 수치가 10정도 된다.
-	Mesh->SetRelativeLocation(FVector(0.0, 0.0, -85.f));
-	Mesh->SetRelativeRotation(FRotator(0.0, -90.0, 0.0));
-
-	if (IsValid(NormalAttributeSet))
+	double HalfHeight = 75.0;
+	if (auto* Capsule = Cast<UCapsuleComponent>(Body))
 	{
-		NormalAttributeSet->InitWalkSpeed(150.f);
-		NormalAttributeSet->InitRunSpeed(200.f);
+		HalfHeight = Capsule->GetUnscaledCapsuleHalfHeight();
 	}
+
+	Mesh->SetRelativeLocationAndRotation(FVector(0.0, 0.0, -HalfHeight), FRotator(0.0, -90.0, 0.0));
 }
 
 void AZombieNormal_Stand::BeginPlay()
