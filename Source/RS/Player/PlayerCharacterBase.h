@@ -13,6 +13,8 @@
 #include "RS/RSTags.h"
 #include "RS/Player/Character/PlayerAnimInstance.h"
 #include "RS/Utils/ASCProvider.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
 #include "PlayerCharacterBase.generated.h"
 
 class UDataSubsystem;
@@ -56,6 +58,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCameraComponent> Camera;
+
+	UPROPERTY(EditDefaultsOnly, Category = "VFX")
+	TObjectPtr<UNiagaraSystem> BulletTrailEffect;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSubclassOf<UInputData> InputDataClass;
@@ -296,7 +301,8 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	void ExecuteMuzzleEffect();
+	void ExecuteMuzzleEffect(const FVector& MuzzleLocation, const FRotator& MuzzleRotation);
+	void ExecuteBulletTrailEffect(const FVector& MuzzleLocation, const FVector& TrailEnd);
 
 	void ExecuteDecalEffect(const FHitResult& Hit);
 

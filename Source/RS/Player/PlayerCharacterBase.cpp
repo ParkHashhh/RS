@@ -862,14 +862,11 @@ void APlayerCharacterBase::OnDashingTagChanged(const FGameplayTag Tag, int32 New
 	}
 }
 
-void APlayerCharacterBase::ExecuteMuzzleEffect()
+void APlayerCharacterBase::ExecuteMuzzleEffect(const FVector& MuzzleLocation, const FRotator& MuzzleRotation)
 {
 	if (!WeaponMeshComponent)
 		return;
 	WeaponMeshComponent->UpdateComponentToWorld();
-
-	FVector MuzzleLocation = WeaponMeshComponent->GetSocketLocation(FName("Muzzle"));
-	FRotator MuzzleRotation = WeaponMeshComponent->GetSocketRotation(FName("Muzzle"));
 
 	// 로컬 전용 GameplayCue 파라미터 구성
 	FGameplayCueParameters CueParams;
@@ -880,6 +877,25 @@ void APlayerCharacterBase::ExecuteMuzzleEffect()
 	{
 		ASC->ExecuteGameplayCue(FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Weapon.MuzzleFlash")), CueParams);
 		ASC->ExecuteGameplayCue(FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Weapon.MuzzleSmoke")), CueParams);
+	}
+}
+
+void APlayerCharacterBase::ExecuteBulletTrailEffect(const FVector& MuzzleLocation,const FVector& TrailEnd)
+{
+	if (BulletTrailEffect)
+	{
+		FVector Direction = (TrailEnd - MuzzleLocation).GetSafeNormal();
+		FRotator TrailRotation = Direction.Rotation();
+
+		UNiagaraComponent* Trail = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(), BulletTrailEffect, MuzzleLocation, TrailRotation);
+		RS_PRINT_SCREEN(10.f, FColor::Red, TEXT("Bullet Trail Have"));
+
+		if (Trail)
+		{
+			Trail->SetVectorParameter(FName("BeamStart"), MuzzleLocation);
+			Trail->SetVectorParameter(FName("BeamEnd"), TrailEnd);
+		}
 	}
 }
 
@@ -1025,7 +1041,6 @@ void APlayerCharacterBase::ShootAttackRay()
 		return;
 
 	ApplyRecoil();
-	ExecuteMuzzleEffect();
 
 	if (!IsLocallyControlled())
 		return;
@@ -1049,6 +1064,7 @@ void APlayerCharacterBase::ShootAttackRay()
 
 	GetWorld()->LineTraceSingleByChannel(CameraHit, CameraLocation, CameraEnd, ECC_GameTraceChannel1, Params);
 
+
 	FVector TargetLocation;
 	if (CameraHit.bBlockingHit)
 	{
@@ -1062,12 +1078,17 @@ void APlayerCharacterBase::ShootAttackRay()
 	FVector MuzzleLocation = WeaponMeshComponent->GetSocketLocation(FName("Muzzle"));
 	FRotator MuzzleRotation = WeaponMeshComponent->GetSocketRotation(FName("Muzzle"));
 
+	ExecuteMuzzleEffect(MuzzleLocation, MuzzleRotation);
+
 	FVector ShootDirection = (TargetLocation - MuzzleLocation).GetSafeNormal();
 
 	FVector FinalEnd = MuzzleLocation + (ShootDirection * Dist);
 
+	FVector TrailEnd = FinalEnd;
+
 	if (CalculateHit(Hit))
 	{
+		TrailEnd = Hit.ImpactPoint;
 		Server_ShootAttackRay();
 		DrawDebugLine(GetWorld(), MuzzleLocation, Hit.Location, FColor::Red, false, 0.2f, 0, 2.0f);
 	}
@@ -1075,6 +1096,8 @@ void APlayerCharacterBase::ShootAttackRay()
 	{
 		DrawDebugLine(GetWorld(), MuzzleLocation, FinalEnd, FColor::Green, false, 0.2f, 0, 2.0f);
 	}
+	ExecuteBulletTrailEffect(MuzzleLocation, TrailEnd,MuzzleRotation);
+
 }
 
 void APlayerCharacterBase::Server_ApplyDamage_Implementation(AActor* TargetActor, FHitResult Hit)

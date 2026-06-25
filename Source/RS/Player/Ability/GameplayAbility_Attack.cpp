@@ -67,7 +67,6 @@ void UGameplayAbility_Attack::ActivateAbility(const FGameplayAbilitySpecHandle H
 void UGameplayAbility_Attack::LoopAttackSequence()
 
 {
-
 	APlayerCharacterBase* PlayerChar = Cast<APlayerCharacterBase>(GetAvatarActorFromActorInfo());
 	if (PlayerChar)
 	{
@@ -93,8 +92,6 @@ void UGameplayAbility_Attack::LoopAttackSequence()
 
 		Task->OnCompleted.AddDynamic(this, &UGameplayAbility_Attack::OnAttackSequenceStep);
 		Task->OnBlendOut.AddDynamic(this, &UGameplayAbility_Attack::OnAttackSequenceStep);
-		Task->OnCancelled.AddDynamic(this, &UGameplayAbility_Attack::OnAttackSequenceStep);
-		Task->OnInterrupted.AddDynamic(this, &UGameplayAbility_Attack::OnAttackSequenceStep);
 
 		Task->ReadyForActivation();
 	}
@@ -109,20 +106,18 @@ void UGameplayAbility_Attack::EndAbility(const FGameplayAbilitySpecHandle Handle
 {
 	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("EndAbility Attack"));
 
-	if (ActorInfo->AnimInstance.IsValid())
-	{
-		ActorInfo->AnimInstance->Montage_Stop(0.2f);
-	}
-
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
 void UGameplayAbility_Attack::OnAttackSequenceStep()
 {
-	if (bStop)
+	if (bStop || !IsActive())
 	{
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+		return;
 	}
+	
+	
 	else
 	{
 		LoopAttackSequence();
@@ -135,7 +130,7 @@ void UGameplayAbility_Attack::OnInputReleased(float TimeHeld)
 	if (ASC)
 	{
 		FGameplayTag AttackTag = FGameplayTag::RequestGameplayTag(TEXT("Player.Combat.Attacking"));
-		ASC->RemoveLooseGameplayTag(AttackTag); // 혹은 ActiveGE 제거
+		ASC->RemoveLooseGameplayTag(AttackTag);
 	}
 	bStop = true;
 }

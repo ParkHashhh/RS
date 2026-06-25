@@ -24,6 +24,7 @@ private:
 	FActiveGameplayEffectHandle AttackEffectHandle;
 
 	bool bStop = false;
+
 protected:
 	// 어빌리티가 BeginPlay 등에서 최초 실행될 때 발동하는 함수
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle,

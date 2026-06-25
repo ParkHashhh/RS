@@ -82,8 +82,6 @@ void UPlayerAnimInstance::AnimNotify_AttackEnd()
 
 void UPlayerAnimInstance::AnimNotify_AttackRay()
 {
-	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("AnimNotify_AttackRay"));
-
 	TObjectPtr<APlayerCharacterBase> PlayerChar = Cast<APlayerCharacterBase>(TryGetPawnOwner());
 
 	if (IsValid(PlayerChar) && PlayerChar->IsAttacking())
