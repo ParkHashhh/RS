@@ -103,7 +103,7 @@ void UGameplaySubsystem::BindPawn(APawn* NewPawn)
 
 	if (CachedCharacter.IsValid())
 	{
-		CachedCharacter->OnASCReady.RemoveAll(this);
+		CachedCharacter->RemoveAllOnASCReady(this);
 	}
 
 	CachedCharacter = Character;
@@ -115,14 +115,7 @@ void UGameplaySubsystem::BindPawn(APawn* NewPawn)
 
 	bPawnReady = true;
 
-	if (Character->IsASCReady())
-	{
-		OnASCReadyCallback();
-	}
-	else
-	{
-		Character->OnASCReady.AddUObject(this, &ThisClass::OnASCReadyCallback);
-	}
+	Character->ExecuteOrBindOnASCReady(this, &ThisClass::OnASCReadyCallback);
 }
 
 void UGameplaySubsystem::OnPlayerStateReadyCallback()

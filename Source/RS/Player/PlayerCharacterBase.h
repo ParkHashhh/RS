@@ -11,6 +11,7 @@
 #include <Components/TimelineComponent.h>
 #include "RS/RSCharacter.h"
 #include "RS/RSTags.h"
+#include "RS/RSUtils.h"
 #include "RS/Player/Character/PlayerAnimInstance.h"
 #include "RS/Utils/ASCProvider.h"
 #include "NiagaraFunctionLibrary.h"
@@ -80,11 +81,15 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "GAS")
 	TMap<FName, TSubclassOf<UGameplayEffect>> Effects;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Projectile")
+	TSubclassOf<class ABulletProjectile> ProjectileClass;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "Combat|Attack")
 	TSubclassOf<UGameplayAbility> AttackAbilityClass;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "Combat|Attack")
 	TSubclassOf<UGameplayAbility> DashAbilityClass;
+
 
 	FGenericTeamId TeamID;
 
@@ -96,7 +101,7 @@ protected:
 
 	bool bCanDash = false;
 
-	bool bIsMoveKey = false;
+	bool bIsMoveKeyPressed = false;
 
 	// 기본 감도 값
 	float MouseXSensitivity = 1.0f;
@@ -151,7 +156,7 @@ protected:
 	float TargetFOV;
 
 	UPROPERTY(EditAnywhere, Category = "Recoil")
-	float RecoilPitch = 1.5f; 
+	float RecoilPitch = 1.5f;
 
 	UPROPERTY(EditAnywhere, Category = "Recoil")
 	float RecoilYawRange = 0.5f;
@@ -163,25 +168,34 @@ protected:
 	// Tick에서 보간을 위한 변수
 	float RecoilPitchCurrent = 0.f;
 	float RecoilYawCurrent = 0.f;
-	
-public:
-	FOnDashingChangedDelegate OnDashingChanged;
-	FOnCurrentShotSpreadChangedDelegate OnCurrentShotSpreadChanged;
 
 	FOnASCReadyDelegate OnASCReady;
 
 public:
-	TObjectPtr<UPlayerAnimInstance> GetAnimInst()
+	template <typename T>
+	void ExecuteOrBindOnASCReady(T* Object, void (T::*Callback)())
+	{
+		RSUtils::ExecuteOrBind(IsASCReady(), OnASCReady, Object, Callback);
+	}
+
+	template <typename T>
+	void RemoveAllOnASCReady(T* Object)
+	{
+		static_assert(TIsDerivedFrom<T, UObject>::IsDerived, "T must be derived from UObject");
+		OnASCReady.RemoveAll(Object);
+	}
+
+	UPlayerAnimInstance* GetAnimInst()
 	{
 		return AnimInst;
 	}
 
-	bool GetIsMovekey()
+	bool IsMoveKeyPressed() const
 	{
-		return bIsMoveKey;
+		return bIsMoveKeyPressed;
 	}
 
-	TObjectPtr<USkeletalMeshComponent> GetWeaponComponent()
+	USkeletalMeshComponent* GetWeaponComponent()
 	{
 		return WeaponMeshComponent;
 	}
@@ -261,7 +275,6 @@ public:
 protected:
 	UFUNCTION(Server, Reliable)
 	void Server_SetMaxWalkSpeed(float NewSpeed);
-	void OnIsDashingChanged() const;
 
 private:
 	// Input Function

@@ -13,6 +13,7 @@
 #include "RS/Data/Subsystem/DataSubsystem.h"
 #include "RS/Input/InputData.h"
 #include "RS/Zombie/ZombieBase.h"
+#include "Actor/BulletProjectile.h"
 #include "GameplayCueManager.h"
 
 // Sets default values
@@ -126,18 +127,8 @@ void APlayerCharacterBase::BeginPlay()
 		AimAlphaTimeline.AddInterpFloat(AimAlphaCurve, OnTimelineFloat);
 	}
 
-	if (IsASCReady())
-	{
-		BindGameplayTagDelegate();
-	}
-	else
-	{
-		OnASCReady.AddUObject(this, &ThisClass::BindGameplayTagDelegate);
-	}
-
-
+	ExecuteOrBindOnASCReady(this, &ThisClass::BindGameplayTagDelegate);
 }
-
 
 void APlayerCharacterBase::PossessedBy(AController* NewController)
 {
@@ -237,7 +228,6 @@ void APlayerCharacterBase::Tick(float DeltaTime)
 		AddControllerYawInput(YawDelta);
 		RecoilYawCurrent -= YawDelta;
 	}
-
 }
 
 // Called to bind functionality to input
@@ -409,11 +399,6 @@ TObjectPtr<UAnimMontage> APlayerCharacterBase::GetBaseAttackMontage()
 	return AnimInst->GetBaseAttackMontage();
 }
 
-void APlayerCharacterBase::OnIsDashingChanged() const
-{
-	OnDashingChanged.Broadcast(bIsDashing);
-}
-
 void APlayerCharacterBase::MoveKey(const FInputActionValue& Value)
 {
 	FVector2D MovementVector = Value.Get<FVector2D>();
@@ -422,7 +407,7 @@ void APlayerCharacterBase::MoveKey(const FInputActionValue& Value)
 
 	AddMovementInput(GetActorRightVector(), MovementVector.Y);
 
-	bIsMoveKey = true;
+	bIsMoveKeyPressed = true;
 
 	bCanDash = MovementVector.X > 0.9f && FMath::Abs(MovementVector.Y) < 0.1f;
 
@@ -437,7 +422,7 @@ void APlayerCharacterBase::MoveKey(const FInputActionValue& Value)
 
 void APlayerCharacterBase::MoveReleaseKey(const FInputActionValue& Value)
 {
-	bIsMoveKey = false;
+	bIsMoveKeyPressed = false;
 }
 
 void APlayerCharacterBase::DashKey(const FInputActionValue& Value)
@@ -499,13 +484,12 @@ void APlayerCharacterBase::AimKey(const FInputActionValue& Value)
 
 void APlayerCharacterBase::AimReleaseKey(const FInputActionValue& Value)
 {
-	if (!IsValid(ASC))
+	if (!ASC)
 	{
 		return;
 	}
 
 	ASC->AbilityLocalInputReleased(static_cast<int32>(ERSInputID::Aim));
-
 }
 
 void APlayerCharacterBase::RotationMouse(const FInputActionValue& Value)
@@ -762,11 +746,6 @@ ETeamAttitude::Type APlayerCharacterBase::GetTeamAttitudeTowards(const AActor& O
 		       : ETeamAttitude::Hostile;
 }
 
-
-
-
-
-
 void APlayerCharacterBase::GiveAbilities()
 {
 	if (IsValid(AimingAbilityClass))
@@ -853,8 +832,6 @@ void APlayerCharacterBase::OnAttackingTagChanged(const FGameplayTag Tag, int32 N
 
 void APlayerCharacterBase::OnDashingTagChanged(const FGameplayTag Tag, int32 NewCount)
 {
-
-
 	if (GetCharacterMovement() && !GetCharacterMovement()->IsFalling())
 	{
 		UpdatePlayerCameraState();
@@ -882,20 +859,18 @@ void APlayerCharacterBase::ExecuteMuzzleEffect(const FVector& MuzzleLocation, co
 
 void APlayerCharacterBase::ExecuteBulletTrailEffect(const FVector& MuzzleLocation,const FVector& TrailEnd)
 {
-	if (BulletTrailEffect)
+	if (ProjectileClass)
 	{
 		FVector Direction = (TrailEnd - MuzzleLocation).GetSafeNormal();
-		FRotator TrailRotation = Direction.Rotation();
+		FRotator BulletRoation = Direction.Rotation();
 
-		UNiagaraComponent* Trail = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-			GetWorld(), BulletTrailEffect, MuzzleLocation, TrailRotation);
-		RS_PRINT_SCREEN(10.f, FColor::Red, TEXT("Bullet Trail Have"));
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;
+		SpawnParams.Instigator = this;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-		if (Trail)
-		{
-			Trail->SetVectorParameter(FName("BeamStart"), MuzzleLocation);
-			Trail->SetVectorParameter(FName("BeamEnd"), TrailEnd);
-		}
+		// 3. 월드에 총알 스폰! (스폰되자마자 총알 안의 ProjectileMovement가 앞으로 날려보냄)
+		GetWorld()->SpawnActor<ABulletProjectile>(ProjectileClass, MuzzleLocation, BulletRoation, SpawnParams);
 	}
 }
 
@@ -916,7 +891,7 @@ void APlayerCharacterBase::ExecuteDecalEffect(const FHitResult& Hit)
 void APlayerCharacterBase::ExecuteHitEffect(const FHitResult& Hit)
 {
 	FGameplayEffectContextHandle ParticleEffectContext = ASC->MakeEffectContext();
-	ParticleEffectContext.AddHitResult(Hit); 
+	ParticleEffectContext.AddHitResult(Hit);
 
 	FGameplayCueParameters CueParams;
 	CueParams.EffectContext = ParticleEffectContext;
@@ -989,7 +964,7 @@ void APlayerCharacterBase::Multicast_ExecuteVisualEffect_Implementation(const FH
 	FGameplayCueParameters CueParams;
 	CueParams.Location = Hit.ImpactPoint;
 	CueParams.Normal = Hit.ImpactNormal;
-	CueParams.PhysicalMaterial = Hit.PhysMaterial;	
+	CueParams.PhysicalMaterial = Hit.PhysMaterial;
 
 	// 타격인지 데칼(벽)인지 태그로 구분하여 실행
 	FGameplayTag Tag = bIsHit
@@ -1003,7 +978,7 @@ void APlayerCharacterBase::Server_ShootAttackRay_Implementation()
 {
 	// 충돌결과를 받을 구조체
 	FHitResult Hit;
-	
+
 	if (CalculateHit(Hit))
 	{
 		AActor* TargetActor = Hit.GetActor();
@@ -1047,7 +1022,7 @@ void APlayerCharacterBase::ShootAttackRay()
 
 	FHitResult Hit;
 
-	FVector CameraLocation;	
+	FVector CameraLocation;
 	FRotator CameraRotation;
 
 
@@ -1096,20 +1071,19 @@ void APlayerCharacterBase::ShootAttackRay()
 	{
 		DrawDebugLine(GetWorld(), MuzzleLocation, FinalEnd, FColor::Green, false, 0.2f, 0, 2.0f);
 	}
-	ExecuteBulletTrailEffect(MuzzleLocation, TrailEnd,MuzzleRotation);
+	ExecuteBulletTrailEffect(MuzzleLocation, TrailEnd);
 
 }
 
 void APlayerCharacterBase::Server_ApplyDamage_Implementation(AActor* TargetActor, FHitResult Hit)
 {
 	auto* TargetChar = Cast<AZombieBase>(TargetActor);
-
 	if (!TargetChar)
 	{
 		return;
 	}
 
-	UAbilitySystemComponent* TargetASC = TargetActor->FindComponentByClass<UAbilitySystemComponent>();
+	auto* TargetASC = TargetActor->FindComponentByClass<UAbilitySystemComponent>();
 	if (!TargetASC)
 	{
 		return;
@@ -1128,9 +1102,7 @@ void APlayerCharacterBase::Server_ApplyDamage_Implementation(AActor* TargetActor
 	                                               -Damage);
 
 	ASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
-
 }
-
 
 void APlayerCharacterBase::OnPlayerDefaultInfoLoaded()
 {
@@ -1162,17 +1134,6 @@ void APlayerCharacterBase::OnPlayerDefaultInfoLoaded()
 
 					ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
 				}
-
-				// if (AttributeSet)
-				// {
-				// 	AttributeSet->SetHPMax(Info->MaxHP);
-				// 	AttributeSet->SetHP(Info->MaxHP);
-				// }
-
-				FString NetContext = HasAuthority() ? TEXT("Server") : TEXT("Client");
-				RS_LOG_DEBUG(LogRSCommon, Log,
-					TEXT("[%s] OnPlayerDefaultInfoLoaded: MaxHP(%.2f) Applied Successfully."), *NetContext,
-					Info->MaxHP);
 
 				NotifyASCReady();
 			}

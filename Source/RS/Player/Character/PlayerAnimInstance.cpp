@@ -50,7 +50,7 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 		bIsDashing = PlayerChar->IsDashing();
 
-		bIsMoveKey = PlayerChar->GetIsMovekey();
+		bIsMoveKey = PlayerChar->IsMoveKeyPressed();
 	}
 }
 
