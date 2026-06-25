@@ -99,11 +99,7 @@ void UPlayerAnimInstance::AnimNotify_AttackRay()
 
 void UPlayerAnimInstance::AnimNotify_ReloadFinish()
 {
-	// 플레이어 캐릭터에 인풋 release Reloading 보내기
-}
 
-void UPlayerAnimInstance::AnimNotify_Reload()
-{
 	// 플레이어 총알 가는 함수
 	TObjectPtr<APlayerCharacterBase> PlayerChar = Cast<APlayerCharacterBase>(TryGetPawnOwner());
 
@@ -111,4 +107,11 @@ void UPlayerAnimInstance::AnimNotify_Reload()
 	{
 		PlayerChar->ReloadFinish();
 	}
+
+}
+
+void UPlayerAnimInstance::AnimNotify_Reload()
+{
+	// 플레이어 캐릭터에 인풋 release Reloading 보내기
+
 }

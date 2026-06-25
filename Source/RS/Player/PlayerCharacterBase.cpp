@@ -505,6 +505,7 @@ void APlayerCharacterBase::AimReleaseKey(const FInputActionValue& Value)
 void APlayerCharacterBase::ReloadKey(const FInputActionValue& Value)
 {
 	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("ReloadKey"));
+
 	ASC->AbilityLocalInputPressed(static_cast<int32>(ERSInputID::Reload));
 
 }
@@ -659,14 +660,15 @@ void APlayerCharacterBase::UpdatePlayerCameraState()
 void APlayerCharacterBase::UpdatePlayerSpeedState()
 {
 	UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
+	float TargetSpeed = 400.f;
+
 	if (MovementComponent->IsFalling())
 	{
-		MovementComponent->MaxWalkSpeed = 400.f;
-		Server_SetMaxWalkSpeed(400.f);
+		MovementComponent->MaxWalkSpeed = TargetSpeed;
+		Server_SetMaxWalkSpeed(TargetSpeed);
 		return;
 	}
 
-	float TargetSpeed = 400.f;
 
 	if (IsDashing())
 	{
