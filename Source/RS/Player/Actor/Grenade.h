@@ -33,10 +33,15 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "FX")
 	TObjectPtr<class UNiagaraSystem>		Niagara;
 
+	FTimerHandle ExplosionTimerHandle;
+
+
 public:
 	// 매 프레임 호출
 	virtual void Tick(float DeltaTime) override;
 
+private:
+	void Explode();
 
 protected:
 	UFUNCTION()

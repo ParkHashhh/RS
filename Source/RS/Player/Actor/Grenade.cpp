@@ -5,6 +5,7 @@
 
 #include "Components/SphereComponent.h"
 #include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"       
 #include "GameFramework/ProjectileMovementComponent.h"
 
 // Sets default values
@@ -39,6 +40,7 @@ AGrenade::AGrenade()
 
 	bReplicates = true; 
 	SetReplicateMovement(true);
+
 }
 
 // Called when the game starts or when spawned
@@ -46,6 +48,7 @@ void AGrenade::BeginPlay()
 {
 	Super::BeginPlay();
 
+	GetWorldTimerManager().SetTimer(ExplosionTimerHandle, this, &AGrenade::Explode, 3.0f, false);
 }
 
 // Called every frame
@@ -53,6 +56,18 @@ void AGrenade::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+}
+
+void AGrenade::Explode()
+{
+	if (IsValid(Niagara))
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), Niagara, GetActorLocation());
+	}
+
+	// 주변에 Apply Damage 필요
+
+	Destroy();
 }
 
 void AGrenade::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
