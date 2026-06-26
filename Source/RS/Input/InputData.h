@@ -27,6 +27,7 @@ struct FInputKeyNames
 	inline static const FName Rotation = FName(TEXT("Rotation"));
 	inline static const FName Aim = FName(TEXT("Aim"));
 	inline static const FName Reload = FName(TEXT("Reload"));
+	inline static const FName SubSkill = FName(TEXT("SubSkill"));
 
 	inline static const FName Debug_00 = FName(TEXT("debug_00"));
 	inline static const FName Debug_01 = FName(TEXT("debug_01"));

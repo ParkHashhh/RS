@@ -4,25 +4,24 @@
 
 #include "CoreMinimal.h"
 #include "GameplayAbility_PlayerBase.h"
-#include "GameplayAbility_PlayerReload.generated.h"
+#include "GameplayAbility_Grenade.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class RS_API UGameplayAbility_PlayerReload : public UGameplayAbility_PlayerBase
+class RS_API UGameplayAbility_Grenade : public UGameplayAbility_PlayerBase
 {
 	GENERATED_BODY()
 
-
 public:
-	UGameplayAbility_PlayerReload();
+	UGameplayAbility_Grenade();
 
 private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
-	TSubclassOf<UGameplayEffect> ReloadGameplayEffect;
+	TSubclassOf<UGameplayEffect> GrenadeGameplayEffect;
 
-	FActiveGameplayEffectHandle ReloadffectHandle;
+	FActiveGameplayEffectHandle GrenadeEffectHandle;
 protected:
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		const FGameplayAbilityActorInfo* ActorInfo,
@@ -38,5 +37,5 @@ protected:
 
 protected:
 	UFUNCTION()
-	void OnFinishReload(float TimeHeld);
+	void OnFinishGrenade(float TimeHeld);
 };

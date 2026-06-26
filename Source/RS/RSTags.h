@@ -11,6 +11,7 @@ namespace RSTags
 		UE_DECLARE_GAMEPLAY_TAG_EXTERN(Attacking);
 		UE_DECLARE_GAMEPLAY_TAG_EXTERN(Dashing);
 		UE_DECLARE_GAMEPLAY_TAG_EXTERN(Reloading);
+		UE_DECLARE_GAMEPLAY_TAG_EXTERN(SubSkilling);
 	}
 
 	namespace Zombie

@@ -14,6 +14,7 @@
 #include "RS/Input/InputData.h"
 #include "RS/Zombie/ZombieBase.h"
 #include "Actor/BulletProjectile.h"
+#include "Actor/Grenade.h"
 #include "GameplayCueManager.h"
 
 // Sets default values
@@ -315,6 +316,14 @@ void APlayerCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 	{
 		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::ReloadKey);
 	}
+
+	Action = InputData->FindAction(FInputKeyNames::SubSkill);
+
+	if (Action)
+	{
+		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::SubSkillKey);
+	}
+
 #if !UE_BUILD_SHIPPING
 	Action = InputData->FindAction(FInputKeyNames::Debug_00);
 	if (Action)
@@ -407,6 +416,11 @@ TObjectPtr<UAnimMontage> APlayerCharacterBase::GetBaseAttackMontage()
 TObjectPtr<UAnimMontage> APlayerCharacterBase::GetReloadMontage()
 {
 	return AnimInst->GetReloadMontage();
+}
+
+TObjectPtr<UAnimMontage> APlayerCharacterBase::GetSubSkillMontage()
+{
+	return AnimInst->GetSubSkillMontage();
 }
 
 void APlayerCharacterBase::MoveKey(const FInputActionValue& Value)
@@ -510,11 +524,75 @@ void APlayerCharacterBase::ReloadKey(const FInputActionValue& Value)
 
 }
 
+void APlayerCharacterBase::SubSkillKey(const FInputActionValue& Value)
+{
+
+
+	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("SubSkillKey"));
+
+	ASC->AbilityLocalInputPressed(static_cast<int32>(ERSInputID::SubSkill));
+}
+
+
+void APlayerCharacterBase::Server_SpawnGrenade_Implementation(const FVector& SpawnLocation, const FRotator& GrenadeRotation)
+{
+	if (GrenadeClass)
+	{
+
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;
+		SpawnParams.Instigator = this;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		// 수류탄 생성
+		GetWorld()->SpawnActor<AGrenade>(GrenadeClass, SpawnLocation, GrenadeRotation, SpawnParams);
+	}
+}
 
 
 void APlayerCharacterBase::ReloadFinish()
 {
 	ASC->AbilityLocalInputReleased(static_cast<int32>(ERSInputID::Reload));
+}
+
+void APlayerCharacterBase::MakeGrenade()
+{
+
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+
+	FVector SpawnLocation = GetMesh()->GetSocketLocation(FName("Grenade_Socket"));
+
+	FVector DummyCameraLocation;
+	FRotator CameraRotation;
+	if (IsValid(PlayerController) && IsLocallyControlled())
+	{
+		// 카메라 위치가 어디있고 회전이 얼마나된지 가져오기.
+		PlayerController->GetPlayerViewPoint(DummyCameraLocation, CameraRotation);
+	}
+	else
+	{
+		// 서버에는 카메라가 없기때문에 각도 가져오기
+		CameraRotation = GetBaseAimRotation();
+	}
+
+	Server_SpawnGrenade(SpawnLocation, CameraRotation);
+
+}
+
+void APlayerCharacterBase::EndGrenade()
+{
+	ASC->AbilityLocalInputReleased(static_cast<int32>(ERSInputID::SubSkill));
+	WeaponMeshComponent->SetVisibility(true, true);
+	WeaponMeshComponent->SetHiddenInGame(false);
+
+	WeaponMeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+}
+
+void APlayerCharacterBase::StartGrenade()
+{
+	WeaponMeshComponent->SetVisibility(false, true);
+	WeaponMeshComponent->SetHiddenInGame(true);
+
+	WeaponMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 
@@ -803,6 +881,13 @@ void APlayerCharacterBase::GiveAbilities()
 		ReloadSpec.InputID = static_cast<int32>(ERSInputID::Reload);
 		ASC->GiveAbility(ReloadSpec);
 	}
+
+	if (IsValid(SubSkillAbilityClass))
+	{
+		FGameplayAbilitySpec SubSkillSpec(SubSkillAbilityClass, 1);
+		SubSkillSpec.InputID = static_cast<int32>(ERSInputID::SubSkill);
+		ASC->GiveAbility(SubSkillSpec);
+	}
 }
 
 void APlayerCharacterBase::SetAimAlpha(float NewAimAlpha)
@@ -832,6 +917,8 @@ void APlayerCharacterBase::BindGameplayTagDelegate()
 		this, &ThisClass::OnDashingTagChanged);
 	ASC->RegisterGameplayTagEvent(RSTags::Player::Reloading, EGameplayTagEventType::NewOrRemoved).AddUObject(
 		this, &ThisClass::OnReloadingTagChanged);
+	ASC->RegisterGameplayTagEvent(RSTags::Player::SubSkilling, EGameplayTagEventType::NewOrRemoved).AddUObject(
+		this, &ThisClass::OnSubSkillingTagChanged);
 }
 
 void APlayerCharacterBase::OnAimingTagChanged(const FGameplayTag Tag, int32 NewCount)
@@ -876,6 +963,15 @@ void APlayerCharacterBase::OnDashingTagChanged(const FGameplayTag Tag, int32 New
 }
 
 void APlayerCharacterBase::OnReloadingTagChanged(const FGameplayTag Tag, int32 NewCount)
+{
+	if (GetCharacterMovement() && !GetCharacterMovement()->IsFalling())
+	{
+		UpdatePlayerCameraState();
+		UpdatePlayerSpeedState();
+	}
+}
+
+void APlayerCharacterBase::OnSubSkillingTagChanged(const FGameplayTag Tag, int32 NewCount)
 {
 	if (GetCharacterMovement() && !GetCharacterMovement()->IsFalling())
 	{

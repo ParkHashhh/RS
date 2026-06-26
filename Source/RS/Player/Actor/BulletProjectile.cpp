@@ -11,7 +11,7 @@ ABulletProjectile::ABulletProjectile()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	CollisionComp = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComp"));
+	CollisionComp = CreateDefaultSubobject<USphereComponent>(TEXT("Collision"));
 	CollisionComp->SetCollisionProfileName("Player");
 	// 플레이어 자신 무시
 	CollisionComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);

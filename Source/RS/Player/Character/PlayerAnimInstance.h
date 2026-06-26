@@ -31,6 +31,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UAnimMontage> ReloadMontage;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UAnimMontage> SubSkillMontage;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	bool bIsAiming;
 
@@ -45,6 +48,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	bool bIsReloading;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	bool bIsSubSkilling;
 
 	UPROPERTY(BlueprintReadWrite)
 	FTransform LeftHandTransform;
@@ -63,6 +69,11 @@ public:
 	{
 		return ReloadMontage;
 	}
+
+	TObjectPtr<UAnimMontage> GetSubSkillMontage()
+	{
+		return SubSkillMontage;
+	}
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	float ViewPitch;
 
@@ -72,20 +83,25 @@ public:
 protected:
 	UFUNCTION()
 	void MontageEnd(UAnimMontage* Montage, bool bInterrupted);
-
 	UFUNCTION()
 	void AnimNotify_AttackEnd();
-
 	UFUNCTION()
 	void AnimNotify_AttackRay();
 
 
 	UFUNCTION()
+	void AnimNotify_Reload();
+	UFUNCTION()
 	void AnimNotify_ReloadFinish();
 
 
 	UFUNCTION()
-	void AnimNotify_Reload();
+	void AnimNotify_StartGrenade();
+	UFUNCTION()
+	void AnimNotify_EndGrenade();
+	UFUNCTION()
+	void AnimNotify_MakeGrenade();
+
 
 public:
 	bool GetDirectionFoward()

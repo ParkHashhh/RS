@@ -84,6 +84,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Projectile")
 	TSubclassOf<class ABulletProjectile> ProjectileClass;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Projectile")
+	TSubclassOf<class AGrenade> GrenadeClass;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "Combat|Attack")
 	TSubclassOf<UGameplayAbility> AttackAbilityClass;
 
@@ -92,6 +95,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "Combat|Attack")
 	TSubclassOf<UGameplayAbility> ReloadAbilityClass;	
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "Combat|Attack")
+	TSubclassOf<UGameplayAbility> SubSkillAbilityClass;
 
 	FGenericTeamId TeamID;
 
@@ -175,6 +181,10 @@ protected:
 
 public:
 	void ReloadFinish();
+	void MakeGrenade();
+	void EndGrenade();
+	void StartGrenade();
+
 
 
 	template <typename T>
@@ -227,6 +237,18 @@ public:
 	bool K2_IsDashing() const
 	{
 		return IsDashing();
+	}
+
+
+	FORCEINLINE bool IsSubSkilling() const
+	{
+		return ASC && ASC->HasMatchingGameplayTag(RSTags::Player::SubSkilling);
+	}
+
+	UFUNCTION(BlueprintGetter, DisplayName = "Is SubSkilling")
+	bool K2_IsSubSkilling() const
+	{
+		return IsSubSkilling();
 	}
 
 	FORCEINLINE bool IsAiming() const
@@ -293,6 +315,11 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void Server_SetMaxWalkSpeed(float NewSpeed);
 
+
+	UFUNCTION(Server, Reliable)
+	void Server_SpawnGrenade(const FVector& SpawnLocation, const FRotator& GrenadeRotation);
+
+
 private:
 	// Input Function
 	void MoveKey(const FInputActionValue& Value);
@@ -305,6 +332,7 @@ private:
 	void AimKey(const FInputActionValue& Value);
 	void AimReleaseKey(const FInputActionValue& Value);
 	void ReloadKey(const FInputActionValue& Value);
+	void SubSkillKey(const FInputActionValue& Value);
 	void RotationMouse(const FInputActionValue& Value);
 	// WeaponSkeleton Attach
 	void AttachWeapon();
@@ -364,6 +392,7 @@ public:
 
 	TObjectPtr<UAnimMontage> GetBaseAttackMontage();
 	TObjectPtr<UAnimMontage> GetReloadMontage();
+	TObjectPtr<UAnimMontage> GetSubSkillMontage();
 
 public:
 	virtual void SetGenericTeamId(const FGenericTeamId& ID) override;
@@ -422,6 +451,7 @@ private:
 	void OnAttackingTagChanged(const FGameplayTag Tag, int32 NewCount);
 	void OnDashingTagChanged(const FGameplayTag Tag, int32 NewCount);
 	void OnReloadingTagChanged(const FGameplayTag Tag, int32 NewCount);
+	void OnSubSkillingTagChanged(const FGameplayTag Tag, int32 NewCount);
 
 	UFUNCTION()
 	void OnPlayerDefaultInfoLoaded();

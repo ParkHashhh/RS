@@ -51,11 +51,17 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		RS_PRINT_SCREEN(0.f, FColor::Black, TEXT("bIsAttacking : %d"), bIsAttacking);
 
 		bIsDashing = PlayerChar->IsDashing();
+		RS_PRINT_SCREEN(0.f, FColor::Black, TEXT("bIsDashing : %d"), bIsDashing);
 
 		bIsMoveKey = PlayerChar->IsMoveKeyPressed();
+		RS_PRINT_SCREEN(0.f, FColor::Black, TEXT("bIsMoveKey : %d"), bIsMoveKey);
 
 		bIsReloading = PlayerChar->IsReloading();
 		RS_PRINT_SCREEN(0.f, FColor::Black, TEXT("bIsReloading : %d"), bIsReloading);
+
+		bIsSubSkilling = PlayerChar->IsSubSkilling();
+		RS_PRINT_SCREEN(0.f, FColor::Black, TEXT("bIsSubSkilling : %d"), bIsSubSkilling);
+
 	}
 }
 
@@ -110,8 +116,40 @@ void UPlayerAnimInstance::AnimNotify_ReloadFinish()
 
 }
 
+void UPlayerAnimInstance::AnimNotify_StartGrenade()
+{
+	TObjectPtr<APlayerCharacterBase> PlayerChar = Cast<APlayerCharacterBase>(TryGetPawnOwner());
+
+	if (IsValid(PlayerChar))
+	{
+		PlayerChar->StartGrenade();
+	}
+}
+
+void UPlayerAnimInstance::AnimNotify_EndGrenade()
+{
+	TObjectPtr<APlayerCharacterBase> PlayerChar = Cast<APlayerCharacterBase>(TryGetPawnOwner());
+
+	if (IsValid(PlayerChar))
+	{
+		PlayerChar->EndGrenade();
+	}
+}
+
+void UPlayerAnimInstance::AnimNotify_MakeGrenade()
+{
+	TObjectPtr<APlayerCharacterBase> PlayerChar = Cast<APlayerCharacterBase>(TryGetPawnOwner());
+
+	if (IsValid(PlayerChar))
+	{
+		PlayerChar->MakeGrenade();
+	}
+}
+
 void UPlayerAnimInstance::AnimNotify_Reload()
 {
 	// 플레이어 캐릭터에 인풋 release Reloading 보내기
 
 }
+
+

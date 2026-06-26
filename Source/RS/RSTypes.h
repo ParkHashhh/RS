@@ -171,6 +171,7 @@ enum class ERSInputID : uint8
 	Fire,
 	Aim,
 	Reload,
+	SubSkill,
 	Dash,
 	Interact,
 };

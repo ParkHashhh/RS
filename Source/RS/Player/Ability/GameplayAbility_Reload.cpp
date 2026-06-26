@@ -1,7 +1,7 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "GameplayAbility_PlayerReload.h"
+#include "GameplayAbility_Reload.h"
 #include "AbilitySystemComponent.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitInputRelease.h"
@@ -10,13 +10,13 @@
 #include "RS/LogCategory.h"
 
 
-UGameplayAbility_PlayerReload::UGameplayAbility_PlayerReload()
+UGameplayAbility_Reload::UGameplayAbility_Reload()
 {
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 
 }
 
-void UGameplayAbility_PlayerReload::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
+void UGameplayAbility_Reload::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	const FGameplayAbilityActorInfo* ActorInfo,
 	const FGameplayAbilityActivationInfo ActivationInfo,
 	const FGameplayEventData* TriggerEventData)
@@ -35,7 +35,7 @@ void UGameplayAbility_PlayerReload::ActivateAbility(const FGameplayAbilitySpecHa
 
 	if (WaitRelease)
 	{
-		WaitRelease->OnRelease.AddDynamic(this, &UGameplayAbility_PlayerReload::OnFinishReload);
+		WaitRelease->OnRelease.AddDynamic(this, &UGameplayAbility_Reload::OnFinishReload);
 		WaitRelease->ReadyForActivation();
 	}
 	APlayerCharacterBase* PlayerChar = Cast<APlayerCharacterBase>(GetAvatarActorFromActorInfo());
@@ -73,7 +73,7 @@ void UGameplayAbility_PlayerReload::ActivateAbility(const FGameplayAbilitySpecHa
 
 
 
-void UGameplayAbility_PlayerReload::EndAbility(const FGameplayAbilitySpecHandle Handle,
+void UGameplayAbility_Reload::EndAbility(const FGameplayAbilitySpecHandle Handle,
 	const FGameplayAbilityActorInfo* ActorInfo,
 	const FGameplayAbilityActivationInfo ActivationInfo,
 	bool bReplicateEndAbility, bool bWasCancelled)
@@ -89,7 +89,7 @@ void UGameplayAbility_PlayerReload::EndAbility(const FGameplayAbilitySpecHandle 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
-void UGameplayAbility_PlayerReload::OnFinishReload(float TimeHeld)
+void UGameplayAbility_Reload::OnFinishReload(float TimeHeld)
 {
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }
