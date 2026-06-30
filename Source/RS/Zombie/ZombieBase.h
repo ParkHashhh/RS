@@ -40,7 +40,8 @@ class RS_API AZombieBase : public ARSPawn,
 	GENERATED_BODY()
 
 public:
-	inline static const FName ZombieCollisionName = TEXT("Zombie");
+	inline static const FName ZombieBodyCollisionName = TEXT("Zombie");
+	inline static const FName ZombieMeshCollisionName = TEXT("ZombieBody");
 
 	// Sets default values for this pawn's properties
 	AZombieBase();
@@ -71,8 +72,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta =(AllowPrivateAccess = "true"))
 	TSubclassOf<AZombieAIController> AICtrl;
 
-	FGenericTeamId TeamID;
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS", meta = (AllowPrivateAccess = "true"));
 	TSubclassOf<UGameplayAbility> AttackAbility;
 
@@ -87,6 +86,11 @@ protected:
 	UPROPERTY();
 	FVector NextPointLocation;
 
+	UPROPERTY(Replicated)
+	int32 AtkMontageIndex;
+
+	FGenericTeamId TeamID;
+
 	TArray<TObjectPtr<UMaterialInstanceDynamic>> MaterialArray;
 
 	//디졸브는 0.5 시작, -0.5 완료임을 테스트로 확인함
@@ -95,8 +99,14 @@ protected:
 	UPROPERTY(Replicated)
 	bool bDissolveEnable = false;
 
-	UPROPERTY(Replicated)
-	int32 AtkMontageIndex;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPirvateAccess = "true"))
+	float TurnSpeed;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
+	TMap<TEnumAsByte<EPhysicalSurface>, TObjectPtr<USoundBase>> SoundCueMap;
+
+	//행 이름으로써 검색을 위해 좀비이름을 들고 있게 한다.
+	FName ZombieName;
 
 protected:
 	// Called when the game starts or when spawned
@@ -133,11 +143,20 @@ public:
 	{
 		return NextPointLocation;
 	}
+	float GetTurnSpeed() const
+	{
+		return TurnSpeed;
+	}
+	UZombieAnimInstance* GetAnimInst() const
+	{
+		return AnimInstance;
+	}
 
 public:
 	virtual void SetGenericTeamId(const FGenericTeamId& ID);
 	virtual FGenericTeamId GetGenericTeamId() const;
 	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const;
+
 public:
 	virtual void Attack();
 	TSubclassOf<UGameplayEffect> GetEffect(const FName& Name);
@@ -150,16 +169,15 @@ public:
 	void ChangeSpeed_Walk();
 	void ChangeSpeed_Run();
 	virtual float CalcDistanceToTarget(AActor* Target);
+	void PlayFootStepCue(const FName& FootName);
+	
 
 public:
 	UFUNCTION()
 	void OnRep_ChangeAnimType();
 
-	UFUNCTION(Server, Reliable, WithValidation)
-	void Death_Server();
-
-	//클라 변조를 막아줄 검증 함수
-	virtual bool Death_Server_Validate();
-	virtual void Death_Server_Implementation();
-
+protected:
+	UFUNCTION()
+	void LoadZombieDefaultData();
+	virtual void InitStatData(const FZombieDefaultInfo* Data);
 };

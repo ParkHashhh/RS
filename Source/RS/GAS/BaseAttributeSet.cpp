@@ -25,8 +25,6 @@ void UBaseAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 
 	if (Data.EvaluatedData.Attribute == GetCurrentHPAttribute())
 	{
-		RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("OnHpChanged"));
-
 		OnHpChanged(Instigator);
 	}
 }

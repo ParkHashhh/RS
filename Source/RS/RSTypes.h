@@ -147,9 +147,47 @@ struct FPlayerDefaultInfo : public FTableRowBase
 };
 
 UENUM(BlueprintType)
+enum class ENormalZombieRarity : uint8
+{
+	Common,
+	Rare
+};
+
+USTRUCT(BlueprintType)
+struct FZombieDefaultInfo : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|HP")
+	float MaxHP{};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Move")
+	float WalkSpeed{};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Move")
+	float RunSpeed{};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Damage")
+	float AttackPower;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Damage")
+	float DefensePower;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Range")
+	float AttackDistance;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Detect")
+	float DetectRange_Sight;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Type")
+	ENormalZombieRarity Rarity;
+};
+
+UENUM(BlueprintType)
 enum class EZombieAnimType : uint8
 {
 	Idle,
+	CombatIdle,
 	Walk,
 	Run,
 	Attack,

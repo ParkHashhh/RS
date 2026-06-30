@@ -15,6 +15,8 @@
 #include "BrainComponent.h"
 #include "RS/LogCategory.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "RS/Data/Subsystem/DataSubsystem.h"
 
 // Sets default values
 AZombieBase::AZombieBase()
@@ -23,7 +25,6 @@ AZombieBase::AZombieBase()
 	PrimaryActorTick.bCanEverTick = true;
 
 	Mesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Mesh"));
-	Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	Movement = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("Movement"));
 
@@ -45,6 +46,14 @@ AZombieBase::AZombieBase()
 void AZombieBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	const UGameInstance* Inst = GetGameInstance();
+	check(Inst);
+
+	UDataSubsystem* DataSubSystem = Inst->GetSubsystem<UDataSubsystem>();
+	check(DataSubSystem);
+
+	DataSubSystem->ExecuteOrBindOnZombieDefaultInfoLoaded(this, &AZombieBase::LoadZombieDefaultData);
 
 	if (IsValid(AICtrl))
 	{
@@ -172,8 +181,6 @@ void AZombieBase::ChangeAnim(EZombieAnimType Type)
 {
 	AnimType = Type;
 
-	//현재 데디케이트 서버에서는 필요가 없는 기능이다.
-	//하지만 리슨 서버에서는 필요한 기능이므로 남겨둔다.
 	if (HasAuthority())
 	{
 		//애님 인스턴스를 제대로 못 가져올 경우를 대비해 한번 더 가져오도록 한다.
@@ -229,11 +236,11 @@ void AZombieBase::CalcNextPointLocation()
 
 void AZombieBase::CallBackHP(AActor* InstigatorActor)
 {
-	if (!InstigatorActor)
+	if (!HasAuthority())
 	{
-		RS_LOG_DEBUG(LogRSCommon, Error, TEXT("%s: InstigatorActor is nullptr"), *LOG_LINE_INFO);
 		return;
 	}
+	
 
 	if (AttributeSet->GetCurrentHP() <= 0)
 	{
@@ -289,9 +296,6 @@ void AZombieBase::Death()
 	{
 		Mtrl->SetScalarParameterValue(TEXT("DissolveEnable"), 1.f);
 	}
-
-	//랙돌 처리를 서버에서도 하도록 요청한다.
-	Death_Server();
 }
 
 void AZombieBase::ApplyRagdoll()
@@ -350,9 +354,45 @@ float AZombieBase::CalcDistanceToTarget(AActor* Target)
 	return Distance;
 }
 
+void AZombieBase::PlayFootStepCue(const FName& FootName)
+{
+	//발바닥 위치와 라인트레이스를 발사할 위치를 구한다.
+	FVector FootLoc = Mesh->GetSocketLocation(FootName);
+	FootLoc.Z += 20.f;
+	RS_PRINT_SCREEN(1.f, FColor::Blue, TEXT("FootLoc : %s"), *FootLoc.ToString());
+	FVector EndLoc = FootLoc - FVector(0.0, 0.0, 100.0);
+
+	FHitResult Result;
+	FCollisionQueryParams Params;
+	//피지컬 머티리얼을 히트 구조체에 담기 위한 설정
+	Params.bReturnPhysicalMaterial = true;
+	//발 소켓에서 발사한 라인이 내 발바닥 표면에 충돌하는 것을 막는다.
+	Params.AddIgnoredActor(this);
+
+	if (GetWorld()->LineTraceSingleByChannel(Result, FootLoc, EndLoc, ECC_Visibility, Params))
+	{
+		//피지컬 머티리얼을 얻어온다.
+		UPhysicalMaterial* PMtrl = Result.PhysMaterial.Get();
+
+		EPhysicalSurface Surface = PMtrl->SurfaceType;
+
+		//맵에서 꺼내온 사운드 큐 포인터가 유효한지 확인 : 머티리얼은 있는데 Surface 지정을 안한 경우도 있으므로
+		const TObjectPtr<USoundBase>* SoundCuePtr = SoundCueMap.Find(Surface);
+
+		if (!SoundCuePtr)
+		{
+			return;
+		}
+
+		USoundBase* SoundCue = *SoundCuePtr;
+
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SoundCue,	Result.ImpactPoint, 0.1f);
+	}
+}
+
 void AZombieBase::OnRep_ChangeAnimType()
 {
-	//서버는 애니메이션을 재생할 필요가 없기 때문이다.
+	//서버는 이미 ChangeAnim에서 처리했다.
 	if (HasAuthority())
 	{
 		return;
@@ -378,24 +418,26 @@ void AZombieBase::OnRep_ChangeAnimType()
 	}
 }
 
-bool AZombieBase::Death_Server_Validate()
+void AZombieBase::LoadZombieDefaultData()
 {
-	if (AttributeSet->GetCurrentHP() > 0)
-	{
-		return false;
-	}
-	return true;
-}
+	const UGameInstance* Inst = GetGameInstance();
+	check(Inst);
 
-void AZombieBase::Death_Server_Implementation()
-{
-	//신호 검증은 _Validate 함수에서 수행했다.
-	//이곳에서는 중복 연산을 체크한다.
-	if (Mesh->bBlendPhysics)
+	UDataSubsystem* DataSubsystem = Inst->GetSubsystem<UDataSubsystem>();
+	check(DataSubsystem);
+
+	const FZombieDefaultInfo* ZombieDefaultInfo = DataSubsystem->GetZombieDefaultTableInfo(ZombieName);
+	if (!ZombieDefaultInfo)
 	{
+		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: No valid zombie default data"), *LOG_LINE_INFO);
 		return;
 	}
-	//클라와 동일하게 서버에서도 처리하도록 동일한 함수를 호출해준다.
-	ApplyRagdoll();
+
+	InitStatData(ZombieDefaultInfo);
+}
+
+void AZombieBase::InitStatData(const FZombieDefaultInfo* Data)
+{
+
 }
 

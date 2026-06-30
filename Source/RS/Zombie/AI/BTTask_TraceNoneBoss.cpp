@@ -42,15 +42,27 @@ EBTNodeResult::Type UBTTask_TraceNoneBoss::ExecuteTask(UBehaviorTreeComponent& O
 		return EBTNodeResult::Failed;
 	}
 
-	//타겟까지 유효하다면 이동한다.
-	EPathFollowingRequestResult::Type MoveRequestResult = Ctrl->MoveToActor(Target);
-	if (MoveRequestResult == EPathFollowingRequestResult::Failed)
+	AZombieBase* Zombie = Ctrl->GetPawn<AZombieBase>();
+	if (!IsValid(Zombie))
 	{
 		return EBTNodeResult::Failed;
 	}
 
-	AZombieBase* Zombie = Ctrl->GetPawn<AZombieBase>();
-	if (!IsValid(Zombie))
+	//이미 공격 사거리 안이라면 추적을 할 필요가 없다.
+	float Distance = Zombie->CalcDistanceToTarget(Target);
+	UBaseAttributeSet* ZombieAttri = Zombie->GetAttributeSet();
+	float AttackRange = ZombieAttri->GetAttackDistance();
+	if (Distance <= AttackRange)
+	{
+		return EBTNodeResult::Failed;
+	}
+
+	//추적이 시작되면 이후 발동되는 공격은 첫번째 공격임을 주지시킨다.
+	BlackboardComp->SetValueAsBool(TEXT("IsFirstAttack"), true);
+
+	//좀비를 이동시킨다.
+	EPathFollowingRequestResult::Type MoveRequestResult = Ctrl->MoveToActor(Target, -1.f, true, true, false);
+	if (MoveRequestResult == EPathFollowingRequestResult::Failed)
 	{
 		return EBTNodeResult::Failed;
 	}

@@ -72,6 +72,11 @@ void UGameplayAbility_Attack::LoopAttackSequence()
 	{
 		TObjectPtr<UAnimMontage> AttackMontage = PlayerChar->GetBaseAttackMontage();
 
+		FVector MuzzleLocation = PlayerChar->GetWeaponComponent()->GetSocketLocation(FName("Muzzle"));
+		FRotator MuzzleRotation = PlayerChar->GetWeaponComponent()->GetSocketRotation(FName("Muzzle"));	
+
+		PlayerChar->ExecuteMuzzleEffect(MuzzleLocation, MuzzleRotation);
+
 		if (!AttackMontage)
 		{
 			RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("Have Not AttackMontage"));
@@ -104,7 +109,6 @@ void UGameplayAbility_Attack::EndAbility(const FGameplayAbilitySpecHandle Handle
 	const FGameplayAbilityActivationInfo ActivationInfo,
 	bool bReplicateEndAbility, bool bWasCancelled)
 {
-	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("EndAbility Attack"));
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
 	if (ASC)
 	{

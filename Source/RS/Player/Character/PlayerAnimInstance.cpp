@@ -45,22 +45,16 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		//  앉기 상태
 
 		bIsAiming = PlayerChar->IsAiming();
-		RS_PRINT_SCREEN(0.f, FColor::Black, TEXT("bIsAiming : %d"), bIsAiming);
 
 		bIsAttacking = PlayerChar->IsAttacking();
-		RS_PRINT_SCREEN(0.f, FColor::Black, TEXT("bIsAttacking : %d"), bIsAttacking);
 
 		bIsDashing = PlayerChar->IsDashing();
-		RS_PRINT_SCREEN(0.f, FColor::Black, TEXT("bIsDashing : %d"), bIsDashing);
 
 		bIsMoveKey = PlayerChar->IsMoveKeyPressed();
-		RS_PRINT_SCREEN(0.f, FColor::Black, TEXT("bIsMoveKey : %d"), bIsMoveKey);
 
 		bIsReloading = PlayerChar->IsReloading();
-		RS_PRINT_SCREEN(0.f, FColor::Black, TEXT("bIsReloading : %d"), bIsReloading);
 
 		bIsSubSkilling = PlayerChar->IsSubSkilling();
-		RS_PRINT_SCREEN(0.f, FColor::Black, TEXT("bIsSubSkilling : %d"), bIsSubSkilling);
 
 	}
 }

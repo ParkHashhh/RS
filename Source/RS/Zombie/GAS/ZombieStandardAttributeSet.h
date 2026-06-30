@@ -18,8 +18,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute", meta = (AllowPrivateAccess = true))
 	FGameplayAttributeData	DetectRange_Sight;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute", meta = (AllowPrivateAccess = true))
+	FGameplayAttributeData	Rarity;
+
 public:
 	ATTRIBUTE_ACCESSORS_BASIC(UZombieStandardAttributeSet, DetectRange_Sight)
+	ATTRIBUTE_ACCESSORS_BASIC(UZombieStandardAttributeSet, Rarity)
 
 public:
 	virtual void OnHpChanged(AActor* Instigator) override;

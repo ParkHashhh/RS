@@ -24,6 +24,25 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category="UI")
 	TSubclassOf<UBattleHUDWidget> BattleHUDWidgetClass;
 
+	UPROPERTY()
+	TArray<class APlayerCharacterBase*>SpectateTargets;
+
+	int32 CurrentSpectateIndex = 0;
+
+
+public:
+	// 서버: 관전 목록 계산 요청
+	UFUNCTION(Server, Reliable)
+	void Server_RequestSpectateTargets();
+
+	// 클라이언트: 계산된 목록 받기
+	UFUNCTION(Client, Reliable)
+	void Client_ReceiveSpectateTargets(const TArray<class APlayerCharacterBase*>& Targets);
+
+	// 입력 바인딩용
+	void SpectateNext();
+	void SpectatePrev();
+
 public:
 	FORCEINLINE FString GetPlayerName() const
 	{

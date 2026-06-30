@@ -5,6 +5,7 @@
 
 #include "RSPlayerState.h"
 #include "Attribute/PlayerAttributeSet.h"
+#include "PlayerControllerBase.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -86,7 +87,7 @@ void APlayerCharacterBase::BeginPlay()
 
 	DataSubsystem->ExecuteOrBindOnPlayerDefaultInfoLoaded(this, &ThisClass::LoadDefaultData);
 
-	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	PlayerController = Cast<APlayerControllerBase>(GetController());
 
 	if (IsValid(PlayerController))
 	{
@@ -146,6 +147,8 @@ void APlayerCharacterBase::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 
+	PlayerController = Cast<APlayerControllerBase>(NewController);
+
 	if (IsValid(ASC))
 	{
 		ASC->InitAbilityActorInfo(this, this);
@@ -190,6 +193,7 @@ void APlayerCharacterBase::OnRep_PlayerState()
 void APlayerCharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(APlayerCharacterBase, bIsDead);
 }
 
 UAbilitySystemComponent* APlayerCharacterBase::GetASC() const
@@ -335,6 +339,19 @@ void APlayerCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 	if (Action)
 	{
 		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::SubSkillKey);
+	}
+
+	Action = InputData->FindAction(FInputKeyNames::SpecNext);
+
+	if (Action)
+	{
+		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::SpecNextKey);
+	}
+	Action = InputData->FindAction(FInputKeyNames::SpecPrev);
+
+	if (Action)
+	{
+		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::SpecPrevKey);
 	}
 
 #if !UE_BUILD_SHIPPING
@@ -543,6 +560,22 @@ void APlayerCharacterBase::SubSkillKey(const FInputActionValue& Value)
 	ASC->AbilityLocalInputPressed(static_cast<int32>(ERSInputID::SubSkill));
 }
 
+void APlayerCharacterBase::SpecNextKey(const FInputActionValue& Value)
+{
+	if (IsValid(PlayerController))
+	{
+		PlayerController->SpectateNext();
+	}
+}
+
+void APlayerCharacterBase::SpecPrevKey(const FInputActionValue& Value)
+{
+	if (IsValid(PlayerController))
+	{
+		PlayerController->SpectatePrev();
+	}
+}
+
 
 void APlayerCharacterBase::Server_SpawnGrenade_Implementation(const FVector& SpawnLocation, const FRotator& GrenadeRotation)
 {
@@ -575,7 +608,6 @@ void APlayerCharacterBase::MakeGrenade()
 		return; // 서버에서 노티파이로 호출된 경우 무시 (RPC로 처리되니까)
 	}
 
-	APlayerController* PlayerController = Cast<APlayerController>(GetController());
 	if (!IsValid(PlayerController))
 		return;
 	FHitResult Hit;
@@ -637,6 +669,8 @@ void APlayerCharacterBase::CallAttackAbility()
 
 void APlayerCharacterBase::RotationMouse(const FInputActionValue& Value)
 {
+	if (!bCanRotate)
+		return;
 	FVector Axis = Value.Get<FVector>();
 	AddControllerYawInput(Axis.X * MouseXSensitivity);
 	AddControllerPitchInput(Axis.Y * MouseYSensitivity);
@@ -999,11 +1033,8 @@ void APlayerCharacterBase::OnAimingTagChanged(const FGameplayTag Tag, int32 NewC
 
 void APlayerCharacterBase::OnAttackingTagChanged(const FGameplayTag Tag, int32 NewCount)
 {
-	if (GetCharacterMovement() && !GetCharacterMovement()->IsFalling())
-	{
-		UpdatePlayerCameraState();
-		UpdatePlayerSpeedState();
-	}
+	UpdatePlayerCameraState();
+	UpdatePlayerSpeedState();
 }
 
 void APlayerCharacterBase::OnDashingTagChanged(const FGameplayTag Tag, int32 NewCount)
@@ -1033,6 +1064,7 @@ void APlayerCharacterBase::OnJumpingTagChanged(const FGameplayTag Tag, int32 New
 
 void APlayerCharacterBase::ExecuteMuzzleEffect(const FVector& MuzzleLocation, const FRotator& MuzzleRotation)
 {
+	
 	if (!WeaponMeshComponent)
 		return;
 	WeaponMeshComponent->UpdateComponentToWorld();
@@ -1060,11 +1092,8 @@ void APlayerCharacterBase::ExecuteBulletTrailEffect(const FVector& MuzzleLocatio
 		SpawnParams.Owner = this;
 		SpawnParams.Instigator = this;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-
 		// 3. 월드에 총알 스폰
 		GetWorld()->SpawnActor<ABulletProjectile>(ProjectileClass, MuzzleLocation, BulletRoation, SpawnParams);
-
 	}
 }
 
@@ -1099,9 +1128,6 @@ void APlayerCharacterBase::ExecuteHitEffect(const FHitResult& Hit)
 
 bool APlayerCharacterBase::CalculateHit(FHitResult& Hit)
 {
-	// 캐릭터 컨트롤러 가져오기
-	APlayerController* PlayerController = Cast<APlayerController>(GetController());
-		// 사거리 가져오기
 	float Dist = AttributeSet->GetAttackDistance();
 
 	FVector CameraLocation;
@@ -1152,6 +1178,7 @@ bool APlayerCharacterBase::CalculateHit(FHitResult& Hit)
 	// 총구에서 카메라 조준점 끝까지의 히트를 확인하기
 	return GetWorld()->LineTraceSingleByChannel(Hit, MuzzleLocation, FinalEnd, ECC_GameTraceChannel1, Params);
 }
+
 
 void APlayerCharacterBase::Multicast_ExecuteVisualEffect_Implementation(const FHitResult& Hit, bool bIsHit)
 {
@@ -1205,8 +1232,6 @@ void APlayerCharacterBase::Server_ShootAttackRay_Implementation()
 //디버그용 ShootRay
 void APlayerCharacterBase::ShootAttackRay()
 {
-	APlayerController* PlayerController = Cast<APlayerController>(GetController());
-
 	if (!IsValid(PlayerController))
 		return;
 
@@ -1214,7 +1239,6 @@ void APlayerCharacterBase::ShootAttackRay()
 
 	if (!IsLocallyControlled())
 		return;
-
 	FHitResult Hit;
 
 	FVector CameraLocation;
@@ -1245,10 +1269,9 @@ void APlayerCharacterBase::ShootAttackRay()
 		TargetLocation = CameraEnd;
 	}
 
+
 	FVector MuzzleLocation = WeaponMeshComponent->GetSocketLocation(FName("Muzzle"));
 	FRotator MuzzleRotation = WeaponMeshComponent->GetSocketRotation(FName("Muzzle"));
-
-	ExecuteMuzzleEffect(MuzzleLocation, MuzzleRotation);
 
 	FVector ShootDirection = (TargetLocation - MuzzleLocation).GetSafeNormal();
 
@@ -1334,5 +1357,24 @@ void APlayerCharacterBase::OnPlayerDefaultInfoLoaded()
 
 void APlayerCharacterBase::OnDead()
 {
-	Destroy();
+	bIsDead = true;
+
+	RS_PRINT_SCREEN(10.f, FColor::Green, TEXT("OnDead"));
+
+	GetMesh()->SetVisibility(false, true);
+	GetMesh()->SetHiddenInGame(true, true);
+
+	HideWeapon();
+
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	GetCharacterMovement()->DisableMovement();
+	GetCharacterMovement()->StopMovementImmediately();
+
+	if (IsValid(PlayerController))
+	{
+		PlayerController->Server_RequestSpectateTargets();	
+	}
+
 }

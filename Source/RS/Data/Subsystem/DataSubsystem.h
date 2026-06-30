@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -10,6 +10,7 @@
 struct FMiscTableInfo;
 struct FItemTableInfo;
 struct FPlayerDefaultInfo;
+struct FZombieDefaultInfo;
 class UDataTable;
 DECLARE_MULTICAST_DELEGATE(FOnTableInfoLoaded);
 
@@ -36,9 +37,13 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UDataTable> PlayerDefaultInfoTable;
 
+	UPROPERTY(Transient)
+	TObjectPtr<UDataTable> ZombieDefaultInfoTable;
+
 	FOnTableInfoLoaded OnItemInfoLoadedDelegate;
 	FOnTableInfoLoaded OnMiscInfoLoadedDelegate;
 	FOnTableInfoLoaded OnPlayerDefaultInfoLoadedDelegate;
+	FOnTableInfoLoaded OnZombieDefaultInfoLoadedDelegate;
 
 public:
 	template <typename T>
@@ -57,6 +62,12 @@ public:
 	void ExecuteOrBindOnPlayerDefaultInfoLoaded(T* Object, void (T::*Callback)())
 	{
 		RSUtils::ExecuteOrBind(IsPlayerDefaultTableLoaded(), OnPlayerDefaultInfoLoadedDelegate, Object, Callback);
+	}
+
+	template <typename T>
+	void ExecuteOrBindOnZombieDefaultInfoLoaded(T* Object, void (T::* Callback)())
+	{
+		RSUtils::ExecuteOrBind(IsZombieDefaultTableLoaded(), OnZombieDefaultInfoLoadedDelegate, Object, Callback);
 	}
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
@@ -103,6 +114,13 @@ public:
 		return IsPlayerDefaultTableLoaded();
 	}
 
+	const FZombieDefaultInfo* GetZombieDefaultTableInfo(const FName& RowName) const;
+
+	FORCEINLINE bool IsZombieDefaultTableLoaded() const
+	{
+		return IsValid(ZombieDefaultInfoTable);
+	}
+
 private:
 	void LoadItemInfoTable();
 
@@ -118,4 +136,9 @@ private:
 
 	UFUNCTION()
 	void OnPlayerDefaultInfoTableLoaded(FPrimaryAssetId LoadedAssetID);
+
+	void LoadZombieDefaultInfoTable();
+
+	UFUNCTION()
+	void OnZombieDefaultInfoTableLoaded(FPrimaryAssetId LoadedAssetID);
 };

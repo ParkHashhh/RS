@@ -63,8 +63,7 @@ void UGameplayAbility_Dead::ActivateAbility(const FGameplayAbilitySpecHandle Han
 	UAbilityTask_PlayMontageAndWait* Task =
 		UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, NAME_None, DeathMontage, 1.f);
 
-	Task->OnInterrupted.AddDynamic(this, &UGameplayAbility_Dead::OnFinishDead);
-	Task->OnBlendOut.AddDynamic(this, &UGameplayAbility_Dead::OnFinishDead);
+	PlayerChar->bCanRotate = false;
 
 	Task->ReadyForActivation();
 }

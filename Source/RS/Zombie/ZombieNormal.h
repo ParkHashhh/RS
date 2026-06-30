@@ -7,6 +7,7 @@
 
 class USkeletalMesh;
 class UZombieStandardAttributeSet;
+struct FZombieDefaultInfo;
 
 UCLASS()
 class RS_API AZombieNormal : public AZombieBase
@@ -33,6 +34,11 @@ protected:
 
 public:
 	virtual void Attack();
+	virtual void InitStatData(const FZombieDefaultInfo* Data);
+
+private:
+	void SetDynamicMI();
+	void SetZombieMesh();
 
 public:
 	UFUNCTION()

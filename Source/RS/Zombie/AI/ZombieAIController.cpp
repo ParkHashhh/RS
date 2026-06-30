@@ -20,8 +20,8 @@ AZombieAIController::AZombieAIController()
 	SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("Sight"));
 
 	//테스트용 임시 코드
-	SightConfig->SightRadius = 600.f;
-	SightConfig->LoseSightRadius = 600.f;
+	SightConfig->SightRadius = 1.f;
+	SightConfig->LoseSightRadius = 1.f;
 	SightConfig->PeripheralVisionAngleDegrees = 160.f;
 
 	//탐지 대상을 지정한다
@@ -91,15 +91,12 @@ void AZombieAIController::ActivateBT()
 {
 	if (!IsValid(BT))
 	{
-		RS_PRINT_SCREEN(30.f, FColor::Red, TEXT("NO BT!"));
 		return;
 	}
 
 	if (!RunBehaviorTree(BT))
 	{
-		RS_PRINT_SCREEN(30.f, FColor::Red, TEXT("BT Run Failed!"));
 		return;
 	}
 
-	RS_PRINT_SCREEN(30.f, FColor::Red, TEXT("BT Run Success!"));
 }

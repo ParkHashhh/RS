@@ -47,6 +47,8 @@ public:
 	static inline FName CollisionProfileName = TEXT("Player");
 
 protected:
+	TObjectPtr<class APlayerControllerBase> PlayerController;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USkeletalMesh> SkeletalMeshAsset;
 
@@ -128,7 +130,8 @@ protected:
 
 	bool bASCReady = false;
 
-	
+	UPROPERTY(Replicated)
+	bool bIsDead = false;
 
 	// 기본값 세팅
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Camera|Default")
@@ -193,6 +196,14 @@ protected:
 	FOnASCReadyDelegate OnASCReady;
 
 public:
+	bool bCanRotate = true;
+
+public:
+	bool IsDead() const
+	{
+		return bIsDead;
+	}
+
 	void MakeGrenade();
 	void VisibleWeapon();
 	void HideWeapon();
@@ -354,6 +365,8 @@ private:
 	void AimReleaseKey(const FInputActionValue& Value);
 	void ReloadKey(const FInputActionValue& Value);
 	void SubSkillKey(const FInputActionValue& Value);
+	void SpecNextKey(const FInputActionValue& Value);
+	void SpecPrevKey(const FInputActionValue& Value);
 	void RotationMouse(const FInputActionValue& Value);
 	// WeaponSkeleton Attach
 	void AttachWeapon();
@@ -381,11 +394,13 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	void ExecuteMuzzleEffect(const FVector& MuzzleLocation, const FRotator& MuzzleRotation);
+	
 	void ExecuteBulletTrailEffect(const FVector& MuzzleLocation, const FVector& TrailEnd);
 	void ExecuteDecalEffect(const FHitResult& Hit);
 	void ExecuteHitEffect(const FHitResult& Hit);
 
+public:
+	void ExecuteMuzzleEffect(const FVector& MuzzleLocation, const FRotator& MuzzleRotation);
 public:
 	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode) override;
 	virtual void PossessedBy(AController* NewController) override;
@@ -428,6 +443,8 @@ protected:
 
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_ExecuteVisualEffect(const FHitResult& Hit, bool bIsHit);
+
+
 public:
 	FOnAimAlphaChangedDelegate OnAimAlphaChanged;
 

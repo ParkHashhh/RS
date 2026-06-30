@@ -6,9 +6,6 @@
 #include "BehaviorTree/BTTaskNode.h"
 #include "BTTask_Attack.generated.h"
 
-/**
- * 
- */
 UCLASS()
 class RS_API UBTTask_Attack : public UBTTaskNode
 {

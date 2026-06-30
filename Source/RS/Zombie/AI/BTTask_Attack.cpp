@@ -9,6 +9,7 @@
 #include "../../GAS/BaseAttributeSet.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "RS/LogCategory.h"
+#include "RS/Zombie/Animation/ZombieAnimInstance.h"
 
 
 UBTTask_Attack::UBTTask_Attack()
@@ -47,6 +48,13 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 
 	//현재 추적중인 대상이 공격 타겟이 된다.
 	BlackboardComp->SetValueAsObject(TEXT("AttackTarget"), Target);
+
+	//좀비에게 일반공격 쿨다운 태그가 있는지 확인한다.
+	UAbilitySystemComponent* ASC = Zombie->GetAbilitySystemComponent();
+	if (!ASC || ASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(TEXT("Zombie.Battle.AttackCooldown"))))
+	{
+		return EBTNodeResult::Failed;
+	}
 
 	//좀비의 애니메이션을 변경한다.
 	Zombie->ChangeAnim(EZombieAnimType::Attack);
@@ -95,20 +103,52 @@ void UBTTask_Attack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemo
 
 	if (!IsAttacking)
 	{
-		if (Distance < AttackRange)
+		if (Distance <= AttackRange)
 		{
+			//만약 첫번째 공격이였다면 후속타를 위한 머리 돌리기 로직을 수행하지 않고 바로 종료시킨다.
+			//movetoActor의 종료 전 오차 때문에 첫 공격 후에 무조건 걷기 모션이 나오기 때문이다.
+			bool IsFirstAttack = BlackboardComp->GetValueAsBool(TEXT("IsFirstAttack"));
+			if (IsFirstAttack)
+			{
+				BlackboardComp->SetValueAsBool(TEXT("IsFirstAttack"), false);
+				Zombie->ChangeAnim(EZombieAnimType::CombatIdle);
+				return;
+			}
+
 			//공격이 끝났을 때 여전히 사거리 안이라면 다음 공격을 위해 좀비의 방향을 돌려준다.
-			//공격이 끝났을 때 사거리 밖이라면 추적 태스크에서 이동을 할 것이므로 자연스럽게 방향이 돌아간다.
-			//고개를 돌릴 때 보간과 걷기 애니메이션을 통해 순간이동처럼 보이는 것을 완화시킬 예정
 			FVector ZombieLoc = Zombie->GetActorLocation();
 			FVector TargetLoc = Target->GetActorLocation();
 			ZombieLoc.Z = TargetLoc.Z;
 
-			FRotator Rot = UKismetMathLibrary::FindLookAtRotation(ZombieLoc, TargetLoc);
-			Zombie->SetActorRotation(Rot);
-		}
+			//RInterpTo 함수를 이용해 보간된 회전값을 구한다.
+			FRotator CurrentRot = Zombie->GetActorRotation();
+			FRotator TargetRot = UKismetMathLibrary::FindLookAtRotation(ZombieLoc, TargetLoc);
 
-		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+			FRotator Rot = FMath::RInterpTo(CurrentRot, TargetRot, DeltaSeconds, Zombie->GetTurnSpeed());
+			
+			Zombie->SetActorRotation(Rot);
+
+			//좀비가 머리를 돌리는 동안 걷기 애니메이션을 출력한다
+			//타겟과 좀비의 현재 회전값의 차이를 이용한다.
+			float DegreeGap = FMath::Abs(FRotator::NormalizeAxis(TargetRot.Yaw - CurrentRot.Yaw));
+			if (DegreeGap > 10.f)
+			{
+				Zombie->ChangeAnim(EZombieAnimType::Walk);
+				Zombie->GetAnimInst()->SetIsTurn(true);
+			}
+			else
+			{
+				//회전이 끝났을 때 태스크를 종료시킨다	
+				Zombie->ChangeAnim(EZombieAnimType::CombatIdle);
+				Zombie->GetAnimInst()->SetIsTurn(false);
+				FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+			}
+		}
+		else
+		{
+			//사거리 밖이라면 머리를 돌릴 필요 없이 바로 종료시키면 된다.
+			FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+		}
 	}
 }
 
@@ -124,6 +164,6 @@ void UBTTask_Attack::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* No
 	AZombieBase* Zombie = Ctrl->GetPawn<AZombieBase>();
 	if (IsValid(Zombie))
 	{
-		Zombie->ChangeAnim(EZombieAnimType::Idle);
+		Zombie->ChangeAnim(EZombieAnimType::CombatIdle);
 	}
 }

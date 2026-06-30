@@ -28,6 +28,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TMap<FName, TObjectPtr<UAnimMontage>> MontageMap;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	float TurnSpeedRate_Walk;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	bool bIsTurn;
+
 public:
 	void SetAnim(EZombieAnimType Type)
 	{
@@ -46,6 +52,7 @@ public:
 
 public:
 	void PlayAttackMontage(int32 Number);
+	void SetIsTurn(bool IsTurn);
 
 public:
 	UFUNCTION()
@@ -56,4 +63,10 @@ public:
 
 	UFUNCTION()
 	void AnimNotify_Death();
+
+	UFUNCTION()
+	void AnimNotify_RFootStep();
+
+	UFUNCTION()
+	void AnimNotify_LFootStep();
 };

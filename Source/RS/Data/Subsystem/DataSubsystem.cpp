@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "DataSubsystem.h"
@@ -11,6 +11,7 @@
 #include "RS/Data/DataAsset/ItemInfoTableAsset.h"
 #include "RS/Data/DataAsset/MiscInfoTableAsset.h"
 #include "RS/Data/DataAsset/PlayerDefaultInfoTableAsset.h"
+#include "RS/Data/DataAsset/ZombieDefaultInfoTableAsset.h"
 
 UDataSubsystem::UDataSubsystem()
 {
@@ -23,6 +24,7 @@ void UDataSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	LoadPlayerDefaultInfoTable();
 	LoadItemInfoTable();
 	LoadMiscInfoTable();
+	LoadZombieDefaultInfoTable();
 }
 
 const FItemTableInfo* UDataSubsystem::GetItemTableInfo(FName Name) const
@@ -95,6 +97,23 @@ const FPlayerDefaultInfo* UDataSubsystem::GetPlayerDefaultTableInfo() const
 	if (!Row)
 	{
 		RS_LOG_DEBUG(LogRSData, Warning, TEXT("%s: Failed to find row %s in PlayerDefaultInfoTable"), *LOG_LINE_INFO, *DefaultItemRowName.ToString());
+	}
+
+	return Row;
+}
+
+const FZombieDefaultInfo* UDataSubsystem::GetZombieDefaultTableInfo(const FName& RowName) const
+{
+	if (!ZombieDefaultInfoTable)
+	{
+		RS_LOG_DEBUG(LogRSData, Warning, TEXT("%s: ZombieDefaultInfoTable is NOT valid when getting row %s. It might still be loading."), *LOG_LINE_INFO, *DefaultItemRowName.ToString());
+		return nullptr;
+	}
+
+	const auto* Row = ZombieDefaultInfoTable->FindRow<FZombieDefaultInfo>(RowName, TEXT("ZombieDefaultInfo"));
+	if (!Row)
+	{
+		RS_LOG_DEBUG(LogRSData, Warning, TEXT("%s: Failed to find row %s in ZombieDefaultInfoTable"), *LOG_LINE_INFO, *RowName.ToString());
 	}
 
 	return Row;
@@ -233,4 +252,45 @@ void UDataSubsystem::OnPlayerDefaultInfoTableLoaded(FPrimaryAssetId LoadedAssetI
 	RS_LOG_DEBUG(LogRSData, Log, TEXT("%s: PlayerDefaultInfoTable loaded successfully: %s"), *LOG_LINE_INFO, *PlayerDefaultInfoTable->GetName());
 
 	OnPlayerDefaultInfoLoadedDelegate.Broadcast();
+}
+
+void UDataSubsystem::LoadZombieDefaultInfoTable()
+{
+	const URSDataSettings* Settings = GetDefault<URSDataSettings>();
+	if (!Settings || !Settings->ZombieDefaultInfoTableAsset.IsValid())
+	{
+		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: ZombieDefaultInfoTableAsset is invalid. Check Project Settings -> RS Data Settings."), *LOG_LINE_INFO);
+		return;
+	}
+
+	const FPrimaryAssetId& TargetAssetId = Settings->ZombieDefaultInfoTableAsset;
+
+	RS_LOG_DEBUG(LogRSData, Log, TEXT("%s: Starting to load ZombieDefaultInfoTableAsset (%s)"), *LOG_LINE_INFO, *TargetAssetId.ToString());
+
+	auto& AssetManager = UAssetManager::Get();
+	AssetManager.LoadPrimaryAsset(TargetAssetId, TArray<FName>{},
+		FStreamableDelegate::CreateUObject(
+			this, &UDataSubsystem::OnZombieDefaultInfoTableLoaded, TargetAssetId));
+}
+
+void UDataSubsystem::OnZombieDefaultInfoTableLoaded(FPrimaryAssetId LoadedAssetID)
+{
+	const auto& AssetManager = UAssetManager::Get();
+	const auto* DataAsset = AssetManager.GetPrimaryAssetObject<UZombieDefaultInfoTableAsset>(LoadedAssetID);
+	if (!IsValid(DataAsset))
+	{
+		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to get Primary Asset Object for %s"), *LOG_LINE_INFO, *LoadedAssetID.ToString());
+		return;
+	}
+
+	ZombieDefaultInfoTable = DataAsset->DataTable.LoadSynchronous();
+	if (!ZombieDefaultInfoTable)
+	{
+		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to load DataTable from DataAsset %s"), *LOG_LINE_INFO, *LoadedAssetID.ToString());
+		return;
+	}
+
+	RS_LOG_DEBUG(LogRSData, Log, TEXT("%s: ZombieDefaultInfoTable loaded successfully: %s"), *LOG_LINE_INFO, *ZombieDefaultInfoTable->GetName());
+
+	OnZombieDefaultInfoLoadedDelegate.Broadcast();
 }

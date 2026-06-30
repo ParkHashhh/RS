@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -29,4 +29,8 @@ public:
 	// 기타 데이터 테이블 애셋
 	UPROPERTY(Config, EditAnywhere, Category="Data")
 	FPrimaryAssetId MiscInfoTableAsset;
+
+	// 좀비의 기본 정보가 담긴 테이블 애셋
+	UPROPERTY(Config, EditAnywhere, Category = "Data")
+	FPrimaryAssetId ZombieDefaultInfoTableAsset;
 };

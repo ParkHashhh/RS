@@ -28,7 +28,8 @@ public class RS : ModuleRules
 			"UMG",
 			"Networking",
 			"NetCore",
-			"DeveloperSettings"
+			"DeveloperSettings",
+			"PhysicsCore"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { "AnimGraphRuntime" });
