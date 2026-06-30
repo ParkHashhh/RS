@@ -34,6 +34,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UAnimMontage> SubSkillMontage;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UAnimMontage> DeadMontage;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	bool bIsAiming;
 
@@ -52,11 +55,16 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	bool bIsSubSkilling;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	bool bIsDead = false;;
+
 	UPROPERTY(BlueprintReadWrite)
 	FTransform LeftHandTransform;
 
 	UPROPERTY(BlueprintReadWrite)
 	FTransform LeftElbowTransform;
+
+	FTimerHandle DeadTimerHandle;
 
 
 public:
@@ -73,6 +81,10 @@ public:
 	TObjectPtr<UAnimMontage> GetSubSkillMontage()
 	{
 		return SubSkillMontage;
+	}
+	TObjectPtr<UAnimMontage> GetDeadMontage()
+	{
+		return DeadMontage;
 	}
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	float ViewPitch;
@@ -102,6 +114,10 @@ protected:
 	UFUNCTION()
 	void AnimNotify_MakeGrenade();
 
+	UFUNCTION()
+	void AnimNotify_StartDead();
+	UFUNCTION()
+	void AnimNotify_EndDead();
 
 public:
 	bool GetDirectionFoward()

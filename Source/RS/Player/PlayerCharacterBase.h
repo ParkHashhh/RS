@@ -29,6 +29,8 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnAimAlphaChangedDelegate, float);
 
 DECLARE_MULTICAST_DELEGATE(FOnASCReadyDelegate);
 
+class AGrenade;
+
 UCLASS()
 class RS_API APlayerCharacterBase : public ARSCharacter,
                                     public IGenericTeamAgentInterface,
@@ -36,7 +38,7 @@ class RS_API APlayerCharacterBase : public ARSCharacter,
                                     public IASCProvider
 {
 	GENERATED_BODY()
-
+	friend class AGrenade;
 public:
 	// Sets default values for this pawn's properties
 	APlayerCharacterBase();
@@ -90,14 +92,21 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "Combat|Attack")
 	TSubclassOf<UGameplayAbility> AttackAbilityClass;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "Combat|Attack")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "Combat|Dash")
 	TSubclassOf<UGameplayAbility> DashAbilityClass;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "Combat|Attack")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "Combat|Reload")
 	TSubclassOf<UGameplayAbility> ReloadAbilityClass;	
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "Combat|Attack")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "Combat|SubSkill")
 	TSubclassOf<UGameplayAbility> SubSkillAbilityClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "State|Dead")
+	TSubclassOf<UGameplayAbility> DeadAbilityClass;
+
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "State|Movement")
+	TSubclassOf<UGameplayAbility> JumpAbilityClass;
 
 	FGenericTeamId TeamID;
 
@@ -108,6 +117,8 @@ protected:
 	bool bIsDashing = false;
 
 	bool bCanDash = false;
+	bool bCanJump = true;
+	bool bIsAttackKeyPressed = false;
 
 	bool bIsMoveKeyPressed = false;
 
@@ -116,6 +127,8 @@ protected:
 	float MouseYSensitivity = 1.0f;
 
 	bool bASCReady = false;
+
+	
 
 	// 기본값 세팅
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true), Category="Camera|Default")
@@ -180,13 +193,16 @@ protected:
 	FOnASCReadyDelegate OnASCReady;
 
 public:
-	void ReloadFinish();
 	void MakeGrenade();
-	void EndGrenade();
-	void StartGrenade();
+	void VisibleWeapon();
+	void HideWeapon();
 
+	bool IsAttackKeyPressed()
+	{
+		return bIsAttackKeyPressed;
+	}
 
-
+	void CallAttackAbility();
 	template <typename T>
 	void ExecuteOrBindOnASCReady(T* Object, void (T::*Callback)())
 	{
@@ -319,6 +335,11 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void Server_SpawnGrenade(const FVector& SpawnLocation, const FRotator& GrenadeRotation);
 
+public:
+	TSubclassOf<UGameplayAbility> GetDeadAbility()
+	{
+		return DeadAbilityClass;
+	}
 
 private:
 	// Input Function
@@ -362,15 +383,11 @@ protected:
 
 	void ExecuteMuzzleEffect(const FVector& MuzzleLocation, const FRotator& MuzzleRotation);
 	void ExecuteBulletTrailEffect(const FVector& MuzzleLocation, const FVector& TrailEnd);
-
 	void ExecuteDecalEffect(const FHitResult& Hit);
-
-
 	void ExecuteHitEffect(const FHitResult& Hit);
 
-
-
 public:
+	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode) override;
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;
 
@@ -393,6 +410,7 @@ public:
 	TObjectPtr<UAnimMontage> GetBaseAttackMontage();
 	TObjectPtr<UAnimMontage> GetReloadMontage();
 	TObjectPtr<UAnimMontage> GetSubSkillMontage();
+	TObjectPtr<UAnimMontage> GetDeadMontage();
 
 public:
 	virtual void SetGenericTeamId(const FGenericTeamId& ID) override;
@@ -401,7 +419,7 @@ public:
 
 protected:
 	UFUNCTION(Server, Reliable)
-	void Server_ApplyDamage(AActor* TargetActor, FHitResult Hit);
+	void Server_ApplyDamage(AActor* TargetActor, FHitResult Hit,float Damage);
 
 	UFUNCTION(Server, Reliable)
 	void Server_ShootAttackRay();
@@ -452,7 +470,13 @@ private:
 	void OnDashingTagChanged(const FGameplayTag Tag, int32 NewCount);
 	void OnReloadingTagChanged(const FGameplayTag Tag, int32 NewCount);
 	void OnSubSkillingTagChanged(const FGameplayTag Tag, int32 NewCount);
+	void OnJumpingTagChanged(const FGameplayTag Tag, int32 NewCount);
 
 	UFUNCTION()
 	void OnPlayerDefaultInfoLoaded();
+
+
+public:
+	UFUNCTION()
+	void OnDead();
 };

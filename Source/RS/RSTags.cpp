@@ -9,7 +9,7 @@ namespace RSTags
 		UE_DEFINE_GAMEPLAY_TAG(Reloading, "Player.Combat.Reloading");
 		UE_DEFINE_GAMEPLAY_TAG(SubSkilling, "Player.Combat.SubSkilling");
 		UE_DEFINE_GAMEPLAY_TAG(Dashing, "Player.Movement.Dashing");
-
+		UE_DEFINE_GAMEPLAY_TAG(Jumping, "Player.Movement.Jumping");
 	}
 
 	namespace Zombie

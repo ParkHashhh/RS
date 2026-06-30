@@ -106,13 +106,7 @@ void UPlayerAnimInstance::AnimNotify_AttackRay()
 void UPlayerAnimInstance::AnimNotify_ReloadFinish()
 {
 
-	// 플레이어 총알 가는 함수
-	TObjectPtr<APlayerCharacterBase> PlayerChar = Cast<APlayerCharacterBase>(TryGetPawnOwner());
-
-	if (IsValid(PlayerChar) && PlayerChar->IsReloading())
-	{
-		PlayerChar->ReloadFinish();
-	}
+	
 
 }
 
@@ -122,18 +116,12 @@ void UPlayerAnimInstance::AnimNotify_StartGrenade()
 
 	if (IsValid(PlayerChar))
 	{
-		PlayerChar->StartGrenade();
+		PlayerChar->HideWeapon();
 	}
 }
 
 void UPlayerAnimInstance::AnimNotify_EndGrenade()
 {
-	TObjectPtr<APlayerCharacterBase> PlayerChar = Cast<APlayerCharacterBase>(TryGetPawnOwner());
-
-	if (IsValid(PlayerChar))
-	{
-		PlayerChar->EndGrenade();
-	}
 }
 
 void UPlayerAnimInstance::AnimNotify_MakeGrenade()
@@ -146,9 +134,37 @@ void UPlayerAnimInstance::AnimNotify_MakeGrenade()
 	}
 }
 
+void UPlayerAnimInstance::AnimNotify_StartDead()
+{
+	RS_PRINT_SCREEN(10.f, FColor::Red, TEXT("AnimNotify_StartDead"));
+
+	TObjectPtr<APlayerCharacterBase> PlayerChar = Cast<APlayerCharacterBase>(TryGetPawnOwner());
+
+	if (IsValid(PlayerChar))
+	{
+		PlayerChar->HideWeapon();
+	}
+	bIsDead = true;
+}
+
+void UPlayerAnimInstance::AnimNotify_EndDead()
+{
+	RS_PRINT_SCREEN(10.f, FColor::Red, TEXT("AnimNotify_EndDead"));
+
+	APlayerCharacterBase* PlayerChar = Cast<APlayerCharacterBase>(TryGetPawnOwner());
+	if (IsValid(PlayerChar))
+	{
+		if (PlayerChar)
+		{
+			PlayerChar->GetWorldTimerManager().SetTimer(DeadTimerHandle, PlayerChar, &APlayerCharacterBase::OnDead, 2.0f, false);
+		}
+	}
+
+}
+
 void UPlayerAnimInstance::AnimNotify_Reload()
 {
-	// 플레이어 캐릭터에 인풋 release Reloading 보내기
+	// 총알갈기
 
 }
 

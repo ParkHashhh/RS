@@ -22,7 +22,7 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
 	TSubclassOf<UGameplayEffect> ReloadGameplayEffect;
 
-	FActiveGameplayEffectHandle ReloadffectHandle;
+	FActiveGameplayEffectHandle ReloadEffectHandle;
 protected:
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		const FGameplayAbilityActorInfo* ActorInfo,
@@ -38,5 +38,5 @@ protected:
 
 protected:
 	UFUNCTION()
-	void OnFinishReload(float TimeHeld);
+	void OnFinishReload();
 };

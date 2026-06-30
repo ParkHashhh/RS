@@ -10,7 +10,7 @@ UCLASS()
 class RS_API AGrenade : public AActor
 {
 	GENERATED_BODY()
-	
+
 public:	
 	AGrenade();
 protected:
@@ -34,7 +34,8 @@ protected:
 	TObjectPtr<class UNiagaraSystem>		Niagara;
 
 	FTimerHandle ExplosionTimerHandle;
-
+public:
+	FVector LaunchDir = FVector::ZeroVector;
 
 public:
 	// 매 프레임 호출

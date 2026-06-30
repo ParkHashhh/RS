@@ -131,6 +131,17 @@ void APlayerCharacterBase::BeginPlay()
 	ExecuteOrBindOnASCReady(this, &ThisClass::BindGameplayTagDelegate);
 }
 
+void APlayerCharacterBase::OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode)
+{
+	Super::OnMovementModeChanged(PrevMovementMode, PreviousCustomMode);
+
+	if (GetCharacterMovement()->IsWalking())
+	{
+		bCanJump = true;
+		
+	}
+}
+
 void APlayerCharacterBase::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
@@ -229,6 +240,8 @@ void APlayerCharacterBase::Tick(float DeltaTime)
 		AddControllerYawInput(YawDelta);
 		RecoilYawCurrent -= YawDelta;
 	}
+
+
 }
 
 // Called to bind functionality to input
@@ -423,6 +436,11 @@ TObjectPtr<UAnimMontage> APlayerCharacterBase::GetSubSkillMontage()
 	return AnimInst->GetSubSkillMontage();
 }
 
+TObjectPtr<UAnimMontage> APlayerCharacterBase::GetDeadMontage()
+{
+	return AnimInst->GetDeadMontage();
+}
+
 void APlayerCharacterBase::MoveKey(const FInputActionValue& Value)
 {
 	FVector2D MovementVector = Value.Get<FVector2D>();
@@ -465,17 +483,19 @@ void APlayerCharacterBase::DashReleaseKey(const FInputActionValue& Value)
 void APlayerCharacterBase::AttackKey(const FInputActionValue& Value)
 {
 	// Bool 변수로 누르고 있는지 땠는지를 판단 한 후 공격속도마다 공격 함수를 호출하게 하고(이펙트 파티클 등등), 서버에서는 충돌처리 및 데미지 체크하기 => 완료
-	if (!IsValid(ASC) || !GetMovementComponent() || GetMovementComponent()->IsFalling())
+	if (!IsValid(ASC))
 	{
 		return;
 	}
 	ASC->AbilityLocalInputPressed(static_cast<int32>(ERSInputID::Fire));
+	bIsAttackKeyPressed = true;
 }
 
 
 void APlayerCharacterBase::AttackReleaseKey(const FInputActionValue& Value)
 {
 	ASC->AbilityLocalInputReleased(static_cast<int32>(ERSInputID::Fire));
+	bIsAttackKeyPressed = false;
 }
 
 
@@ -484,21 +504,16 @@ void APlayerCharacterBase::JumpKey(const FInputActionValue& Value)
 	bool bJump = Value.Get<bool>();
 	if (bJump)
 	{
-		if (CanJump())
+		if (bCanJump)
 		{
-			Jump();
-			AimReleaseKey(Value);
-			DashReleaseKey(Value);
-		}
-		else
-		{
+			ASC->AbilityLocalInputPressed(static_cast<int32>(ERSInputID::Jump));
 		}
 	}
 }
 
 void APlayerCharacterBase::AimKey(const FInputActionValue& Value)
 {
-	if (!IsValid(ASC) || !GetMovementComponent() || GetMovementComponent()->IsFalling())
+	if (!IsValid(ASC) || !GetMovementComponent() )
 	{
 		return;
 	}
@@ -518,7 +533,6 @@ void APlayerCharacterBase::AimReleaseKey(const FInputActionValue& Value)
 
 void APlayerCharacterBase::ReloadKey(const FInputActionValue& Value)
 {
-	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("ReloadKey"));
 
 	ASC->AbilityLocalInputPressed(static_cast<int32>(ERSInputID::Reload));
 
@@ -526,10 +540,6 @@ void APlayerCharacterBase::ReloadKey(const FInputActionValue& Value)
 
 void APlayerCharacterBase::SubSkillKey(const FInputActionValue& Value)
 {
-
-
-	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("SubSkillKey"));
-
 	ASC->AbilityLocalInputPressed(static_cast<int32>(ERSInputID::SubSkill));
 }
 
@@ -544,55 +554,84 @@ void APlayerCharacterBase::Server_SpawnGrenade_Implementation(const FVector& Spa
 		SpawnParams.Instigator = this;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		// 수류탄 생성
-		GetWorld()->SpawnActor<AGrenade>(GrenadeClass, SpawnLocation, GrenadeRotation, SpawnParams);
+		AGrenade* Grenade = GetWorld()->SpawnActorDeferred<AGrenade>(
+			GrenadeClass, FTransform(GrenadeRotation, SpawnLocation), this, this,
+			ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+
+		if (Grenade)
+		{
+			// 보는 방향으로 초기 속도 설정
+			Grenade->LaunchDir = GrenadeRotation.Vector();
+			Grenade->FinishSpawning(FTransform(GrenadeRotation, SpawnLocation));
+		}
 	}
 }
 
-
-void APlayerCharacterBase::ReloadFinish()
-{
-	ASC->AbilityLocalInputReleased(static_cast<int32>(ERSInputID::Reload));
-}
 
 void APlayerCharacterBase::MakeGrenade()
 {
+	if (!IsLocallyControlled())
+	{
+		return; // 서버에서 노티파이로 호출된 경우 무시 (RPC로 처리되니까)
+	}
 
 	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	if (!IsValid(PlayerController))
+		return;
+	FHitResult Hit;
+
+	FVector CameraLocation;
+	FRotator CameraRotation;
+
+
+	PlayerController->GetPlayerViewPoint(CameraLocation, CameraRotation);
+
+	// 임시로 5000
+	FVector CameraEnd = CameraLocation + CameraRotation.Vector() * 5000.f;
+
+	FHitResult CameraHit;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+
+	FVector TargetPoint = CameraEnd;
+	if (GetWorld()->LineTraceSingleByChannel(CameraHit, CameraLocation, CameraEnd, ECC_Visibility, Params))
+	{
+		TargetPoint = CameraHit.ImpactPoint;
+	}
 
 	FVector SpawnLocation = GetMesh()->GetSocketLocation(FName("Grenade_Socket"));
+	FVector LaunchDirection = (TargetPoint - SpawnLocation).GetSafeNormal();
 
-	FVector DummyCameraLocation;
-	FRotator CameraRotation;
-	if (IsValid(PlayerController) && IsLocallyControlled())
-	{
-		// 카메라 위치가 어디있고 회전이 얼마나된지 가져오기.
-		PlayerController->GetPlayerViewPoint(DummyCameraLocation, CameraRotation);
-	}
-	else
-	{
-		// 서버에는 카메라가 없기때문에 각도 가져오기
-		CameraRotation = GetBaseAimRotation();
-	}
+	FRotator LaunchRotation = LaunchDirection.Rotation();
+	LaunchRotation.Pitch += 8.f;
 
-	Server_SpawnGrenade(SpawnLocation, CameraRotation);
-
+	Server_SpawnGrenade(SpawnLocation, LaunchRotation);
 }
 
-void APlayerCharacterBase::EndGrenade()
+void APlayerCharacterBase::VisibleWeapon()
 {
-	ASC->AbilityLocalInputReleased(static_cast<int32>(ERSInputID::SubSkill));
+
 	WeaponMeshComponent->SetVisibility(true, true);
 	WeaponMeshComponent->SetHiddenInGame(false);
 
 	WeaponMeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 }
 
-void APlayerCharacterBase::StartGrenade()
+void APlayerCharacterBase::HideWeapon()
 {
 	WeaponMeshComponent->SetVisibility(false, true);
 	WeaponMeshComponent->SetHiddenInGame(true);
 
 	WeaponMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+}
+
+void APlayerCharacterBase::CallAttackAbility()
+{
+	if (!IsValid(ASC))
+	{
+		return;
+	}
+	ASC->AbilityLocalInputPressed(static_cast<int32>(ERSInputID::Fire));
 }
 
 
@@ -711,7 +750,7 @@ void APlayerCharacterBase::UpdatePlayerCameraState()
 	UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
 
 	// 1. 공중
-	if (MovementComponent->IsFalling())
+	if (!bCanJump)
 	{
 		SetDefaultCameraPosition();
 		return;
@@ -740,7 +779,7 @@ void APlayerCharacterBase::UpdatePlayerSpeedState()
 	UCharacterMovementComponent* MovementComponent = GetCharacterMovement();
 	float TargetSpeed = 400.f;
 
-	if (MovementComponent->IsFalling())
+	if (!bCanJump)
 	{
 		MovementComponent->MaxWalkSpeed = TargetSpeed;
 		Server_SetMaxWalkSpeed(TargetSpeed);
@@ -888,6 +927,18 @@ void APlayerCharacterBase::GiveAbilities()
 		SubSkillSpec.InputID = static_cast<int32>(ERSInputID::SubSkill);
 		ASC->GiveAbility(SubSkillSpec);
 	}
+	if (IsValid(SubSkillAbilityClass))
+	{
+		FGameplayAbilitySpec JumpSpec(JumpAbilityClass, 1);
+		JumpSpec.InputID = static_cast<int32>(ERSInputID::Jump);
+		ASC->GiveAbility(JumpSpec);
+	}
+
+	if (IsValid(DeadAbilityClass))
+	{
+		FGameplayAbilitySpec DeadSpec(DeadAbilityClass, 1);
+		ASC->GiveAbility(DeadSpec);
+	}
 }
 
 void APlayerCharacterBase::SetAimAlpha(float NewAimAlpha)
@@ -919,6 +970,8 @@ void APlayerCharacterBase::BindGameplayTagDelegate()
 		this, &ThisClass::OnReloadingTagChanged);
 	ASC->RegisterGameplayTagEvent(RSTags::Player::SubSkilling, EGameplayTagEventType::NewOrRemoved).AddUObject(
 		this, &ThisClass::OnSubSkillingTagChanged);
+	ASC->RegisterGameplayTagEvent(RSTags::Player::Jumping, EGameplayTagEventType::NewOrRemoved).AddUObject(
+		this, &ThisClass::OnJumpingTagChanged);
 }
 
 void APlayerCharacterBase::OnAimingTagChanged(const FGameplayTag Tag, int32 NewCount)
@@ -955,29 +1008,27 @@ void APlayerCharacterBase::OnAttackingTagChanged(const FGameplayTag Tag, int32 N
 
 void APlayerCharacterBase::OnDashingTagChanged(const FGameplayTag Tag, int32 NewCount)
 {
-	if (GetCharacterMovement() && !GetCharacterMovement()->IsFalling())
-	{
-		UpdatePlayerCameraState();
-		UpdatePlayerSpeedState();
-	}
+	
+	UpdatePlayerCameraState();
+	UpdatePlayerSpeedState();
 }
 
 void APlayerCharacterBase::OnReloadingTagChanged(const FGameplayTag Tag, int32 NewCount)
 {
-	if (GetCharacterMovement() && !GetCharacterMovement()->IsFalling())
-	{
-		UpdatePlayerCameraState();
-		UpdatePlayerSpeedState();
-	}
+	UpdatePlayerCameraState();
+	UpdatePlayerSpeedState();
 }
 
 void APlayerCharacterBase::OnSubSkillingTagChanged(const FGameplayTag Tag, int32 NewCount)
 {
-	if (GetCharacterMovement() && !GetCharacterMovement()->IsFalling())
-	{
-		UpdatePlayerCameraState();
-		UpdatePlayerSpeedState();
-	}
+	UpdatePlayerCameraState();
+	UpdatePlayerSpeedState();
+}
+
+void APlayerCharacterBase::OnJumpingTagChanged(const FGameplayTag Tag, int32 NewCount)
+{
+	UpdatePlayerCameraState();
+	UpdatePlayerSpeedState();
 }
 
 void APlayerCharacterBase::ExecuteMuzzleEffect(const FVector& MuzzleLocation, const FRotator& MuzzleRotation)
@@ -1135,7 +1186,8 @@ void APlayerCharacterBase::Server_ShootAttackRay_Implementation()
 		// 적군인지 확인
 		if (Attitude == ETeamAttitude::Hostile)
 		{
-			Server_ApplyDamage(TargetActor, Hit);
+			
+			Server_ApplyDamage(TargetActor, Hit,GetAttributeSet()->GetAttackPower());
 			Multicast_ExecuteVisualEffect(Hit, true);
 
 		}
@@ -1216,7 +1268,7 @@ void APlayerCharacterBase::ShootAttackRay()
 
 }
 
-void APlayerCharacterBase::Server_ApplyDamage_Implementation(AActor* TargetActor, FHitResult Hit)
+void APlayerCharacterBase::Server_ApplyDamage_Implementation(AActor* TargetActor, FHitResult Hit,float Damage)
 {
 	auto* TargetChar = Cast<AZombieBase>(TargetActor);
 	if (!TargetChar)
@@ -1230,8 +1282,6 @@ void APlayerCharacterBase::Server_ApplyDamage_Implementation(AActor* TargetActor
 		return;
 	}
 
-	// 상대방 액터를 좀비로 형변환
-	float Damage = AttributeSet->GetAttackPower();
 
 	FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
 	EffectContext.AddHitResult(Hit);
@@ -1280,4 +1330,9 @@ void APlayerCharacterBase::OnPlayerDefaultInfoLoaded()
 			}
 		}
 	}
+}
+
+void APlayerCharacterBase::OnDead()
+{
+	Destroy();
 }

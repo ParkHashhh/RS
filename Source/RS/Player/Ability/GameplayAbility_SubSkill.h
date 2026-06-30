@@ -4,24 +4,24 @@
 
 #include "CoreMinimal.h"
 #include "GameplayAbility_PlayerBase.h"
-#include "GameplayAbility_Grenade.generated.h"
+#include "GameplayAbility_SubSkill.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class RS_API UGameplayAbility_Grenade : public UGameplayAbility_PlayerBase
+class RS_API UGameplayAbility_SubSkill : public UGameplayAbility_PlayerBase
 {
 	GENERATED_BODY()
 
 public:
-	UGameplayAbility_Grenade();
+	UGameplayAbility_SubSkill();
 
 private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true))
-	TSubclassOf<UGameplayEffect> GrenadeGameplayEffect;
+	TSubclassOf<UGameplayEffect> SubSkillGameplayEffect;
 
-	FActiveGameplayEffectHandle GrenadeEffectHandle;
+	FActiveGameplayEffectHandle SubSkillEffectHandle;
 protected:
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		const FGameplayAbilityActorInfo* ActorInfo,
@@ -37,5 +37,5 @@ protected:
 
 protected:
 	UFUNCTION()
-	void OnFinishGrenade(float TimeHeld);
+	void OnFinishSubSkill();
 };

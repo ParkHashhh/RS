@@ -2,7 +2,7 @@
 
 
 #include "PlayerAttributeSet.h"
-
+#include "../PlayerCharacterBase.h"
 #include "GameplayEffectExtension.h"
 #include "RS/LogCategory.h"
 
@@ -31,9 +31,28 @@ void UPlayerAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCall
 		}
 	}
 
+	// Instigator는 히트를 때린 상대방
+
+	AActor* OwnerActor = GetOwningAbilitySystemComponent()->GetAvatarActor();
+	APlayerCharacterBase* Player = Cast<APlayerCharacterBase>(OwnerActor);
+
 	if (Data.EvaluatedData.Attribute == GetCurrentHPAttribute())
 	{
 		OnHpChanged(Instigator);
+
+		if (GetCurrentHP() <= 0.0f)
+		{
+			if (IsValid(Player))
+			{
+
+				Player->GetAbilitySystemComponent()->TryActivateAbilityByClass(Player->GetDeadAbility());
+			}
+			else
+			{
+				RS_PRINT_SCREEN(10.f, FColor::Green, TEXT("Have Not Player"));
+
+			}
+		}
 	}
 }
 

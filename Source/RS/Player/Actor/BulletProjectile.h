@@ -5,12 +5,13 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "BulletProjectile.generated.h"
+class APlayerCharacterBase;
 
 UCLASS()
 class RS_API ABulletProjectile : public AActor
 {
 	GENERATED_BODY()
-	
+	friend class APlayerCharacterBase;
 public:	
 	// Sets default values for this actor's properties
 	ABulletProjectile();

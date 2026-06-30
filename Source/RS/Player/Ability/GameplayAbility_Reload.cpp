@@ -31,13 +31,6 @@ void UGameplayAbility_Reload::ActivateAbility(const FGameplayAbilitySpecHandle H
 		return;
 	}
 
-	UAbilityTask_WaitInputRelease* WaitRelease = UAbilityTask_WaitInputRelease::WaitInputRelease(this);
-
-	if (WaitRelease)
-	{
-		WaitRelease->OnRelease.AddDynamic(this, &UGameplayAbility_Reload::OnFinishReload);
-		WaitRelease->ReadyForActivation();
-	}
 	APlayerCharacterBase* PlayerChar = Cast<APlayerCharacterBase>(GetAvatarActorFromActorInfo());
 
 	if (PlayerChar)
@@ -53,7 +46,7 @@ void UGameplayAbility_Reload::ActivateAbility(const FGameplayAbilitySpecHandle H
 				ReloadGameplayEffect, 1.0f, EffectContext);
 			if (SpecHandle.IsValid())
 			{
-				ReloadffectHandle = ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
+				ReloadEffectHandle = ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
 			}
 		}
 	}
@@ -68,6 +61,11 @@ void UGameplayAbility_Reload::ActivateAbility(const FGameplayAbilitySpecHandle H
 		UAbilityTask_PlayMontageAndWait* Task =
 			UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, NAME_None, ReloadMontage,1.f);
 
+		Task->OnCompleted.AddDynamic(this, &UGameplayAbility_Reload::OnFinishReload);
+		Task->OnInterrupted.AddDynamic(this, &UGameplayAbility_Reload::OnFinishReload);
+		Task->OnCancelled.AddDynamic(this, &UGameplayAbility_Reload::OnFinishReload);
+		Task->OnBlendOut.AddDynamic(this, &UGameplayAbility_Reload::OnFinishReload);
+
 		Task->ReadyForActivation();
 }
 
@@ -78,18 +76,24 @@ void UGameplayAbility_Reload::EndAbility(const FGameplayAbilitySpecHandle Handle
 	const FGameplayAbilityActivationInfo ActivationInfo,
 	bool bReplicateEndAbility, bool bWasCancelled)
 {
-	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("EndAbility Dash"));
-
-	if (ReloadffectHandle.IsValid())
+	if (ReloadEffectHandle.IsValid())
 	{
 		UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
-		ASC->RemoveActiveGameplayEffect(ReloadffectHandle);
-		ReloadffectHandle.Invalidate();
+		ASC->RemoveActiveGameplayEffect(ReloadEffectHandle);
+		ReloadEffectHandle.Invalidate();
 	}
+
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+
+
+	APlayerCharacterBase* PlayerChar = Cast<APlayerCharacterBase>(GetAvatarActorFromActorInfo());
+	if (IsValid(PlayerChar) && PlayerChar->IsAttackKeyPressed())
+	{
+		PlayerChar->CallAttackAbility();
+	}
 }
 
-void UGameplayAbility_Reload::OnFinishReload(float TimeHeld)
+void UGameplayAbility_Reload::OnFinishReload()
 {
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }

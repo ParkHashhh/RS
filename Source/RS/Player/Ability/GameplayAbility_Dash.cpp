@@ -75,8 +75,6 @@ void UGameplayAbility_Dash::EndAbility(const FGameplayAbilitySpecHandle Handle,
 	const FGameplayAbilityActivationInfo ActivationInfo,
 	bool bReplicateEndAbility, bool bWasCancelled)
 {
-	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("EndAbility Dash"));
-
 	if (DashEffectHandle.IsValid())
 	{
 		UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
