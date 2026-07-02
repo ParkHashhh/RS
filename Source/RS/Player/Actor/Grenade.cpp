@@ -10,6 +10,7 @@
 #include "RS/Zombie/ZombieBase.h"
 #include "RS/Player/PlayerCharacterBase.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Kismet/GameplayStatics.h"       
 #include "RS/LogCategory.h"
 
 
@@ -67,6 +68,10 @@ void AGrenade::Explode()
 	if (IsValid(Niagara))
 	{
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), Niagara, GetActorLocation());
+	}
+	if (IsValid(Sound))
+	{
+		UGameplayStatics::SpawnSoundAtLocation(GetWorld(), Sound, GetActorLocation());
 	}
 	// 주변에 Apply Damage 필요
 	const float ExplosionRadius = 300.f;

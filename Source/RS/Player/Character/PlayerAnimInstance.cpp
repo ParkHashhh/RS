@@ -56,6 +56,7 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 		bIsSubSkilling = PlayerChar->IsSubSkilling();
 
+		ViewPitch = PlayerChar->ReplicatedViewPitch;
 	}
 }
 
@@ -130,8 +131,6 @@ void UPlayerAnimInstance::AnimNotify_MakeGrenade()
 
 void UPlayerAnimInstance::AnimNotify_StartDead()
 {
-	RS_PRINT_SCREEN(10.f, FColor::Red, TEXT("AnimNotify_StartDead"));
-
 	TObjectPtr<APlayerCharacterBase> PlayerChar = Cast<APlayerCharacterBase>(TryGetPawnOwner());
 
 	if (IsValid(PlayerChar))
@@ -143,8 +142,6 @@ void UPlayerAnimInstance::AnimNotify_StartDead()
 
 void UPlayerAnimInstance::AnimNotify_EndDead()
 {
-	RS_PRINT_SCREEN(10.f, FColor::Red, TEXT("AnimNotify_EndDead"));
-
 	APlayerCharacterBase* PlayerChar = Cast<APlayerCharacterBase>(TryGetPawnOwner());
 	if (IsValid(PlayerChar))
 	{
@@ -154,6 +151,16 @@ void UPlayerAnimInstance::AnimNotify_EndDead()
 		}
 	}
 
+}
+
+void UPlayerAnimInstance::AnimNotify_FootStep()
+{
+	TObjectPtr<APlayerCharacterBase> PlayerChar = Cast<APlayerCharacterBase>(TryGetPawnOwner());
+
+	if (IsValid(PlayerChar))
+	{
+		PlayerChar->PlayFootStepSound();
+	}
 }
 
 void UPlayerAnimInstance::AnimNotify_Reload()

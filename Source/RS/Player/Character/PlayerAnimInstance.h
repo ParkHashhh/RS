@@ -92,6 +92,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	float ViewYaw;
 
+
 protected:
 	UFUNCTION()
 	void MontageEnd(UAnimMontage* Montage, bool bInterrupted);
@@ -118,6 +119,10 @@ protected:
 	void AnimNotify_StartDead();
 	UFUNCTION()
 	void AnimNotify_EndDead();
+
+
+	UFUNCTION()
+	void AnimNotify_FootStep();
 
 public:
 	bool GetDirectionFoward()

@@ -9,6 +9,25 @@
 /**
  * 
  */
+USTRUCT(BlueprintType)
+struct FSurfaceEffectData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX")
+	TObjectPtr<UMaterialInterface> DecalMaterial;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX")
+	TObjectPtr<UMaterialInterface> SplatterMaterial;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX")
+	TObjectPtr<class UNiagaraSystem> SplatterNiagara;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sound")
+	TObjectPtr<class USoundBase> Sound;
+
+};
+
 UCLASS()
 class RS_API UGameplayCueNotify_PlayerStatic : public UGameplayCueNotify_StaticBase
 {
@@ -27,26 +46,18 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "FX")
 	float NiagaraRandomPitchRange = 30.f;
 
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "FX")
-	UMaterialInterface* Decal;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "FX")
-	UMaterialInterface* Splash;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "FX")
-	TMap<FName, UMaterialInterface*> SurfaceDecalMap;
+	UPROPERTY(EditDefaultsOnly, Category = "Combat")
+	TMap<TObjectPtr<UPhysicalMaterial>, FSurfaceEffectData> AttackEffectMap;
 
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "FX")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
 	FVector SurfaceDecalSize = FVector::ZeroVector;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "FX")
-	TMap<FName, UMaterialInterface*> SurfaceSplashMap;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "FX")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
 	FVector SurfaceSplashSize = FVector::ZeroVector;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	FVector SurfaceNiagaraSize = FVector::ZeroVector;
 public:
 	bool OnExecute_Implementation(AActor* Target,
 		const FGameplayCueParameters& Parameters) const;

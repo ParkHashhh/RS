@@ -70,6 +70,7 @@ void APlayerControllerBase::CreateBattleHUD()
 
 void APlayerControllerBase::Server_RequestSpectateTargets_Implementation()
 {
+	// 서버에서 호출하는 살아있는 사람들을 Array에 담아 클라이언트로 보내 그중 Controller의 View를 SetViewTarget으로 한다.
 	TArray<APlayerCharacterBase*> AliveTargets;
 	// FConstPlayerControllerIterator -> 서버에 있는 사람들의 컨트롤러를 반환해주는 이터레이터
 	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
@@ -103,20 +104,13 @@ void APlayerControllerBase::Client_ReceiveSpectateTargets_Implementation(const T
 	if (SpectateTargets.Num() > 0)
 	{
 		CurrentSpectateIndex = 0;
-
+		auto* Actor = SpectateTargets[CurrentSpectateIndex];
 		// 액터로 변환해서 보내야 뷰타겟이 가능
-		if (APlayerController* TargetPC = Cast<APlayerController>(SpectateTargets[0]->GetController()))
+		if (IsValid(Actor))
 		{
-			SetControlRotation(TargetPC->GetControlRotation());
+			SetViewTargetWithBlend(Actor, 0.5f);
 		}
-
-		FViewTargetTransitionParams Params;
-		Params.BlendTime = 0.5f;
-		Params.BlendFunction = VTBlend_Linear; 
-
-		SetViewTarget(SpectateTargets[0], Params);
 	}
-
 }
 
 void APlayerControllerBase::SpectateNext()
@@ -129,10 +123,7 @@ void APlayerControllerBase::SpectateNext()
 	auto* Actor = SpectateTargets[CurrentSpectateIndex];
 	if (IsValid(Actor))
 	{
-		FViewTargetTransitionParams Params;
-		SetViewTarget(Actor, Params);
-		SetControlRotation(Actor->GetActorRotation());
-		SetViewTarget(Actor);
+		SetViewTargetWithBlend(Actor, 0.5f);
 	}
 }
 
@@ -146,9 +137,6 @@ void APlayerControllerBase::SpectatePrev()
 	auto* Actor = SpectateTargets[CurrentSpectateIndex];
 	if (IsValid(Actor))
 	{
-		FViewTargetTransitionParams Params;
-		SetViewTarget(Actor, Params);
-		SetControlRotation(Actor->GetActorRotation());
-		SetViewTarget(Actor);
+		SetViewTargetWithBlend(Actor, 0.5f);
 	}
 }

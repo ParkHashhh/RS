@@ -55,48 +55,50 @@ bool UGameplayCueNotify_PlayerStatic::OnExecute_Implementation(AActor* Target,
 
 	if (IsValid(Sound))
 	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(Target->GetWorld(), Niagara, SpawnLocation, SpawnRotation);
+		UGameplayStatics::SpawnSoundAtLocation(GetWorld(), Sound, SpawnLocation);
 	}
 
-	if (IsValid(Decal))
-	{
-		UGameplayStatics::SpawnDecalAtLocation(Target->GetWorld(), Decal, FVector(5.f, 5.f, 5.f), SpawnLocation, SpawnRotation);
-	}
+	const FSurfaceEffectData* FoundEffect = nullptr;
 
-	if (IsValid(Splash))
-	{
-		UGameplayStatics::SpawnDecalAtLocation(Target->GetWorld(), Splash, FVector(15.f, 15.f, 15.f), SpawnLocation, SpawnRotation);
-	}
-
-	EPhysicalSurface Surface = SurfaceType_Default;
-	FName SurfaceName = NAME_None;
 	if (Hit && Hit->PhysMaterial.IsValid())
 	{
-		SurfaceName = Hit->PhysMaterial->GetFName();
+		FoundEffect = AttackEffectMap.Find(Hit->PhysMaterial.Get());
 	}
-	else if (Parameters.PhysicalMaterial.IsValid())
+
+	if (!FoundEffect && Parameters.PhysicalMaterial.IsValid())
 	{
-		SurfaceName = Parameters.PhysicalMaterial->GetFName();
+		FoundEffect = AttackEffectMap.Find(Parameters.PhysicalMaterial.Get());
 	}
-
-	UMaterialInterface* SurfaceDecal = SurfaceDecalMap.FindRef(SurfaceName);
-	UMaterialInterface* SurfaceSplash = SurfaceSplashMap.FindRef(SurfaceName);
-
 
 	FRotator SplashRotation = SpawnRotation;
-	if(Hit)
-		SplashRotation = (-Hit->ImpactNormal).Rotation();
 
-	if (IsValid(SurfaceSplash))
-		UGameplayStatics::SpawnDecalAtLocation(Target->GetWorld(), SurfaceSplash,
-			SurfaceSplashSize, SpawnLocation, SplashRotation, 4.f);
+	if (FoundEffect)
+	{
+		// 스플래터 생성
+		if (IsValid(FoundEffect->SplatterMaterial))
+		{
+			UGameplayStatics::SpawnDecalAtLocation(Target->GetWorld(), FoundEffect->SplatterMaterial,
+				SurfaceSplashSize, SpawnLocation, SpawnRotation, 4.f);
+		}
 
-	if (IsValid(SurfaceDecal))
-		UGameplayStatics::SpawnDecalAtLocation(Target->GetWorld(), SurfaceDecal,
-			SurfaceDecalSize, SpawnLocation, SpawnRotation, 4.f);
+		// 데칼 생성
+		if (IsValid(FoundEffect->DecalMaterial))
+		{
+			UGameplayStatics::SpawnDecalAtLocation(Target->GetWorld(), FoundEffect->DecalMaterial,
+				SurfaceDecalSize, SpawnLocation, SpawnRotation, 4.f);
+		}
+		// 나이아가라 생성
+		if (IsValid(FoundEffect->SplatterNiagara))
+		{
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(Target->GetWorld(), FoundEffect->SplatterNiagara, SpawnLocation, SpawnRotation, SurfaceNiagaraSize);
+		}
 
-
-
+		// 나이아가라 생성
+		if (IsValid(FoundEffect->Sound))
+		{
+			UGameplayStatics::SpawnSoundAtLocation(GetWorld(), FoundEffect->Sound, SpawnLocation);
+		}
+	}
 	return true;
 }
 

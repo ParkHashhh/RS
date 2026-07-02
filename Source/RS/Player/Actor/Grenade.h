@@ -33,7 +33,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "FX")
 	TObjectPtr<class UNiagaraSystem>		Niagara;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "FX")
+	TObjectPtr<class USoundBase> Sound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "FX")
 	FTimerHandle ExplosionTimerHandle;
+
 public:
 	FVector LaunchDir = FVector::ZeroVector;
 

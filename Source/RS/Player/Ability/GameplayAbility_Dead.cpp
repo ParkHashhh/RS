@@ -64,6 +64,8 @@ void UGameplayAbility_Dead::ActivateAbility(const FGameplayAbilitySpecHandle Han
 		UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, NAME_None, DeathMontage, 1.f);
 
 	PlayerChar->bCanRotate = false;
+	PlayerChar->bCanMove = false;
+
 
 	Task->ReadyForActivation();
 }

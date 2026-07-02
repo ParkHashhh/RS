@@ -32,7 +32,7 @@ bool UGameplayCueNotify_StaticBase::OnExecute_Implementation(AActor* Target,
 
 	if (IsValid(Sound))
 	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), Niagara, SpawnLocation);
+		UGameplayStatics::SpawnSoundAtLocation(GetWorld(), Sound, SpawnLocation);
 	}
 
 	return true;

@@ -2,11 +2,10 @@
 
 
 #include "PlayerCharacterBase.h"
-
+#include "Kismet/GameplayStatics.h"       
 #include "RSPlayerState.h"
 #include "Attribute/PlayerAttributeSet.h"
 #include "PlayerControllerBase.h"
-#include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -32,8 +31,9 @@ APlayerCharacterBase::APlayerCharacterBase()
 
 	SpringArm->SetRelativeRotation(FRotator::ZeroRotator);
 
-	SpringArm->bUsePawnControlRotation = true;
-
+	// SpringArm Roation은 PawnRotation을 따라는것이 아닌 직접관리. -> 관전자 시점 때문에 필요
+	SpringArm->bUsePawnControlRotation = false;
+	
 	// CameraComponent를 생성하고 SpringArm에 붙여준다.
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(SpringArm);
@@ -194,13 +194,14 @@ void APlayerCharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(APlayerCharacterBase, bIsDead);
+	DOREPLIFETIME(APlayerCharacterBase, ReplicatedViewPitch);
 }
 
 UAbilitySystemComponent* APlayerCharacterBase::GetASC() const
 {
 	return GetAbilitySystemComponent();
 }
-
+	
 // Called every frame
 void APlayerCharacterBase::Tick(float DeltaTime)
 {
@@ -210,8 +211,17 @@ void APlayerCharacterBase::Tick(float DeltaTime)
 	FRotator ActorRot = GetActorRotation();
 
 	float RelativePitch = FRotator::NormalizeAxis(CurrentControlRot.Pitch - ActorRot.Pitch);
-
-	AnimInst->ViewPitch = FMath::Clamp(RelativePitch, -40.0f, 40.0f);
+	float ClampedPitch = FMath::Clamp(RelativePitch, -40.0f, 40.0f);
+	// 서버에서 ViewPitch 호출하기전에 미리 클라이언트에서 자신의 화면부터 이동
+	if (IsLocallyControlled())
+	{
+		ReplicatedViewPitch = ClampedPitch;
+	}
+	if (HasAuthority())
+	{
+		ReplicatedViewPitch = ClampedPitch;
+	}
+	
 
 
 	float InterpSpeed = 10.f;
@@ -222,6 +232,17 @@ void APlayerCharacterBase::Tick(float DeltaTime)
 	                                                InterpSpeed));
 	Camera->SetRelativeRotation(
 		FMath::RInterpTo(Camera->GetRelativeRotation(), TargetCameraRot, DeltaTime, InterpSpeed));
+
+	if (IsLocallyControlled())
+	{
+		// 내마우스에따라 로테이션 설정
+		SpringArm->SetWorldRotation(GetControlRotation());
+	}
+	else
+	{
+		// bUseControllerRotationPitch 은 False 이기때문에 직접 Replication한 Pitch값과 컨트롤러의 Yaw 값으로 설정한다.
+		SpringArm->SetWorldRotation(GetSpectateViewRotation());
+	}
 
 	if (IsLocallyControlled())
 	{
@@ -462,6 +483,9 @@ void APlayerCharacterBase::MoveKey(const FInputActionValue& Value)
 {
 	FVector2D MovementVector = Value.Get<FVector2D>();
 
+	if (!bCanMove)
+		return;
+
 	AddMovementInput(GetActorForwardVector(), MovementVector.X);
 
 	AddMovementInput(GetActorRightVector(), MovementVector.Y);
@@ -600,6 +624,11 @@ void APlayerCharacterBase::Server_SpawnGrenade_Implementation(const FVector& Spa
 	}
 }
 
+
+FRotator APlayerCharacterBase::GetSpectateViewRotation() const
+{
+	return FRotator(ReplicatedViewPitch, GetActorRotation().Yaw,0.f);
+}
 
 void APlayerCharacterBase::MakeGrenade()
 {
@@ -1073,12 +1102,46 @@ void APlayerCharacterBase::ExecuteMuzzleEffect(const FVector& MuzzleLocation, co
 	FGameplayCueParameters CueParams;
 	CueParams.Location = MuzzleLocation;
 	CueParams.Normal = MuzzleRotation.Vector();
-
+	// AI가 들을 수 있는 함수
+	MakeNoise(20.f,this, MuzzleLocation,50.f);
 	if (ASC)
 	{
 		ASC->ExecuteGameplayCue(FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Weapon.MuzzleFlash")), CueParams);
 		ASC->ExecuteGameplayCue(FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Weapon.MuzzleSmoke")), CueParams);
 	}
+}
+
+void APlayerCharacterBase::PlayFootStepSound()
+{
+
+	FHitResult Hit;
+	FVector Start = GetActorLocation();
+	FVector End = Start - FVector(0, 0, 200.f);
+
+
+	//피지컬 머티리얼을 히트 구조체에 담기 위한 설정
+	//발 소켓에서 발사한 라인이 내 발바닥 표면에 충돌하는 것을 막는다.
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+	QueryParams.bReturnPhysicalMaterial = true;
+
+	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_GameTraceChannel1, QueryParams))
+	{
+		FString PMName = Hit.PhysMaterial.IsValid() ? Hit.PhysMaterial->GetName() : TEXT("NULL");
+		RS_PRINT_SCREEN(5.f, FColor::Yellow, TEXT("Hit: %s, PM: %s"), *Hit.GetActor()->GetName(), *PMName);
+		if (Hit.PhysMaterial.IsValid())
+		{
+			RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("Have Material"));
+
+			USoundBase* Sound = FootstepSoundMap.FindRef(Hit.PhysMaterial.Get());
+			UGameplayStatics::PlaySoundAtLocation(this, Sound, Hit.ImpactPoint);
+		}
+		else
+		{
+			RS_PRINT_SCREEN(1.f, FColor::Red, TEXT("Have Not Material"));
+		}
+	}
+
 }
 
 void APlayerCharacterBase::ExecuteBulletTrailEffect(const FVector& MuzzleLocation,const FVector& TrailEnd)

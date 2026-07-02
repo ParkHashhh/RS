@@ -8,6 +8,7 @@
 #include "InputActionValue.h"
 #include "PlayerAbilitySystemComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Camera/CameraComponent.h"
 #include <Components/TimelineComponent.h>
 #include "RS/RSCharacter.h"
 #include "RS/RSTags.h"
@@ -189,6 +190,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Recoil")
 	float RecoilInterpSpeed = 10.f;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Footstep")
+	TMap<TObjectPtr<UPhysicalMaterial>, TObjectPtr<USoundBase>> FootstepSoundMap;
+
 	// Tick에서 보간을 위한 변수
 	float RecoilPitchCurrent = 0.f;
 	float RecoilYawCurrent = 0.f;
@@ -197,12 +201,23 @@ protected:
 
 public:
 	bool bCanRotate = true;
+	bool bCanMove = true;
+
+	UPROPERTY(Replicated)
+	float ReplicatedViewPitch;
 
 public:
+	TObjectPtr<UCameraComponent> GetCameraComponent()
+	{
+		return Camera;
+	}
+
 	bool IsDead() const
 	{
 		return bIsDead;
 	}
+	UFUNCTION(BlueprintCallable, Category = "Camera")
+	FRotator GetSpectateViewRotation() const;
 
 	void MakeGrenade();
 	void VisibleWeapon();
@@ -338,6 +353,8 @@ public:
 	void SetRunAndGunCameraPosition();
 	void SetDashingCameraPosition();
 
+
+
 protected:
 	UFUNCTION(Server, Reliable)
 	void Server_SetMaxWalkSpeed(float NewSpeed);
@@ -401,6 +418,8 @@ protected:
 
 public:
 	void ExecuteMuzzleEffect(const FVector& MuzzleLocation, const FRotator& MuzzleRotation);
+	void PlayFootStepSound();
+
 public:
 	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode) override;
 	virtual void PossessedBy(AController* NewController) override;
