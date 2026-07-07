@@ -2,6 +2,7 @@
 
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemInterface.h"
+#include "RSTypes.h"
 
 UAbilitySystemComponent* RSUtils::FindASC(const AActor* Actor)
 {
@@ -16,4 +17,15 @@ UAbilitySystemComponent* RSUtils::FindASC(const AActor* Actor)
 	}
 
 	return Actor->FindComponentByClass<UAbilitySystemComponent>();
+}
+
+FText RSUtils::GetStatDescription(const FStatDisplayTableInfo& StatInfo, const TArray<FFormatArgumentValue>& Arguments)
+{
+	FFormatOrderedArguments Args;
+	for (const auto& Arg : Arguments)
+	{
+		Args.Add(Arg);
+	}
+
+	return FText::Format(StatInfo.DescriptionFormat, Args);
 }

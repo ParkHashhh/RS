@@ -47,6 +47,31 @@ void UBaseAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	DOREPLIFETIME(UBaseAttributeSet, AttackDistance)
 }
 
+void UBaseAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
+{
+	Super::PreAttributeChange(Attribute, NewValue);
+
+	if (Attribute == GetMaxHPAttribute())
+	{
+		// 최대 체력 변화에 따른 현재 체력 변화
+		float Diff = NewValue - GetMaxHP();
+		if (Diff > 0)
+		{
+			if (UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent())
+			{
+				ASC->SetNumericAttributeBase(GetCurrentHPAttribute(), GetCurrentHP() + Diff);
+			}
+		}
+		else if (GetCurrentHP() < NewValue)
+		{
+			if (UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent())
+			{
+				ASC->SetNumericAttributeBase(GetCurrentHPAttribute(), NewValue);
+			}
+		}
+	}
+}
+
 void UBaseAttributeSet::OnRep_AttackPower(const FGameplayAttributeData& OldValue)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UBaseAttributeSet, AttackPower, OldValue);

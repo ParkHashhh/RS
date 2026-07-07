@@ -11,310 +11,148 @@
 #include "RS/LogCategory.h"
 #include "RS/RSTypes.h"
 #include "RS/Data/Subsystem/DataSubsystem.h"
-#include "RS/Player/RSPlayerState.h"
 
-
-const FItemTableInfo* FInventoryItem::GetRowInfo(const UDataSubsystem* Subsystem) const
+void FInventoryEntry::PreReplicatedRemove(const FInventoryList& InArraySerializer)
 {
-	if (!Subsystem || ItemRowName.IsNone())
+	if (InArraySerializer.Owner)
+	{
+		InArraySerializer.Owner->HandleEntryRemoved(*this);
+	}
+}
+
+void FInventoryEntry::PostReplicatedAdd(const FInventoryList& InArraySerializer)
+{
+	if (InArraySerializer.Owner)
+	{
+		InArraySerializer.Owner->HandleEntryAdded(*this);
+	}
+}
+
+void FInventoryEntry::PostReplicatedChange(const FInventoryList& InArraySerializer)
+{
+	if (InArraySerializer.Owner)
+	{
+		InArraySerializer.Owner->HandleEntryChanged(*this);
+	}
+}
+
+void FInventoryList::RebuildIndexMap()
+{
+	GuidIndexMap.Empty(Entries.Num());
+
+	for (int32 Index = 0; Index < Entries.Num(); ++Index)
+	{
+		if (!Entries[Index].Item)
+		{
+			continue;
+		}
+
+		GuidIndexMap.Add(Entries[Index].Item->GetItemGUID(), Index);
+	}
+}
+
+void FInventoryList::MarkDirty(const UItemInstance* Item)
+{
+	if (!Item)
+	{
+		return;
+	}
+
+	if (FInventoryEntry* Entry = FindEntry(Item->GetItemGUID()))
+	{
+		MarkItemDirty(*Entry);
+	}
+}
+
+FInventoryEntry* FInventoryList::FindEntry(const FGuid& Guid)
+{
+	const int32* Index = GuidIndexMap.Find(Guid);
+	if (!Index)
 	{
 		return nullptr;
 	}
 
-	return Subsystem->GetItemTableInfo(ItemRowName);
+	return &Entries[*Index];
 }
 
-void FInventoryItem::PreReplicatedRemove(const FInventoryArray& InArraySerializer)
+const FInventoryEntry* FInventoryList::FindEntry(const FGuid& Guid) const
 {
-	if (IsValid(InArraySerializer.OwningInventoryComponent)
-		&& IsValid(InArraySerializer.OwningInventoryComponent->GetOwner())
-		&& InArraySerializer.OwningInventoryComponent->GetOwner()->HasAuthority())
+	const int32* Index = GuidIndexMap.Find(Guid);
+	if (!Index)
 	{
-		RemoveItemEffect(InArraySerializer.OwningInventoryComponent);
-
-		RS_LOG_DEBUG(LogRSItem, Log, TEXT("%s: Item removed. key: %s"), *LOG_LINE_INFO, *ItemRowName.ToString());
-		InArraySerializer.OwningInventoryComponent->OnItemChanged.Broadcast(ItemRowName, 0);
+		return nullptr;
 	}
+
+	return &Entries[*Index];
 }
 
-void FInventoryItem::PostReplicatedAdd(const FInventoryArray& InArraySerializer)
+FInventoryEntry* FInventoryList::FindEntry(const FDataTableRowHandle& RowHandle)
 {
-	if (IsValid(InArraySerializer.OwningInventoryComponent)
-		&& IsValid(InArraySerializer.OwningInventoryComponent->GetOwner())
-		&& InArraySerializer.OwningInventoryComponent->GetOwner()->HasAuthority())
-	{
-		ApplyItemEffect(InArraySerializer.OwningInventoryComponent);
-
-		RS_LOG_DEBUG(LogRSItem, Log, TEXT("%s: Item added. key: %s, count: %d"), *LOG_LINE_INFO, *ItemRowName.ToString(), Count);
-		InArraySerializer.OwningInventoryComponent->OnItemChanged.Broadcast(ItemRowName, Count);
-	}
-}
-
-void FInventoryItem::PostReplicatedChange(const FInventoryArray& InArraySerializer)
-{
-	if (IsValid(InArraySerializer.OwningInventoryComponent)
-		&& IsValid(InArraySerializer.OwningInventoryComponent->GetOwner())
-		&& InArraySerializer.OwningInventoryComponent->GetOwner()->HasAuthority())
-	{
-		RemoveItemEffect(InArraySerializer.OwningInventoryComponent);
-		ApplyItemEffect(InArraySerializer.OwningInventoryComponent);
-
-		RS_LOG_DEBUG(LogRSItem, Log, TEXT("%s: Item changed. key: %s, count: %d"), *LOG_LINE_INFO, *ItemRowName.ToString(), Count);
-		InArraySerializer.OwningInventoryComponent->OnItemChanged.Broadcast(ItemRowName, Count);
-	}
-}
-
-void FInventoryItem::ApplyItemEffect(UInventoryComponent* InventoryComponent)
-{
-	if (!InventoryComponent)
-	{
-		RS_LOG_DEBUG(LogRSItem, Error, TEXT("%s: Invalid inventory component"), *LOG_LINE_INFO);
-		return;
-	}
-
-	auto* ASC = InventoryComponent->GetASC();
-	if (!ASC)
-	{
-		RS_LOG_DEBUG(LogRSItem, Log, TEXT("%s: Invalid ability system component"), *LOG_LINE_INFO);
-		return;
-	}
-
-	const auto* World = InventoryComponent->GetWorld();
-	check(World);
-
-	const UGameInstance* GameInstance = World->GetGameInstance();
-	check(GameInstance);
-
-	const auto* DataSubsystem = GameInstance->GetSubsystem<UDataSubsystem>();
-	check(DataSubsystem);
-
-	if (!DataSubsystem->IsItemTableLoaded())
-	{
-		RS_LOG_DEBUG(LogRSData, Warning, TEXT("%s: Item table is not loaded"), *LOG_LINE_INFO);
-		return;
-	}
-
-	const FItemTableInfo* ItemTableInfo = GetRowInfo(DataSubsystem);
-	if (!ItemTableInfo || !IsValid(ItemTableInfo->MasterItemEffectClass))
-	{
-		RS_LOG_DEBUG(LogRSItem, Error, TEXT("%s: Invalid item table info or missing effect class for item %s"),
-		             *LOG_LINE_INFO, *ItemRowName.ToString());
-		return;
-	}
-
-	FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
-	EffectContext.AddSourceObject(InventoryComponent->GetOwner());
-
-	FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(
-		ItemTableInfo->MasterItemEffectClass, 1.f, EffectContext);
-	if (SpecHandle.IsValid())
-	{
-		for (const auto& [OptionTag, Value] : ItemTableInfo->ItemOptions)
+	return Entries.FindByPredicate(
+		[&](const FInventoryEntry& Entry)
 		{
-			if (OptionTag.IsValid())
-			{
-				// 수량에 따른 효과를 변경하고 싶으면 이쪽을 수정
-				const float TotalValue = Value * static_cast<float>(Count);
-				SpecHandle.Data->SetSetByCallerMagnitude(OptionTag, TotalValue);
-			}
-		}
-
-		AppliedEffectHandle = ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
-	}
+			return Entry.Item && Entry.Item->GetItemRowHandle() == RowHandle;
+		});
 }
 
-void FInventoryItem::RemoveItemEffect(UInventoryComponent* InventoryComponent)
+const FInventoryEntry* FInventoryList::FindEntry(const FDataTableRowHandle& RowHandle) const
 {
-	if (!InventoryComponent || !AppliedEffectHandle.IsValid())
-	{
-		RS_LOG_DEBUG(LogRSItem, Error, TEXT("%s: Invalid inventory component or applied effect handle"),
-		             *LOG_LINE_INFO);
-		return;
-	}
-
-	if (auto* ASC = InventoryComponent->GetASC())
-	{
-		ASC->RemoveActiveGameplayEffect(AppliedEffectHandle);
-	}
-
-	AppliedEffectHandle.Invalidate();
-}
-
-void FInventoryArray::AddItem(FName InRowName, int32 InCount, const UDataSubsystem* DataSubsystem)
-{
-	if (InRowName.IsNone() || InCount <= 0 || !IsValid(DataSubsystem))
-	{
-		RS_LOG_DEBUG(LogRSItem, Error, TEXT("%s: Invalid parameters - RowName: %s, Count: %d, DataSubsystem: %s"),
-		             *LOG_LINE_INFO, *InRowName.ToString(), InCount,
-		             IsValid(DataSubsystem) ? TEXT("Valid") : TEXT("Invalid"));
-		return;
-	}
-
-	if (!DataSubsystem->IsItemTableLoaded())
-	{
-		RS_LOG_DEBUG(LogRSData, Warning, TEXT("%s: Item table is not loaded"), *LOG_LINE_INFO);
-		return;
-	}
-
-	const FItemTableInfo* ItemTableInfo = DataSubsystem->GetItemTableInfo(InRowName);
-	if (!ItemTableInfo)
-	{
-		RS_LOG_DEBUG(LogRSItem, Error, TEXT("%s: Item table info not found for row name %s"), *LOG_LINE_INFO,
-		             *InRowName.ToString());
-		return;
-	}
-
-	// 중첩 가능한 아이템
-	if (ItemTableInfo->bIsStackable)
-	{
-		for (FInventoryItem& ExistingItem : Items)
+	return Entries.FindByPredicate(
+		[&](const FInventoryEntry& Entry)
 		{
-			if (ExistingItem.ItemRowName == InRowName)
-			{
-				ExistingItem.Count += InCount;
-
-				// 수량 변화를 알림
-				MarkItemDirty(ExistingItem);
-				return;
-			}
-		}
-	}
-
-	// 중첩불가 or 중첩 가능하지만 기존 보유 아이템 없음
-	FInventoryItem& NewItem = Items.AddDefaulted_GetRef();
-	NewItem.ItemRowName = InRowName;
-	NewItem.Count = InCount;
-
-	// 신규 추가를 알림
-	MarkItemDirty(NewItem);
+			return Entry.Item && Entry.Item->GetItemRowHandle() == RowHandle;
+		});
 }
 
-void FInventoryArray::RemoveItem(int32 InIndex)
+FInventoryEntry& FInventoryList::AddEntry(UItemInstance* Item)
 {
-	if (Items.IsValidIndex(InIndex))
-	{
-		Items.RemoveAt(InIndex);
+	FInventoryEntry& Entry = Entries.Emplace_GetRef(Item);
 
-		MarkArrayDirty();
-	}
+	RebuildIndexMap();
+
+	MarkItemDirty(Entry);
+
+	return Entry;
 }
 
-void FInventoryArray::MarkItemDirtyAt(int32 InIndex)
+bool FInventoryList::RemoveEntry(const FGuid& Guid)
 {
-	if (Items.IsValidIndex(InIndex))
+	const int32* Index = GuidIndexMap.Find(Guid);
+	if (!Index)
 	{
-		MarkItemDirty(Items[InIndex]);
+		return false;
 	}
+
+	Entries.RemoveAt(*Index);
+
+	RebuildIndexMap();
+
+	MarkArrayDirty();
+
+	return true;
 }
 
 // Sets default values for this component's properties
 UInventoryComponent::UInventoryComponent()
 {
-	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
-	// off to improve performance if you don't need them.
-	PrimaryComponentTick.bCanEverTick = true;
-
-	InventoryArray.OwningInventoryComponent = this;
+	// 이벤트 기반으로만 작동할 것
+	PrimaryComponentTick.bCanEverTick = false;
 
 	SetIsReplicatedByDefault(true);
 }
 
-void UInventoryComponent::UseConsumableItem(FInventoryItem& Item)
+void UInventoryComponent::BeginPlay()
 {
-	if (!GetOwner() || !GetOwner()->HasAuthority())
-	{
-		return;
-	}
+	Super::BeginPlay();
 
-	auto* ASC = GetASC();
-	if (!IsValid(ASC))
-	{
-		RS_LOG_DEBUG(LogRSItem, Error, TEXT("%s: Need AbilitySystemComponent to consume item"), *LOG_LINE_INFO);
-		return;
-	}
-
-	const UWorld* World = GetWorld();
-	check(World);
-
-	const UGameInstance* GameInstance = World->GetGameInstance();
-	check(GameInstance);
-
-	const auto* DataSubsystem = GameInstance->GetSubsystem<UDataSubsystem>();
-	check(DataSubsystem);
-
-	if (!DataSubsystem->IsItemTableLoaded())
-	{
-		RS_LOG_DEBUG(LogRSData, Warning, TEXT("%s: Item table is not loaded"), *LOG_LINE_INFO);
-		return;
-	}
-
-	const FItemTableInfo* ItemTableInfo = Item.GetRowInfo(DataSubsystem);
-	if (!ItemTableInfo || ItemTableInfo->UseType != EItemUseType::Consumable || !ItemTableInfo->MasterItemEffectClass)
-	{
-		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Invalid item or missing effect class"), *LOG_LINE_INFO);
-		return;
-	}
-
-	FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
-	EffectContext.AddSourceObject(GetOwner());
-
-	const FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(
-		ItemTableInfo->MasterItemEffectClass, 1.f, EffectContext);
-
-	if (SpecHandle.IsValid())
-	{
-		// 데이터 테이블에 정의된 n개의 옵션을 순회하며 SetByCaller 값 주입
-		for (const auto& [OptionTag, Value] : ItemTableInfo->ItemOptions)
-		{
-			if (OptionTag.IsValid())
-			{
-				SpecHandle.Data->SetSetByCallerMagnitude(OptionTag, Value);
-			}
-		}
-
-		// 소모품은 나중에 수동으로 해제할 일이 없으므로 반환된 Handle을 저장하지 않고 버린다
-		ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
-		RS_LOG_DEBUG(LogRSItem, Log, TEXT("%s: Successfully used consumable item %s"), *LOG_LINE_INFO,
-		             *Item.ItemRowName.ToString());
-
-		// 수량 차감 및 그에 따른 효과 갱신
-		int32 ItemIndex = InventoryArray.Items.Find(Item);
-		if (ItemIndex != INDEX_NONE)
-		{
-			auto& ChangedItem = InventoryArray.Items[ItemIndex];
-
-			// 일단 끄고
-			ChangedItem.RemoveItemEffect(this);
-			if (--ChangedItem.Count <= 0)
-			{
-				InventoryArray.RemoveItem(ItemIndex);
-			}
-			else
-			{
-				ChangedItem.ApplyItemEffect(this);
-				InventoryArray.MarkItemDirtyAt(ItemIndex);
-			}
-		}
-	}
+	InventoryList.Owner = this;
 }
 
-void UInventoryComponent::AddItemToInventory(FName InRowName, int32 InCount)
+void UInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
-	if (!GetOwner() || !GetOwner()->HasAuthority())
-	{
-		return;
-	}
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	const UWorld* World = GetWorld();
-	check(World);
-
-	const UGameInstance* GameInstance = World->GetGameInstance();
-	check(GameInstance);
-
-	const auto* DataSubsystem = GameInstance->GetSubsystem<UDataSubsystem>();
-	check(DataSubsystem);
-
-	InventoryArray.AddItem(InRowName, InCount, DataSubsystem);
+	DOREPLIFETIME(UInventoryComponent, InventoryList);
 }
 
 UAbilitySystemComponent* UInventoryComponent::GetASC() const
@@ -328,28 +166,367 @@ UAbilitySystemComponent* UInventoryComponent::GetASC() const
 	return AscOwner->GetASC();
 }
 
-
-// Called when the game starts
-void UInventoryComponent::BeginPlay()
+UItemInstance* UInventoryComponent::CreateItemInstance(const FDataTableRowHandle& RowHandle, int32 Count)
 {
-	Super::BeginPlay();
+	check(Count > 0);
 
-	// ...
+	auto* NewItem = NewObject<UItemInstance>(this);
+	check(NewItem);
+
+	NewItem->Initialize(this, FGuid::NewGuid(), RowHandle, Count);
+
+	return NewItem;
 }
 
-void UInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+bool UInventoryComponent::CanAddItem(const FDataTableRowHandle& RowHandle, int32 Count) const
 {
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME(UInventoryComponent, InventoryArray);
+	return true;
 }
 
-
-// Called every frame
-void UInventoryComponent::TickComponent(float DeltaTime, ELevelTick TickType,
-                                        FActorComponentTickFunction* ThisTickFunction)
+bool UInventoryComponent::CanRemoveItem(const FDataTableRowHandle& RowHandle, int32 Count) const
 {
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	const UItemInstance* Item = FindItem(RowHandle);
 
-	// ...
+	return Item && Item->GetItemCount() >= Count;
+}
+
+UItemInstance* UInventoryComponent::AddItem(FName ItemRowName, int32 Count)
+{
+	check(GetOwner()->HasAuthority());
+
+	if (const UGameInstance* GI = GetOwner()->GetGameInstance())
+	{
+		if (const auto* DataSubsystem = GI->GetSubsystem<UDataSubsystem>())
+		{
+			if (const UDataTable* ItemTable = DataSubsystem->GetItemInfoTable())
+			{
+				FDataTableRowHandle RowHandle;
+				RowHandle.DataTable = ItemTable;
+				RowHandle.RowName = ItemRowName;
+
+				return AddItem(RowHandle, Count);
+			}
+		}
+	}
+
+	return nullptr;
+}
+
+UItemInstance* UInventoryComponent::AddItem(const FDataTableRowHandle& RowHandle, int32 Count)
+{
+	check(GetOwner()->HasAuthority());
+
+	if (Count <= 0)
+	{
+		RS_LOG_DEBUG(LogRSInventory, Error, TEXT("%s: Count must be greater than zero"), *LOG_LINE_INFO);
+		return nullptr;
+	}
+
+	if (!CanAddItem(RowHandle, Count))
+	{
+		RS_LOG_DEBUG(LogRSInventory, Log, TEXT("%s: Cannot add item"), *LOG_LINE_INFO);
+		return nullptr;
+	}
+
+	if (UItemInstance* ExistingItem = FindItem(RowHandle))
+	{
+		ExistingItem->AddItemCount(Count);
+
+		InventoryList.MarkDirty(ExistingItem);
+
+		OnItemChanged(ExistingItem);
+
+		// 이후 게임플레이 이펙트 + 브로드캐스트
+
+		return ExistingItem;
+	}
+
+	UItemInstance* NewItem = CreateItemInstance(RowHandle, Count);
+	if (!IsValid(NewItem))
+	{
+		return nullptr;
+	}
+
+	OnItemAdded(NewItem);
+
+	InventoryList.AddEntry(NewItem);
+
+	// 이후 게임플레이 이펙트 + 브로드캐스트
+
+	return NewItem;
+}
+
+bool UInventoryComponent::RemoveItem(const FDataTableRowHandle& RowHandle, int32 Count)
+{
+	check(GetOwner()->HasAuthority());
+
+	if (Count <= 0)
+	{
+		RS_LOG_DEBUG(LogRSInventory, Error, TEXT("%s: Invalid count"), *LOG_LINE_INFO);
+		return false;
+	}
+
+	UItemInstance* Item = FindItem(RowHandle);
+	if (!Item)
+	{
+		RS_LOG_DEBUG(LogRSInventory, Error, TEXT("%s: Item not found"), *LOG_LINE_INFO);
+		return false;
+	}
+
+	if (!CanRemoveItem(RowHandle, Count))
+	{
+		RS_LOG_DEBUG(LogRSInventory, Error, TEXT("%s: Not enough item count"), *LOG_LINE_INFO);
+		return false;
+	}
+
+	const int32 NewCount = Item->RemoveItemCount(Count);
+	if (NewCount > 0)
+	{
+		InventoryList.MarkDirty(Item);
+
+		OnItemChanged(Item);
+
+		return true;
+	}
+
+	OnItemRemoved(Item);
+
+	return InventoryList.RemoveEntry(Item->GetItemGUID());
+}
+
+UItemInstance* UInventoryComponent::FindItem(const FGuid& ItemGuid)
+{
+	if (FInventoryEntry* Entry = InventoryList.FindEntry(ItemGuid))
+	{
+		return Entry->Item;
+	}
+
+	return nullptr;
+}
+
+const UItemInstance* UInventoryComponent::FindItem(const FGuid& ItemGuid) const
+{
+	if (const FInventoryEntry* Entry = InventoryList.FindEntry(ItemGuid))
+	{
+		return Entry->Item;
+	}
+
+	return nullptr;
+}
+
+UItemInstance* UInventoryComponent::FindItem(const FDataTableRowHandle& RowHandle)
+{
+	if (FInventoryEntry* Entry = InventoryList.FindEntry(RowHandle))
+	{
+		return Entry->Item;
+	}
+
+	return nullptr;
+}
+
+const UItemInstance* UInventoryComponent::FindItem(const FDataTableRowHandle& RowHandle) const
+{
+	if (const FInventoryEntry* Entry = InventoryList.FindEntry(RowHandle))
+	{
+		return Entry->Item;
+	}
+
+	return nullptr;
+}
+
+int32 UInventoryComponent::GetItemCount(const FGuid& ItemGuid) const
+{
+	if (const UItemInstance* Item = FindItem(ItemGuid))
+	{
+		return Item->GetItemCount();
+	}
+
+	return 0;
+}
+
+int32 UInventoryComponent::GetItemCount(const FDataTableRowHandle& RowHandle) const
+{
+	if (const UItemInstance* Item = FindItem(RowHandle))
+	{
+		return Item->GetItemCount();
+	}
+
+	return 0;
+}
+
+void UInventoryComponent::HandleEntryAdded(const FInventoryEntry& Entry)
+{
+	InventoryList.RebuildIndexMap();
+
+	if (!Entry.Item)
+	{
+		return;
+	}
+
+	OnItemAdded(Entry.Item);
+}
+
+void UInventoryComponent::HandleEntryChanged(const FInventoryEntry& Entry)
+{
+	InventoryList.RebuildIndexMap();
+
+	if (!Entry.Item)
+	{
+		return;
+	}
+
+	OnItemChanged(Entry.Item);
+}
+
+void UInventoryComponent::HandleEntryRemoved(const FInventoryEntry& Entry)
+{
+	InventoryList.RebuildIndexMap();
+
+	if (!Entry.Item)
+	{
+		return;
+	}
+
+	OnItemRemoved(Entry.Item);
+}
+
+void UInventoryComponent::ApplyGameplayEffect(UItemInstance* Item)
+{
+	if (!IsValid(Item))
+	{
+		return;
+	}
+
+	ensureMsgf(Item->GetItemCount() > 0, TEXT("Item count must be greater than zero"));
+
+	UAbilitySystemComponent* ASC = GetASC();
+	if (!ASC)
+	{
+		return;
+	}
+
+	const FItemTableInfo* ItemInfo = RSUtils::GetTableInfo<FItemTableInfo>(
+		Item->GetItemRowHandle(), TEXT("ApplyGameplayEffect"));
+	if (!ItemInfo)
+	{
+		return;
+	}
+
+	if (!ItemInfo->MasterItemEffectClass)
+	{
+		return;
+	}
+
+	FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
+	EffectContext.AddSourceObject(Item);
+
+	FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(ItemInfo->MasterItemEffectClass, 1.0f, EffectContext);
+	if (!SpecHandle.IsValid())
+	{
+		return;
+	}
+
+	FGameplayEffectSpec* Spec = SpecHandle.Data.Get();
+	if (!Spec)
+	{
+		return;
+	}
+
+	for (const auto& [OptionTag, Value, bScaleWithStack] : ItemInfo->ItemOptions)
+	{
+		if (!OptionTag.IsValid())
+		{
+			ensureMsgf(false, TEXT("Item option tag is invalid"));
+			continue;
+		}
+
+		float Magnitude;
+		if (bScaleWithStack)
+		{
+			Magnitude = Value * Item->GetItemCount();
+		}
+		else
+		{
+			Magnitude = Value;
+		}
+
+		Spec->SetSetByCallerMagnitude(OptionTag, Magnitude);
+	}
+
+	const FActiveGameplayEffectHandle ActiveHandle = ASC->ApplyGameplayEffectSpecToSelf(*Spec);
+	if (!ActiveHandle.IsValid())
+	{
+		return;
+	}
+
+	ensureMsgf(!Item->GetActiveGameplayEffectHandle().IsValid(), TEXT("Item already has active gameplay effect"));
+
+	Item->SetActiveGameplayEffectHandle(ActiveHandle);
+}
+
+void UInventoryComponent::UpdateGameplayEffect(UItemInstance* Item)
+{
+	RemoveGameplayEffect(Item);
+
+	ApplyGameplayEffect(Item);
+}
+
+void UInventoryComponent::RemoveGameplayEffect(UItemInstance* Item)
+{
+	if (!IsValid(Item))
+	{
+		return;
+	}
+
+	UAbilitySystemComponent* ASC = GetASC();
+	if (!ASC)
+	{
+		return;
+	}
+
+	ensureMsgf(Item->GetActiveGameplayEffectHandle().IsValid(), TEXT("Item does not have active gameplay effect"));
+
+	const FActiveGameplayEffectHandle& Handle = Item->GetActiveGameplayEffectHandle();
+	if (!Handle.IsValid())
+	{
+		return;
+	}
+
+	if (ASC->RemoveActiveGameplayEffect(Handle))
+	{
+		Item->ClearActiveGameplayEffectHandle();
+	}
+}
+
+void UInventoryComponent::OnItemAdded(UItemInstance* Item)
+{
+	if (GetOwner()->HasAuthority())
+	{
+		ApplyGameplayEffect(Item);
+	}
+
+	OnItemAddedDelegate.Broadcast(Item);
+	OnInventoryChangedDelegate.Broadcast();
+}
+
+void UInventoryComponent::OnItemChanged(UItemInstance* Item)
+{
+	if (GetOwner()->HasAuthority())
+	{
+		UpdateGameplayEffect(Item);
+	}
+
+	OnItemChangedDelegate.Broadcast(Item);
+	OnInventoryChangedDelegate.Broadcast();
+}
+
+void UInventoryComponent::OnItemRemoved(UItemInstance* Item)
+{
+	if (GetOwner()->HasAuthority())
+	{
+		RemoveGameplayEffect(Item);
+	}
+
+	OnItemRemovedDelegate.Broadcast(Item);
+	OnInventoryChangedDelegate.Broadcast();
 }

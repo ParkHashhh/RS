@@ -25,5 +25,12 @@ public:
 
 	bool Contains(const FName WidgetName) const;
 
-	URSUserWidget* GetWidget(const FName WidgetName) const;
+	URSUserWidget* FindWidget(const FName WidgetName) const;
+
+	int32 FindCombatWidget(TArray<TObjectPtr<URSUserWidget>> OutCombatWidgets) const;
+
+	const TMap<FName, TWeakObjectPtr<URSUserWidget>>& GetUserWidgets() const
+	{
+		return UserWidgets;
+	}
 };

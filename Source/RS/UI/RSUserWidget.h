@@ -21,6 +21,9 @@ private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, BlueprintGetter=K2_GetWidgetName, meta=(AllowPrivateAccess = true))
 	FName WidgetName;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta=(AllowPrivateAccess=true))
+	bool bIsCombatWidget = false;
+
 	TMap<FName, TWeakObjectPtr<UWidgetAnimation>> Animations;
 
 public:
@@ -37,6 +40,12 @@ public:
 
 	void PlayWidgetAnimation(FName AnimationName, float StartAtTime = 0.0f, float PlaybackSpeed = 1.f,
 	                         bool bForward = true, bool bRestoreState = false, int32 NumberOfLoops = 1);
+
+	UFUNCTION(BlueprintPure)
+	bool IsCombatWidget() const
+	{
+		return bIsCombatWidget;
+	}
 
 protected:
 	virtual void NativeOnInitialized() override;

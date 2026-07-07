@@ -2,7 +2,7 @@
 
 
 #include "PlayerCharacterBase.h"
-#include "Kismet/GameplayStatics.h"       
+#include "Kismet/GameplayStatics.h"
 #include "RSPlayerState.h"
 #include "Attribute/PlayerAttributeSet.h"
 #include "PlayerControllerBase.h"
@@ -17,6 +17,11 @@
 #include "Actor/Grenade.h"
 #include "Actor/HealPack.h"
 #include "GameplayCueManager.h"
+#include "PlayerControllerBase.h"
+#include "RS/Inventory/InventoryComponent.h"
+#include "RS/UI/Battle/BattleHUDWidget.h"
+#include "RS/UI/Battle/Inventory/Popup/InventoryPopupWidget.h"
+#include "RS/UI/Subsystem/UISubsystem.h"
 
 // Sets default values
 APlayerCharacterBase::APlayerCharacterBase()
@@ -34,7 +39,7 @@ APlayerCharacterBase::APlayerCharacterBase()
 
 	// SpringArm Roation은 PawnRotation을 따라는것이 아닌 직접관리. -> 관전자 시점 때문에 필요
 	SpringArm->bUsePawnControlRotation = false;
-	
+
 	// CameraComponent를 생성하고 SpringArm에 붙여준다.
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(SpringArm);
@@ -140,7 +145,7 @@ void APlayerCharacterBase::OnMovementModeChanged(EMovementMode PrevMovementMode,
 	if (GetCharacterMovement()->IsWalking())
 	{
 		bCanJump = true;
-		
+
 	}
 }
 
@@ -194,6 +199,7 @@ void APlayerCharacterBase::OnRep_PlayerState()
 void APlayerCharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
 	DOREPLIFETIME(APlayerCharacterBase, bIsDead);
 	DOREPLIFETIME(APlayerCharacterBase, ReplicatedViewPitch);
 }
@@ -202,7 +208,7 @@ UAbilitySystemComponent* APlayerCharacterBase::GetASC() const
 {
 	return GetAbilitySystemComponent();
 }
-	
+
 // Called every frame
 void APlayerCharacterBase::Tick(float DeltaTime)
 {
@@ -222,7 +228,7 @@ void APlayerCharacterBase::Tick(float DeltaTime)
 	{
 		ReplicatedViewPitch = ClampedPitch;
 	}
-	
+
 
 
 	float InterpSpeed = 10.f;
@@ -266,8 +272,6 @@ void APlayerCharacterBase::Tick(float DeltaTime)
 		AddControllerYawInput(YawDelta);
 		RecoilYawCurrent -= YawDelta;
 	}
-
-
 }
 
 // Called to bind functionality to input
@@ -376,6 +380,14 @@ void APlayerCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::SpecPrevKey);
 	}
 
+
+	Action = InputData->FindAction(FInputKeyNames::Inventory);
+	if (Action)
+	{
+		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::ShowInventory);
+		EnhancedInput->BindAction(Action, ETriggerEvent::Completed, this, &APlayerCharacterBase::HideInventory);
+	}
+
 #if !UE_BUILD_SHIPPING
 	Action = InputData->FindAction(FInputKeyNames::Debug_00);
 	if (Action)
@@ -447,6 +459,7 @@ void APlayerCharacterBase::Server_SetMaxWalkSpeed_Implementation(float NewSpeed)
 		MovementComponent->MaxWalkSpeed = NewSpeed;
 	}
 }
+
 void APlayerCharacterBase::NotifyASCReady()
 {
 	if (bASCReady)
@@ -575,9 +588,7 @@ void APlayerCharacterBase::AimReleaseKey(const FInputActionValue& Value)
 
 void APlayerCharacterBase::ReloadKey(const FInputActionValue& Value)
 {
-
 	ASC->AbilityLocalInputPressed(static_cast<int32>(ERSInputID::Reload));
-
 }
 
 void APlayerCharacterBase::SubSkillKey(const FInputActionValue& Value)
@@ -635,14 +646,16 @@ void APlayerCharacterBase::Server_SpawnHeal_Implementation(const FVector& SpawnL
 		SpawnParams.Instigator = this;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
+		FRotator SpawnRotation = FRotator(0.f, HealRotation.Yaw, 0.f);
+
 		AHealPack* HealPack = GetWorld()->SpawnActorDeferred<AHealPack>(
-			HealPackActor, FTransform(HealRotation, SpawnLocation), this, this,
+			HealPackActor, FTransform(SpawnRotation, SpawnLocation), this, this,
 			ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 
 		if (HealPack)
 		{
 			HealPack->LaunchDir = HealRotation.Vector();
-			HealPack->FinishSpawning(FTransform(HealRotation, SpawnLocation));
+			HealPack->FinishSpawning(FTransform(SpawnRotation, SpawnLocation));
 		}
 	}
 }
@@ -807,30 +820,69 @@ void APlayerCharacterBase::DebugKey0(const FInputActionValue& Value)
 {
 	RS_LOG_DEBUG(LogRSCommon, Log, TEXT("DebugKey0"));
 	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("DebugKey0"));
+
+	if (auto* PS = GetPlayerState<ARSPlayerState>())
+	{
+		if (UInventoryComponent* Inventory = PS->GetInventoryComponent())
+		{
+			Inventory->AddItem(FName("critical_damage"), 1);
+		}
+	}
 }
 
 void APlayerCharacterBase::DebugKey1(const FInputActionValue& Value)
 {
 	RS_LOG_DEBUG(LogRSCommon, Log, TEXT("DebugKey1"));
 	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("DebugKey1"));
+
+	if (auto* PS = GetPlayerState<ARSPlayerState>())
+	{
+		if (UInventoryComponent* Inventory = PS->GetInventoryComponent())
+		{
+			Inventory->AddItem(FName("bullet_recycle"), 1);
+		}
+	}
 }
 
 void APlayerCharacterBase::DebugKey2(const FInputActionValue& Value)
 {
 	RS_LOG_DEBUG(LogRSCommon, Log, TEXT("DebugKey2"));
 	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("DebugKey2"));
+	if (auto* PS = GetPlayerState<ARSPlayerState>())
+	{
+		if (UInventoryComponent* Inventory = PS->GetInventoryComponent())
+		{
+			Inventory->AddItem(FName("attack_speed"), 1);
+		}
+	}
 }
 
 void APlayerCharacterBase::DebugKey3(const FInputActionValue& Value)
 {
 	RS_LOG_DEBUG(LogRSCommon, Log, TEXT("DebugKey3"));
 	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("DebugKey3"));
+
+	if (auto* PS = GetPlayerState<ARSPlayerState>())
+	{
+		if (UInventoryComponent* Inventory = PS->GetInventoryComponent())
+		{
+			Inventory->AddItem(FName("ignite"), 1);
+		}
+	}
 }
 
 void APlayerCharacterBase::DebugKey4(const FInputActionValue& Value)
 {
 	RS_LOG_DEBUG(LogRSCommon, Log, TEXT("DebugKey4"));
 	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("DebugKey4"));
+
+	if (auto* PS = GetPlayerState<ARSPlayerState>())
+	{
+		if (UInventoryComponent* Inventory = PS->GetInventoryComponent())
+		{
+			Inventory->AddItem(FName("hp_booster"), 1);
+		}
+	}
 }
 
 void APlayerCharacterBase::DebugKey5(const FInputActionValue& Value)
@@ -1133,7 +1185,7 @@ void APlayerCharacterBase::OnAttackingTagChanged(const FGameplayTag Tag, int32 N
 
 void APlayerCharacterBase::OnDashingTagChanged(const FGameplayTag Tag, int32 NewCount)
 {
-	
+
 	UpdatePlayerCameraState();
 	UpdatePlayerSpeedState();
 }
@@ -1158,7 +1210,6 @@ void APlayerCharacterBase::OnJumpingTagChanged(const FGameplayTag Tag, int32 New
 
 void APlayerCharacterBase::ExecuteMuzzleEffect(const FVector& MuzzleLocation, const FRotator& MuzzleRotation)
 {
-	
 	if (!WeaponMeshComponent)
 		return;
 	WeaponMeshComponent->UpdateComponentToWorld();
@@ -1304,7 +1355,6 @@ bool APlayerCharacterBase::CalculateHit(FHitResult& Hit)
 	return GetWorld()->LineTraceSingleByChannel(Hit, MuzzleLocation, FinalEnd, ECC_GameTraceChannel1, Params);
 }
 
-
 void APlayerCharacterBase::Multicast_ExecuteVisualEffect_Implementation(const FHitResult& Hit, bool bIsHit)
 {
 	FGameplayCueParameters CueParams;
@@ -1338,10 +1388,8 @@ void APlayerCharacterBase::Server_ShootAttackRay_Implementation()
 		// 적군인지 확인
 		if (Attitude == ETeamAttitude::Hostile)
 		{
-			
 			Server_ApplyDamage(TargetActor, Hit,GetAttributeSet()->GetAttackPower());
 			Multicast_ExecuteVisualEffect(Hit, true);
-
 		}
 		// 아닐경우 벽으로 판정
 		else
@@ -1364,6 +1412,7 @@ void APlayerCharacterBase::ShootAttackRay()
 
 	if (!IsLocallyControlled())
 		return;
+
 	FHitResult Hit;
 
 	FVector CameraLocation;
@@ -1394,7 +1443,6 @@ void APlayerCharacterBase::ShootAttackRay()
 		TargetLocation = CameraEnd;
 	}
 
-
 	FVector MuzzleLocation = WeaponMeshComponent->GetSocketLocation(FName("Muzzle"));
 	FRotator MuzzleRotation = WeaponMeshComponent->GetSocketRotation(FName("Muzzle"));
 
@@ -1413,7 +1461,6 @@ void APlayerCharacterBase::ShootAttackRay()
 	{
 	}
 	ExecuteBulletTrailEffect(MuzzleLocation, TrailEnd);
-
 }
 
 void APlayerCharacterBase::Server_ApplyDamage_Implementation(AActor* TargetActor, FHitResult Hit,float Damage)
@@ -1473,6 +1520,113 @@ void APlayerCharacterBase::OnPlayerDefaultInfoLoaded()
 	}
 }
 
+void APlayerCharacterBase::ShowInventory()
+{
+	ToggleInventory(true);
+}
+
+void APlayerCharacterBase::HideInventory()
+{
+	ToggleInventory(false);
+}
+
+void APlayerCharacterBase::ToggleInventory(bool bShow)
+{
+	auto* PC = GetController<APlayerControllerBase>();
+	if (!PC)
+	{
+		RS_LOG_DEBUG(LogRSInventory, Error, TEXT("%s: Failed to get player controller"), *LOG_LINE_INFO);
+		return;
+	}
+
+	ULocalPlayer* LP = PC->GetLocalPlayer();
+	if (!LP)
+	{
+		RS_LOG_DEBUG(LogRSInventory, Error, TEXT("%s: Failed to get local player"), *LOG_LINE_INFO);
+		return;
+	}
+
+	auto* UISubsystem = LP->GetSubsystem<UUISubsystem>();
+	if (!UISubsystem)
+	{
+		RS_LOG_DEBUG(LogRSInventory, Error, TEXT("%s: Failed to get UI subsystem"), *LOG_LINE_INFO);
+		return;
+	}
+
+	auto* HUD = Cast<UBattleHUDWidget>(UISubsystem->FindWidget(FName(TEXT("battle_hud"))));
+	if (!HUD)
+	{
+		RS_LOG_DEBUG(LogRSInventory, Error, TEXT("%s: Failed to get battle HUD widget"), *LOG_LINE_INFO);
+		return;
+	}
+
+	UInventoryPopupWidget* InventoryPopupWidget = HUD->GetInventoryPopupWidget();
+	if (!InventoryPopupWidget)
+	{
+		RS_LOG_DEBUG(LogRSInventory, Error, TEXT("%s: Failed to get inventory popup widget"), *LOG_LINE_INFO);
+		return;
+	}
+
+	InventoryPopupWidget->SetVisibility(bShow ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+
+	if (bShow)
+	{
+		InventoryPopupWidget->RefreshInventory();
+
+		PC->SetInputMode(FInputModeGameAndUI());
+	}
+	else
+	{
+		FInputModeGameOnly InputMode{};
+		InputMode.SetConsumeCaptureMouseDown(true);
+		PC->SetInputMode(InputMode);
+	}
+
+	RS_LOG_DEBUG(LogRSUI, Log, TEXT("%s: Inventory popup widget visibility set to %s"), *LOG_LINE_INFO, bShow ? TEXT("visible") : TEXT("collapsed"));
+
+	PC->bShowMouseCursor = bShow;
+	ToggleCombatWidgets(!bShow);
+}
+
+void APlayerCharacterBase::ToggleCombatWidgets(bool bShow)
+{
+	RS_LOG_DEBUG(LogRSUI, Log, TEXT("%s: Combat widgets visibility set to %s"), *LOG_LINE_INFO, bShow ? TEXT("visible") : TEXT("collapsed"));
+	const auto* PC = GetController<APlayerControllerBase>();
+	if (!PC)
+	{
+		RS_LOG_DEBUG(LogRSUI, Error, TEXT("%s: Failed to get player controller"), *LOG_LINE_INFO);
+		return;
+	}
+
+	const ULocalPlayer* LP = PC->GetLocalPlayer();
+	if (!LP)
+	{
+		RS_LOG_DEBUG(LogRSUI, Error, TEXT("%s: Failed to get local player"), *LOG_LINE_INFO);
+		return;
+	}
+
+	const auto* UISubsystem = LP->GetSubsystem<UUISubsystem>();
+	if (!UISubsystem)
+	{
+		RS_LOG_DEBUG(LogRSUI, Error, TEXT("%s: Failed to get UI subsystem"), *LOG_LINE_INFO);
+		return;
+	}
+
+	TArray<TObjectPtr<URSUserWidget>> OutCombatWidgets;
+	if (UISubsystem->FindCombatWidget(OutCombatWidgets) > 0)
+	{
+		for (const auto& CombatWidget : OutCombatWidgets)
+		{
+			CombatWidget->SetVisibility(bShow ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+			RS_LOG_DEBUG(LogRSUI, Log, TEXT("%s: %s visibility set to %s"), *LOG_LINE_INFO, *CombatWidget->GetName(), bShow ? TEXT("Visible") : TEXT("Collapsed"));
+		}
+	}
+	else
+	{
+		RS_LOG_DEBUG(LogRSUI, Error, TEXT("%s: Failed to find combat widget"), *LOG_LINE_INFO);
+	}
+}
+
 void APlayerCharacterBase::OnDead()
 {
 	bIsDead = true;
@@ -1492,7 +1646,7 @@ void APlayerCharacterBase::OnDead()
 
 	if (IsValid(PlayerController))
 	{
-		PlayerController->Server_RequestSpectateTargets();	
+		PlayerController->Server_RequestSpectateTargets();
 	}
 
 }

@@ -6,7 +6,7 @@
 
 void UUISubsystem::AddWidget(const FName WidgetName, URSUserWidget* Widget)
 {
-	if (UserWidgets.Contains(WidgetName))
+	if (UserWidgets.Contains(WidgetName) || WidgetName.IsNone())
 	{
 		return;
 	}
@@ -16,7 +16,7 @@ void UUISubsystem::AddWidget(const FName WidgetName, URSUserWidget* Widget)
 
 void UUISubsystem::RemoveWidget(const FName WidgetName)
 {
-	if (!UserWidgets.Contains(WidgetName))
+	if (!UserWidgets.Contains(WidgetName) || WidgetName.IsNone())
 	{
 		return;
 	}
@@ -29,7 +29,22 @@ bool UUISubsystem::Contains(const FName WidgetName) const
 	return UserWidgets.Contains(WidgetName);
 }
 
-URSUserWidget* UUISubsystem::GetWidget(const FName WidgetName) const
+URSUserWidget* UUISubsystem::FindWidget(const FName WidgetName) const
 {
 	return UserWidgets.FindRef(WidgetName).Get();
+}
+
+int32 UUISubsystem::FindCombatWidget(TArray<TObjectPtr<URSUserWidget>> OutCombatWidgets) const
+{
+	OutCombatWidgets.Empty();
+
+	for (auto& [Name, Widget] : UserWidgets)
+	{
+		if (Widget.IsValid() && Widget.Get()->IsCombatWidget())
+		{
+			OutCombatWidgets.Add(Widget.Get());
+		}
+	}
+
+	return OutCombatWidgets.Num();
 }

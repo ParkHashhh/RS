@@ -22,7 +22,7 @@ protected:
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<class USphereComponent> CollisionComp;
+	TObjectPtr<class UBoxComponent> CollisionComp;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<class UProjectileMovementComponent> ProjectileMovement;

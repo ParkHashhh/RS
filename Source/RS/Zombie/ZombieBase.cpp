@@ -245,7 +245,7 @@ void AZombieBase::CallBackHP(AActor* InstigatorActor)
 	{
 		return;
 	}
-	
+
 	if (AttributeSet->GetCurrentHP() <= 0)
 	{
 		//좀비의 사망 애니메이션을 동작시킨다

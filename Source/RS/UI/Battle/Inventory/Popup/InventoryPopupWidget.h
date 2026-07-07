@@ -1,0 +1,69 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "RS/UI/RSUserWidget.h"
+#include "InventoryPopupWidget.generated.h"
+
+struct FGameplayTag;
+class UStatEntryObject;
+class UListView;
+class UStatEntryWidget;
+class UInventoryPopupSlotObject;
+class UTileView;
+class UInventoryPopupSlotWidget;
+class UInventoryComponent;
+/**
+ *
+ */
+UCLASS()
+class RS_API UInventoryPopupWidget : public URSUserWidget
+{
+	GENERATED_BODY()
+
+	UPROPERTY(Transient)
+	TObjectPtr<UInventoryComponent> InventoryComponent;
+
+#pragma region ItemSlot
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UInventoryPopupSlotWidget> InventoryPopupSlotWidgetClass;
+
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UTileView> InventoryTileView;
+
+	UPROPERTY()
+	TArray<TObjectPtr<UInventoryPopupSlotObject>> SlotObjects;
+
+#pragma endregion ItemSlot
+
+#pragma region Stat
+
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UStatEntryWidget> StatDescriptionWidgetClass;
+
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UListView> StatListView;
+
+	UPROPERTY()
+	TArray<TObjectPtr<UStatEntryObject>> StatObjects;
+
+#pragma endregion Stat
+
+public:
+	void Init(UInventoryComponent* InInventoryComponent);
+
+	void RefreshInventory();
+
+protected:
+	virtual void NativeConstruct() override;
+
+private:
+	void RefreshStatList();
+
+	void AddBasicStats();
+	void AddItemEffects();
+
+	void AddStat(const FGameplayTag& StatTag, const FText& StatName, const FText& StatDescription);
+};

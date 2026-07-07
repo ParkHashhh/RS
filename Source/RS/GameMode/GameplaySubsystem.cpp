@@ -67,7 +67,7 @@ void UGameplaySubsystem::BindPlayerState()
 
 	if (CachedPS.IsValid())
 	{
-		CachedPS->OnPlayerStateReady.RemoveAll(this);
+		CachedPS->RemoveAllOnPlayerStateReady(this);
 	}
 
 	CachedPS = PS;
@@ -79,14 +79,7 @@ void UGameplaySubsystem::BindPlayerState()
 		return;
 	}
 
-	if (PS->IsPlayerStateReady())
-	{
-		OnPlayerStateReadyCallback();
-	}
-	else
-	{
-		PS->OnPlayerStateReady.AddUObject(this, &ThisClass::OnPlayerStateReadyCallback);
-	}
+	PS->ExecuteOrBindOnPlayerStateReady(this, &ThisClass::OnPlayerStateReadyCallback);
 }
 
 void UGameplaySubsystem::BindPawn(APawn* NewPawn)

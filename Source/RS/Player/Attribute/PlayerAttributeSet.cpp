@@ -10,8 +10,12 @@ void UPlayerAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME(UPlayerAttributeSet, AttackSpeed)
-	DOREPLIFETIME(UPlayerAttributeSet, ShotSpreadRadius)
+	DOREPLIFETIME(UPlayerAttributeSet, AttackSpeed);
+	DOREPLIFETIME(UPlayerAttributeSet, ShotSpreadRadius);
+	DOREPLIFETIME(UPlayerAttributeSet, CurrAmmo);
+	DOREPLIFETIME(UPlayerAttributeSet, MaxAmmo);
+	DOREPLIFETIME(UPlayerAttributeSet, CriticalChance);
+	DOREPLIFETIME(UPlayerAttributeSet, CriticalDamage);
 }
 
 void UPlayerAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
@@ -81,6 +85,22 @@ void UPlayerAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribut
 	{
 		RS_LOG_DEBUG(LogRSBattle, Log, TEXT("%s: Max HP가 변경됨! 현재 값: %.2f"), *LOG_LINE_INFO, NewValue);
 	}
+	else if (Attribute == GetCurrAmmoAttribute())
+	{
+		RS_LOG_DEBUG(LogRSBattle, Log, TEXT("%s: Ammo가 변경됨! 현재 값: %.2f"), *LOG_LINE_INFO, NewValue);
+	}
+	else if (Attribute == GetMaxAmmoAttribute())
+	{
+		RS_LOG_DEBUG(LogRSBattle, Log, TEXT("%s: Max Ammo가 변경됨! 현재 값: %.2f"), *LOG_LINE_INFO, NewValue);
+	}
+	else if (Attribute == GetCriticalChanceAttribute())
+	{
+		RS_LOG_DEBUG(LogRSBattle, Log, TEXT("%s: Critical Chance가 변경됨! 현재 값: %.2f"), *LOG_LINE_INFO, NewValue);
+	}
+	else if (Attribute == GetCriticalDamageAttribute())
+	{
+		RS_LOG_DEBUG(LogRSBattle, Log, TEXT("%s: Critical Damage가 변경됨! 현재 값: %.2f"), *LOG_LINE_INFO, NewValue);
+	}
 }
 
 void UPlayerAttributeSet::OnRep_AttackSpeed(const FGameplayAttributeData& OldValue)
@@ -91,4 +111,24 @@ void UPlayerAttributeSet::OnRep_AttackSpeed(const FGameplayAttributeData& OldVal
 void UPlayerAttributeSet::OnRep_ShotSpreadRadius(const FGameplayAttributeData& OldValue)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UPlayerAttributeSet, ShotSpreadRadius, OldValue);
+}
+
+void UPlayerAttributeSet::OnRep_CurrAmmo(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UPlayerAttributeSet, CurrAmmo, OldValue);
+}
+
+void UPlayerAttributeSet::OnRep_MaxAmmo(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UPlayerAttributeSet, MaxAmmo, OldValue);
+}
+
+void UPlayerAttributeSet::OnRep_CriticalChance(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UPlayerAttributeSet, CriticalChance, OldValue);
+}
+
+void UPlayerAttributeSet::OnRep_CriticalDamage(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UPlayerAttributeSet, CriticalDamage, OldValue);
 }

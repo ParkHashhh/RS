@@ -40,7 +40,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing=OnRep_AttackDistance, Category="Attribute", meta=(AllowPrivateAccess = true))
 	FGameplayAttributeData	AttackDistance;
 
-
 public:
 	ATTRIBUTE_ACCESSORS_BASIC(UBaseAttributeSet, AttackPower)
 	ATTRIBUTE_ACCESSORS_BASIC(UBaseAttributeSet, DefensePower)
@@ -53,6 +52,8 @@ public:
 
 	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
 
 	virtual void OnHpChanged(AActor* Instigator);
 

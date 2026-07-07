@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+struct FStatDisplayTableInfo;
 class UAbilitySystemComponent;
 
 namespace RSUtils
@@ -25,4 +26,17 @@ namespace RSUtils
 			Delegate.AddUObject(Object, Callback);
 		}
 	}
+
+	template <typename T>
+	const T* GetTableInfo(const FDataTableRowHandle& RowHandle, const TCHAR* Context = TEXT(""))
+	{
+		if (!RowHandle.DataTable)
+		{
+			return nullptr;
+		}
+
+		return RowHandle.DataTable->FindRow<T>(RowHandle.RowName, Context);
+	}
+
+	FText GetStatDescription(const FStatDisplayTableInfo& StatInfo, const TArray<FFormatArgumentValue>& Arguments);
 }

@@ -15,15 +15,30 @@ class RS_API UPlayerAttributeSet : public UBaseAttributeSet
 	GENERATED_BODY()
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing=OnRep_AttackSpeed, Category="Attribute", meta=(AllowPrivateAccess=true))
-	FGameplayAttributeData	AttackSpeed;
+	FGameplayAttributeData AttackSpeed;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing=OnRep_ShotSpreadRadius, Category="Attribute", meta=(AllowPrivateAccess=true))
-	FGameplayAttributeData	ShotSpreadRadius;
+	FGameplayAttributeData ShotSpreadRadius;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing=OnRep_CurrAmmo, Category="Attribute", meta=(AllowPrivateAccess=true))
+	FGameplayAttributeData CurrAmmo;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing=OnRep_MaxAmmo, Category="Attribute", meta=(AllowPrivateAccess=true))
+	FGameplayAttributeData MaxAmmo;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing=OnRep_CriticalChance, Category="Attribute", meta=(AllowPrivateAccess = true))
+	FGameplayAttributeData	CriticalChance;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing=OnRep_CriticalDamage, Category="Attribute", meta=(AllowPrivateAccess = true))
+	FGameplayAttributeData	CriticalDamage;
 
 public:
 	ATTRIBUTE_ACCESSORS_BASIC(UPlayerAttributeSet, AttackSpeed)
 	ATTRIBUTE_ACCESSORS_BASIC(UPlayerAttributeSet, ShotSpreadRadius)
-
+	ATTRIBUTE_ACCESSORS_BASIC(UPlayerAttributeSet, CurrAmmo)
+	ATTRIBUTE_ACCESSORS_BASIC(UPlayerAttributeSet, MaxAmmo)
+	ATTRIBUTE_ACCESSORS_BASIC(UPlayerAttributeSet, CriticalChance)
+	ATTRIBUTE_ACCESSORS_BASIC(UPlayerAttributeSet, CriticalDamage)
 
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -37,4 +52,16 @@ protected:
 
 	UFUNCTION()
 	virtual void OnRep_ShotSpreadRadius(const FGameplayAttributeData& OldValue);
+
+	UFUNCTION()
+	virtual void OnRep_CurrAmmo(const FGameplayAttributeData& OldValue);
+
+	UFUNCTION()
+	virtual void OnRep_MaxAmmo(const FGameplayAttributeData& OldValue);
+
+	UFUNCTION()
+	virtual void OnRep_CriticalChance(const FGameplayAttributeData& OldValue);
+
+	UFUNCTION()
+	virtual void OnRep_CriticalDamage(const FGameplayAttributeData& OldValue);
 };

@@ -6,6 +6,7 @@
 #include "RS/UI/RSUserWidget.h"
 #include "BattleHUDWidget.generated.h"
 
+class UInventoryPopupWidget;
 class UCrosshairWidget;
 /**
  *
@@ -22,6 +23,8 @@ private:
 	UPROPERTY(meta=(BindWidget, AllowPrivateAccess=true), BlueprintReadOnly, BlueprintGetter=K2_GetCrosshairWidget)
 	TObjectPtr<UCrosshairWidget> CrosshairWidget;
 
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UInventoryPopupWidget> InventoryPopupWidget;
 
 public:
 	FORCEINLINE UCrosshairWidget* GetCrosshairWidget() const
@@ -33,6 +36,11 @@ public:
 	UCrosshairWidget* K2_GetCrosshairWidget() const
 	{
 		return GetCrosshairWidget();
+	}
+
+	FORCEINLINE UInventoryPopupWidget* GetInventoryPopupWidget() const
+	{
+		return InventoryPopupWidget;
 	}
 
 protected:

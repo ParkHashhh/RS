@@ -24,6 +24,8 @@ class USpringArmComponent;
 class UCameraComponent;
 class UInputData;
 class UPlayerAttributeSet;
+class AGrenade;
+
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnDashingChangedDelegate, bool);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnCurrentShotSpreadChangedDelegate, float);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnAimAlphaChangedDelegate, float);
@@ -101,7 +103,7 @@ protected:
 	TSubclassOf<UGameplayAbility> DashAbilityClass;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "Combat|Reload")
-	TSubclassOf<UGameplayAbility> ReloadAbilityClass;	
+	TSubclassOf<UGameplayAbility> ReloadAbilityClass;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "Combat|SubSkill")
 	TSubclassOf<UGameplayAbility> SubSkillAbilityClass;
@@ -356,12 +358,9 @@ public:
 	void SetRunAndGunCameraPosition();
 	void SetDashingCameraPosition();
 
-
-
 protected:
 	UFUNCTION(Server, Reliable)
 	void Server_SetMaxWalkSpeed(float NewSpeed);
-
 
 	UFUNCTION(Server, Reliable)
 	void Server_SpawnGrenade(const FVector& SpawnLocation, const FRotator& GrenadeRotation);
@@ -419,7 +418,7 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	
+
 	void ExecuteBulletTrailEffect(const FVector& MuzzleLocation, const FVector& TrailEnd);
 	void ExecuteDecalEffect(const FHitResult& Hit);
 	void ExecuteHitEffect(const FHitResult& Hit);
@@ -471,7 +470,6 @@ protected:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_ExecuteVisualEffect(const FHitResult& Hit, bool bIsHit);
 
-
 public:
 	FOnAimAlphaChangedDelegate OnAimAlphaChanged;
 
@@ -519,8 +517,15 @@ private:
 	UFUNCTION()
 	void OnPlayerDefaultInfoLoaded();
 
-
 public:
 	UFUNCTION()
 	void OnDead();
+
+#pragma region Inventory
+private:
+	void ShowInventory();
+	void HideInventory();
+	void ToggleInventory(bool bShow);
+	void ToggleCombatWidgets(bool bShow);
+#pragma endregion
 };

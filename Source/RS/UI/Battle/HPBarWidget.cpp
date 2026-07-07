@@ -62,11 +62,6 @@ bool UHPBarWidget::TryBindCharacterDelegates(APlayerCharacterBase* Character)
 	return true;
 }
 
-void UHPBarWidget::UnbindCharacterDelegates()
-{
-	Super::UnbindCharacterDelegates();
-}
-
 void UHPBarWidget::OnCurrHpChanged(const FOnAttributeChangeData& Data)
 {
 	RS_LOG_DEBUG(LogRSBattle, Log, TEXT("%s: HP가 변경됨! 현재 값: %.2f"), *LOG_LINE_INFO, Data.NewValue);

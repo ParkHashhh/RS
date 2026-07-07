@@ -6,6 +6,8 @@
 #include "RS/UI/RSUserWidget.h"
 #include "InventoryWidget.generated.h"
 
+class UInventorySlotViewModel;
+class UInventoryViewModel;
 class UWrapBox;
 class UInventorySlotWidget;
 class UInventoryComponent;
@@ -22,31 +24,36 @@ public:
 
 private:
 	UPROPERTY(Transient)
-	TWeakObjectPtr<UInventoryComponent> CachedInventoryComponent;
+	TObjectPtr<UInventoryViewModel> InventoryViewModel;
 
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UWrapBox> SlotContainer;
 
-	TMap<FName, TObjectPtr<UInventorySlotWidget>> InventorySlots;
+	UPROPERTY(Transient)
+	TMap<TObjectPtr<UInventorySlotViewModel>, TObjectPtr<UInventorySlotWidget>> InventorySlots;
 
 	UPROPERTY(EditDefaultsOnly, Category="Inventory", meta=(AllowPrivateAccess=true))
 	TSubclassOf<UInventorySlotWidget> InventorySlotWidgetClass;
 
-	FDelegateHandle OnInventoryItemChangedHandle;
+	FDelegateHandle SlotAddedHandle;
+	FDelegateHandle SlotRemovedHandle;
 
 public:
-	void Init(UInventoryComponent* InventoryComponent);
+	void Init(UInventoryViewModel* InViewModel);
 
-	FORCEINLINE UInventoryComponent* GetCachedInventoryComponent() const
+	FORCEINLINE UInventoryViewModel* GetInventoryViewModel() const
 	{
-		return CachedInventoryComponent.Get();
+		return InventoryViewModel;
+	}
+
+	FORCEINLINE TMap<TObjectPtr<UInventorySlotViewModel>, TObjectPtr<UInventorySlotWidget>>& GetInventorySlots()
+	{
+		return InventorySlots;
 	}
 
 protected:
 	virtual void NativeDestruct() override;
 
-private:
-	void OnInventoryItemChanged(FName ItemRowName, int32 ItemCount) const;
-
-	void InnerInit();
+	void HandleSlotAdded(UInventorySlotViewModel* SlotViewModel);
+	void HandleSlotRemoved(UInventorySlotViewModel* SlotViewModel);
 };

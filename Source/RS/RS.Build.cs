@@ -29,10 +29,15 @@ public class RS : ModuleRules
 			"Networking",
 			"NetCore",
 			"DeveloperSettings",
-			"PhysicsCore"
+			"PhysicsCore",
+			"Paper2D",
 		});
 
-		PrivateDependencyModuleNames.AddRange(new string[] { "AnimGraphRuntime" });
+		PrivateDependencyModuleNames.AddRange(new string[]
+		{
+			"AnimGraphRuntime",
+			"ModelViewViewModel",
+		});
 
 		// Uncomment if you are using Slate UI
 		PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });

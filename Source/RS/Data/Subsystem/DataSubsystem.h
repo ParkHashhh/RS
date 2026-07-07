@@ -10,6 +10,7 @@
 struct FMiscTableInfo;
 struct FItemTableInfo;
 struct FPlayerDefaultInfo;
+struct FStatDisplayTableInfo;
 struct FZombieDefaultInfo;
 class UDataTable;
 DECLARE_MULTICAST_DELEGATE(FOnTableInfoLoaded);
@@ -38,11 +39,15 @@ private:
 	TObjectPtr<UDataTable> PlayerDefaultInfoTable;
 
 	UPROPERTY(Transient)
+	TObjectPtr<UDataTable> StatDisplayInfoTable;
+
+	UPROPERTY(Transient)
 	TObjectPtr<UDataTable> ZombieDefaultInfoTable;
 
 	FOnTableInfoLoaded OnItemInfoLoadedDelegate;
 	FOnTableInfoLoaded OnMiscInfoLoadedDelegate;
 	FOnTableInfoLoaded OnPlayerDefaultInfoLoadedDelegate;
+	FOnTableInfoLoaded OnStatDisplayInfoLoadedDelegate;
 	FOnTableInfoLoaded OnZombieDefaultInfoLoadedDelegate;
 
 public:
@@ -108,10 +113,46 @@ public:
 		return IsValid(PlayerDefaultInfoTable);
 	}
 
-	UFUNCTION(BlueprintPure, Category = "Data", meta=(DisplayName = "Is Player Default Table Loaded"))
+	UFUNCTION(BlueprintCallable, Category = "Data", meta=(DisplayName = "Is Player Default Table Loaded"))
 	bool K2_IsPlayerDefaultTableLoaded() const
 	{
 		return IsPlayerDefaultTableLoaded();
+	}
+
+	const FStatDisplayTableInfo* GetStatDisplayInfoTableInfo(FName Name) const;
+
+	UFUNCTION(BlueprintCallable, Category = "Data", meta=(DisplayName = "Get Stat Display Info Table Info"))
+	bool K2_GetStatDisplayInfoTableInfo(FName Name, FStatDisplayTableInfo& OutStatDisplayInfo) const;
+
+	FORCEINLINE bool IsStatDisplayInfoTableLoaded() const
+	{
+		return IsValid(StatDisplayInfoTable);
+	}
+
+	UFUNCTION(BlueprintPure, Category = "Data", meta=(DisplayName = "Is Stat Display Info Table Loaded"))
+	bool K2_IsStatDisplayInfoTableLoaded() const
+	{
+		return IsStatDisplayInfoTableLoaded();
+	}
+
+	const UDataTable* GetItemInfoTable() const
+	{
+		return ItemInfoTable;
+	}
+
+	const UDataTable* GetMiscInfoTable() const
+	{
+		return MiscInfoTable;
+	}
+
+	const UDataTable* GetPlayerDefaultInfoTable() const
+	{
+		return PlayerDefaultInfoTable;
+	}
+
+	const UDataTable* GetStatDisplayInfoTable() const
+	{
+		return StatDisplayInfoTable;
 	}
 
 	const FZombieDefaultInfo* GetZombieDefaultTableInfo(const FName& RowName) const;
@@ -136,6 +177,13 @@ private:
 
 	UFUNCTION()
 	void OnPlayerDefaultInfoTableLoaded(FPrimaryAssetId LoadedAssetID);
+
+	void LoadStatDisplayInfoTable();
+
+	UFUNCTION()
+	void OnStatDisplayInfoTableLoaded(FPrimaryAssetId LoadedAssetID);
+
+	void ValidateItemInfoTable(const UDataTable* Table) const;
 
 	void LoadZombieDefaultInfoTable();
 

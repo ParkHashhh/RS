@@ -4,87 +4,110 @@
 
 #include "CoreMinimal.h"
 #include "ActiveGameplayEffectHandle.h"
+#include "ItemInstance.h"
 #include "Components/ActorComponent.h"
 #include "Net/Serialization/FastArraySerializer.h"
 #include "RS/Utils/ASCProvider.h"
 #include "InventoryComponent.generated.h"
 
-struct FInventoryItem;
+struct FInventoryList;
+class UItemInstance;
 class UInventoryComponent;
-struct FInventoryArray;
 class UDataSubsystem;
 struct FItemTableInfo;
 
-DECLARE_MULTICAST_DELEGATE_TwoParams(FOnItemChanged, FName, int32);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnItemChanged, const UItemInstance*);
+DECLARE_MULTICAST_DELEGATE(FOnInventoryChanged);
 
 USTRUCT(BlueprintType)
-struct FInventoryItem : public FFastArraySerializerItem
+struct FInventoryEntry : public FFastArraySerializerItem
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	FName ItemRowName;
-
-	UPROPERTY(BlueprintReadOnly)
-	int32 Count{1};
-
-	// 장착 해제 시 효과를 꺼주기 위해 GAS가 발급해 준 핸들을 보관 (로컬/서버 인스턴스 관리용)
 	UPROPERTY()
-	FActiveGameplayEffectHandle AppliedEffectHandle;
+	TObjectPtr<UItemInstance> Item;
 
-	const FItemTableInfo* GetRowInfo(const UDataSubsystem* Subsystem) const;
+	FInventoryEntry() = default;
 
-	void PreReplicatedRemove(const FInventoryArray& InArraySerializer);
-	void PostReplicatedAdd(const FInventoryArray& InArraySerializer);
-	void PostReplicatedChange(const FInventoryArray& InArraySerializer);
-
-	void ApplyItemEffect(UInventoryComponent* InventoryComponent);
-	void RemoveItemEffect(UInventoryComponent* InventoryComponent);
-
-	friend bool operator==(const FInventoryItem& Lhs, const FInventoryItem& RHS)
+	explicit FInventoryEntry(UItemInstance* InItem)
+		: Item(InItem)
 	{
-		// 모든 아이템은 중첩 가능하거나 1개만 획득 가능 -> ItemRowName만으로 구분 가능
-		return Lhs.ItemRowName == RHS.ItemRowName;
 	}
 
-	friend bool operator!=(const FInventoryItem& Lhs, const FInventoryItem& RHS)
+	FORCEINLINE bool IsValid() const
+	{
+		return ::IsValid(Item);
+	}
+
+	void PreReplicatedRemove(const FInventoryList& InArraySerializer);
+	void PostReplicatedAdd(const FInventoryList& InArraySerializer);
+	void PostReplicatedChange(const FInventoryList& InArraySerializer);
+
+	friend bool operator==(const FInventoryEntry& Lhs, const FInventoryEntry& RHS)
+	{
+		if (!Lhs.Item || !RHS.Item)
+		{
+			return false;
+		}
+
+		return Lhs.Item->GetItemGUID() == RHS.Item->GetItemGUID();
+	}
+
+	friend bool operator!=(const FInventoryEntry& Lhs, const FInventoryEntry& RHS)
 	{
 		return !(Lhs == RHS);
 	}
 };
 
 USTRUCT(BlueprintType)
-struct FInventoryArray : public FFastArraySerializer
+struct FInventoryList : public FFastArraySerializer
 {
 	GENERATED_BODY()
 
-	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
-	TArray<FInventoryItem> Items;
+	friend class UInventoryComponent;
 
 	UPROPERTY()
-	TObjectPtr<UInventoryComponent> OwningInventoryComponent{};
+	TArray<FInventoryEntry> Entries;
 
-	// 네트워크 델타 직렬화 필수 구현
-	bool NetDeltaSerialize(FNetDeltaSerializeInfo& InDeltaParms)
+	UPROPERTY(NotReplicated)
+	TObjectPtr<UInventoryComponent> Owner = nullptr;
+
+private:
+	UPROPERTY(NotReplicated)
+	TMap<FGuid, int32> GuidIndexMap;
+
+public:
+	FORCEINLINE bool NetDeltaSerialize(FNetDeltaSerializeInfo& DeltaParams)
 	{
-		return FFastArraySerializer::FastArrayDeltaSerialize<FInventoryItem, FInventoryArray>(
-			Items, InDeltaParms, *this);
+		return FastArrayDeltaSerialize<FInventoryEntry, FInventoryList>(Entries, DeltaParams, *this);
 	}
 
-	void AddItem(FName InRowName, int32 InCount, const UDataSubsystem* DataSubsystem);
-	void RemoveItem(int32 InIndex);
-	void MarkItemDirtyAt(int32 InIndex);
+	void MarkDirty(const UItemInstance* Item);
+
+	FInventoryEntry* FindEntry(const FGuid& Guid);
+	const FInventoryEntry* FindEntry(const FGuid& Guid) const;
+
+	FInventoryEntry* FindEntry(const FDataTableRowHandle& RowHandle);
+	const FInventoryEntry* FindEntry(const FDataTableRowHandle& RowHandle) const;
+
+	FInventoryEntry& AddEntry(UItemInstance* Item);
+
+	bool RemoveEntry(const FGuid& Guid);
+
+private:
+	void RebuildIndexMap();
 };
 
 // NetDeltaSerializer 활성화를 위한 특수화 등록
 template <>
-struct TStructOpsTypeTraits<FInventoryArray> : public TStructOpsTypeTraitsBase2<FInventoryArray>
+struct TStructOpsTypeTraits<FInventoryList> : public TStructOpsTypeTraitsBase2<FInventoryList>
 {
 	enum { WithNetDeltaSerializer = true };
 };
 
-UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
-class RS_API UInventoryComponent : public UActorComponent, public IASCProvider
+UCLASS(ClassGroup=(Inventory), meta=(BlueprintSpawnableComponent))
+class RS_API UInventoryComponent : public UActorComponent
+                                   , public IASCProvider
 {
 	GENERATED_BODY()
 
@@ -92,40 +115,72 @@ public:
 	// Sets default values for this component's properties
 	UInventoryComponent();
 
-public:
-	FOnItemChanged OnItemChanged;
-
-protected:
-	UPROPERTY(Replicated, BlueprintReadOnly, Category="Inventory", meta=(AllowPrivateAccess=true))
-	FInventoryArray InventoryArray;
+private:
+	UPROPERTY(Replicated)
+	FInventoryList InventoryList;
 
 public:
-	UFUNCTION(BlueprintCallable, Category = "Inventory|GAS")
-	void UseConsumableItem(UPARAM(ref) FInventoryItem& Item);
+	FOnItemChanged OnItemAddedDelegate;
+	FOnItemChanged OnItemChangedDelegate;
+	FOnItemChanged OnItemRemovedDelegate;
 
-	// 외부(예: 루팅 시스템 등)에서 인벤토리에 아이템을 지급하기 위한 공용 인터페이스
-	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Inventory")
-	void AddItemToInventory(FName InRowName, int32 InCount = 1);
-
-	virtual UAbilitySystemComponent* GetASC() const override;
+	FOnInventoryChanged OnInventoryChangedDelegate;
 
 protected:
-	// Called when the game starts
 	virtual void BeginPlay() override;
 
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	// Called every frame
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	virtual UAbilitySystemComponent* GetASC() const override;
 
-	FORCEINLINE const FInventoryArray& GetInventoryArray() const
+#pragma region Inventory
+	UItemInstance* CreateItemInstance(const FDataTableRowHandle& RowHandle, int32 Count);
+
+	bool CanAddItem(const FDataTableRowHandle& RowHandle, int32 Count) const;
+	bool CanRemoveItem(const FDataTableRowHandle& RowHandle, int32 Count) const;
+
+	UItemInstance* AddItem(FName ItemRowName, int32 Count);
+	UItemInstance* AddItem(const FDataTableRowHandle& RowHandle, int32 Count);
+
+	bool RemoveItem(const FDataTableRowHandle& RowHandle, int32 Count);
+
+	UItemInstance* FindItem(const FGuid& ItemGuid);
+	const UItemInstance* FindItem(const FGuid& ItemGuid) const;
+
+	UItemInstance* FindItem(const FDataTableRowHandle& RowHandle);
+	const UItemInstance* FindItem(const FDataTableRowHandle& RowHandle) const;
+
+	int32 GetItemCount(const FGuid& ItemGuid) const;
+	int32 GetItemCount(const FDataTableRowHandle& RowHandle) const;
+
+	void HandleEntryAdded(const FInventoryEntry& Entry);
+	void HandleEntryChanged(const FInventoryEntry& Entry);
+	void HandleEntryRemoved(const FInventoryEntry& Entry);
+
+	FORCEINLINE const TArray<FInventoryEntry>& GetEntries() const
 	{
-		return InventoryArray;
+		return InventoryList.Entries;
 	}
 
-	FORCEINLINE const TArray<FInventoryItem>& GetInventoryItems() const
+	FORCEINLINE const FInventoryEntry* GetEntry(int32 SlotIndex) const
 	{
-		return InventoryArray.Items;
+		return InventoryList.Entries.IsValidIndex(SlotIndex) ? &InventoryList.Entries[SlotIndex] : nullptr;
 	}
+
+	FORCEINLINE int32 GetEntryCount() const
+	{
+		return InventoryList.Entries.Num();
+	}
+
+protected:
+	void ApplyGameplayEffect(UItemInstance* Item);
+	void UpdateGameplayEffect(UItemInstance* Item);
+	void RemoveGameplayEffect(UItemInstance* Item);
+
+private:
+	void OnItemAdded(UItemInstance* Item);
+	void OnItemChanged(UItemInstance* Item);
+	void OnItemRemoved(UItemInstance* Item);
+#pragma endregion
 };

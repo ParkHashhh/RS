@@ -18,6 +18,21 @@ namespace RSTags
 
 	namespace Common
 	{
+		/*
++GameplayTagList=(Tag="SetByCaller.Stat.AttackPower",DevComment="")
++GameplayTagList=(Tag="SetByCaller.Stat.AttackSpeed",DevComment="")
++GameplayTagList=(Tag="SetByCaller.Stat.BulletRecycle",DevComment="")
++GameplayTagList=(Tag="SetByCaller.Stat.BurnChance",DevComment="")
++GameplayTagList=(Tag="SetByCaller.Stat.BurnDamage",DevComment="")
++GameplayTagList=(Tag="SetByCaller.Stat.CriticalDamage",DevComment="")
++GameplayTagList=(Tag="SetByCaller.Stat.CurrentHP",DevComment="")
++GameplayTagList=(Tag="SetByCaller.Stat.DashSpeed",DevComment="")
++GameplayTagList=(Tag="SetByCaller.Stat.DefensePower",DevComment="")
++GameplayTagList=(Tag="SetByCaller.Stat.MaxHP",DevComment="")
++GameplayTagList=(Tag="SetByCaller.Stat.MaxRange",DevComment="")
++GameplayTagList=(Tag="SetByCaller.Stat.ShotSpread",DevComment="")
++GameplayTagList=(Tag="SetByCaller.Stat.WalkSpeed",DevComment="")
+		 */
 		UE_DEFINE_GAMEPLAY_TAG(AttackPower, "SetByCaller.Stat.AttackPower");
 		UE_DEFINE_GAMEPLAY_TAG(CurrentHP, "SetByCaller.Stat.CurrentHP");
 		UE_DEFINE_GAMEPLAY_TAG(DashSpeed, "SetByCaller.Stat.DashSpeed");

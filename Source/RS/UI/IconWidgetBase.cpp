@@ -14,73 +14,45 @@ UIconWidgetBase::UIconWidgetBase(const FObjectInitializer& ObjectInitializer) :
 {
 }
 
+void UIconWidgetBase::SetIconSprite(UPaperSprite* NewSprite)
+{
+	if (!IsValid(NewSprite))
+	{
+		RS_LOG_DEBUG(LogRSInventory, Error, TEXT("%s: Invalid sprite for icon widget"), *LOG_LINE_INFO);
+		return;
+	}
+
+	if (!IsValid(IconImage))
+	{
+		RS_LOG_DEBUG(LogRSInventory, Error, TEXT("%s: IconImage is not ready"), *LOG_LINE_INFO);
+		return;
+	}
+
+	IconSprite = NewSprite;
+	IconImage->SetBrushFromAtlasInterface(IconSprite, true);
+}
+
 void UIconWidgetBase::SetIconTexture(UTexture2D* NewTexture)
 {
-	if (!IsValid(IconMID) || !IsValid(NewTexture))
+	if (!IsValid(NewTexture))
 	{
-		RS_LOG_DEBUG(LogRSProperties, Error, TEXT("%s: Invalid texture or material for icon widget"), *LOG_LINE_INFO);
+		RS_LOG_DEBUG(LogRSInventory, Error, TEXT("%s: Invalid texture for icon widget"), *LOG_LINE_INFO);
 		return;
 	}
 
-	IconMID->SetTextureParameterValue(IconTextureParameterName, NewTexture);
+	if (!IsValid(IconImage))
+	{
+		RS_LOG_DEBUG(LogRSInventory, Error, TEXT("%s: IconImage is not ready"), *LOG_LINE_INFO);
+		return;
+	}
 
 	IconTexture = NewTexture;
+	IconImage->SetBrushFromTexture(IconTexture);
 }
 
-void UIconWidgetBase::SetOutlineColor(const FLinearColor& Color)
+UPaperSprite* UIconWidgetBase::GetIconSprite() const
 {
-	if (!IsValid(IconMID))
-	{
-		return;
-	}
-
-	IconMID->SetVectorParameterValue(OutlineColorParameterName, Color);
-}
-
-void UIconWidgetBase::SetOutlineThickness(float Thickness)
-{
-	if (!IsValid(IconMID))
-	{
-		return;
-	}
-
-	IconMID->SetScalarParameterValue(OutlineThicknessParameterName, Thickness);
-}
-
-void UIconWidgetBase::SetGrade(EGrade Grade)
-{
-	const UGameInstance* GameInstance = GetGameInstance();
-	check(GameInstance);
-
-	const auto* DataSubsystem = GameInstance->GetSubsystem<UDataSubsystem>();
-	check(DataSubsystem);
-
-	const FMiscTableInfo* MiscData = DataSubsystem->GetMiscTableInfo();
-	if (!MiscData)
-	{
-		RS_LOG_DEBUG(LogRSProperties, Error, TEXT("%s: Failed to get misc table info"), *LOG_LINE_INFO);
-		return;
-	}
-
-	switch (Grade)
-	{
-	case EGrade::Common:
-		SetOutlineColor(MiscData->CommonColor);
-		SetOutlineThickness(MiscData->CommonIconThickness);
-		break;
-	case EGrade::Rare:
-		SetOutlineColor(MiscData->RareColor);
-		SetOutlineThickness(MiscData->RareIconThickness);
-		break;
-	case EGrade::Epic:
-		SetOutlineColor(MiscData->EpicColor);
-		SetOutlineThickness(MiscData->EpicIconThickness);
-		break;
-	case EGrade::Legendary:
-		SetOutlineColor(MiscData->LegendaryColor);
-		SetOutlineThickness(MiscData->LegendaryIconThickness);
-		break;
-	}
+	return IconSprite;
 }
 
 UTexture2D* UIconWidgetBase::GetIconTexture() const
@@ -101,11 +73,4 @@ void UIconWidgetBase::SetParentSlotWidget(USlotWidget* Parent)
 void UIconWidgetBase::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
-
-	if (!IsValid(IconImage))
-	{
-		return;
-	}
-
-	IconMID = IconImage->GetDynamicMaterial();
 }

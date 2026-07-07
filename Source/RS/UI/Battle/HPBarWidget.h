@@ -33,7 +33,6 @@ protected:
 	virtual void NativeOnInitialized() override;
 
 	virtual bool TryBindCharacterDelegates(APlayerCharacterBase* Character) override;
-	virtual void UnbindCharacterDelegates() override;
 
 	UFUNCTION(BlueprintImplementableEvent, DisplayName="On HP Changed", Category="HPBar")
 	void K2_OnHPChanged(float HPRatio);

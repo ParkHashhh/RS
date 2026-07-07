@@ -44,7 +44,7 @@ void ADataTestActor::OnItemInfoLoaded()
 
 	if (const auto* PotionItem = DataSubsystem->GetItemTableInfo(FName(TEXT("hp_potion"))))
 	{
-		RS_PRINT_SCREEN(3.f, FColor::Cyan, TEXT("%s"), *PotionItem->Name);
+		RS_PRINT_SCREEN(3.f, FColor::Cyan, TEXT("%s"), *PotionItem->Name.ToString());
 	}
 	else
 	{

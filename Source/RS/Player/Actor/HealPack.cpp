@@ -2,7 +2,7 @@
 
 
 #include "HealPack.h"
-#include "Components/SphereComponent.h"
+#include "Components/BoxComponent.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"       
 #include "GameFramework/ProjectileMovementComponent.h"
@@ -15,27 +15,21 @@
 AHealPack::AHealPack()
 {
 	PrimaryActorTick.bCanEverTick = true;
-
-	CollisionComp = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionComp"));
-	CollisionComp->SetupAttachment(RootComponent);
-	CollisionComp->SetSphereRadius(20.0f);
-	CollisionComp->SetCollisionProfileName(TEXT("HealPack"));
-	CollisionComp->SetVisibility(true);
-	CollisionComp->OnComponentHit.AddDynamic(this, &AHealPack::OnHit);
-
 	RootComponent = CollisionComp;
 
-	HealPackMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("HealPackMesh"));
-	HealPackMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	HealPackMesh->SetupAttachment(RootComponent);
-
+	CollisionComp = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionComp"));
+	CollisionComp->SetBoxExtent(FVector(13.f, 13.f, 5.f));
+	CollisionComp->SetCollisionProfileName(TEXT("HealPack"));
+	CollisionComp->OnComponentHit.AddDynamic(this, &AHealPack::OnHit);
 
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileComp"));
 	ProjectileMovement->UpdatedComponent = RootComponent;
 	ProjectileMovement->InitialSpeed = 1500.f;
 	ProjectileMovement->MaxSpeed = 1500.f;
-	ProjectileMovement->bShouldBounce = false;
-	ProjectileMovement->ProjectileGravityScale = 1.0f; 
+	ProjectileMovement->bShouldBounce = true;	
+	ProjectileMovement->Bounciness = 0.2f;
+	ProjectileMovement->Friction = 0.1f;
+	ProjectileMovement->ProjectileGravityScale = 1.0f;
 	bReplicates = true;
 	SetReplicateMovement(true);
 }
@@ -54,14 +48,12 @@ void AHealPack::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-
 }
 
 void AHealPack::Explode()
 {
 	if (IsValid(HealingNiagara))
 	{
-		// 1. 반환값을 즉시 캐스팅하여 멤버 변수에 저장 (헤더에 선언 필요)
 		NiagaraComponent = UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), HealingNiagara, GetActorLocation());
 	}
 	if (IsValid(Sound))
@@ -85,6 +77,7 @@ void AHealPack::PerformHealing()
 
 	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("OverlappingActorsNum : %d"), OverlappingActors.Num());
 
+	NiagaraComponent->ResetSystem();
 
 	if (OverlappingActors.Num() >= 1)	
 	{
@@ -120,10 +113,14 @@ void AHealPack::PerformHealing()
 
 void AHealPack::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("OnHit"));
-
+	const float CheckFloor = 0.8f;
+	if (Hit.ImpactNormal.Z < CheckFloor)
+	{	
+		return;
+	}
 	if (bExploded)
 		return;
+	ProjectileMovement->Deactivate();
 	bExploded = true;
 	Explode();
 }

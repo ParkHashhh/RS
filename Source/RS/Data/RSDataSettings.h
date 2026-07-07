@@ -30,6 +30,10 @@ public:
 	UPROPERTY(Config, EditAnywhere, Category="Data")
 	FPrimaryAssetId MiscInfoTableAsset;
 
+	// 스탯 설명 테이블 애셋
+	UPROPERTY(Config, EditAnywhere, Category="Data")
+	FPrimaryAssetId StatDisplayInfoTableAsset;
+
 	// 좀비의 기본 정보가 담긴 테이블 애셋
 	UPROPERTY(Config, EditAnywhere, Category = "Data")
 	FPrimaryAssetId ZombieDefaultInfoTableAsset;

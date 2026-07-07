@@ -27,19 +27,19 @@ void URSUserWidget::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
 
-	if (GetWidgetName().IsNone())
-	{
-		RS_LOG_DEBUG(LogRSProperties, Error, TEXT("%s: Widget name is none"), *LOG_LINE_INFO)
-		return;
-	}
+	// if (GetWidgetName().IsNone())
+	// {
+	// 	RS_LOG_DEBUG(LogRSProperties, Error, TEXT("%s: Widget name is none"), *LOG_LINE_INFO)
+	// 	return;
+	// }
 
 	ULocalPlayer* LP = GetOwningLocalPlayer();
 	check(LP);
 
-	auto* UiSubsystem = LP->GetSubsystem<UUISubsystem>();
-	check(UiSubsystem);
+	auto* UISubsystem = LP->GetSubsystem<UUISubsystem>();
+	check(UISubsystem);
 
-	UiSubsystem->AddWidget(GetWidgetName(), this);
+	UISubsystem->AddWidget(GetWidgetName(), this);
 
 	if (UWidgetBlueprintGeneratedClass* GeneratedClass = GetWidgetTreeOwningClass())
 	{
@@ -59,11 +59,11 @@ void URSUserWidget::NativeOnInitialized()
 
 void URSUserWidget::NativeDestruct()
 {
-	if (GetWidgetName().IsNone())
-	{
-		RS_LOG_DEBUG(LogRSProperties, Error, TEXT("%s: Widget name is none"), *LOG_LINE_INFO)
-		return;
-	}
+	// if (GetWidgetName().IsNone())
+	// {
+	// 	RS_LOG_DEBUG(LogRSProperties, Error, TEXT("%s: Widget name is none"), *LOG_LINE_INFO)
+	// 	return;
+	// }
 
 	ULocalPlayer* LP = GetOwningLocalPlayer();
 	if (!LP)
@@ -71,13 +71,13 @@ void URSUserWidget::NativeDestruct()
 		return;
 	}
 
-	auto* UiSubsystem = LP->GetSubsystem<UUISubsystem>();
-	if (!UiSubsystem)
+	auto* UISubsystem = LP->GetSubsystem<UUISubsystem>();
+	if (!UISubsystem)
 	{
 		return;
 	}
 
-	UiSubsystem->RemoveWidget(GetWidgetName());
+	UISubsystem->RemoveWidget(GetWidgetName());
 
 	Super::NativeDestruct();
 }

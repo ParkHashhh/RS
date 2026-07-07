@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "AttributeSet.h"
 #include "GameplayTagContainer.h"
+#include "PaperSprite.h"
 
 class UGameplayEffect;
 
@@ -34,6 +35,10 @@ struct FItemOption
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Option")
 	float Value{0.f};
+
+	// 이단점프 해금, 자동조준 해금 등의 옵션이면 false, stack에 따라 증가하는 옵션이면 true
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Option")
+	bool bScaleWithStack{true};
 };
 
 USTRUCT(BlueprintType)
@@ -66,7 +71,13 @@ struct FItemTableInfo : public FTableRowBase
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	FString Name{};
+	FText Name{};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UTexture2D* IconTexture;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPaperSprite* IconSprite;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bIsStackable{true};
@@ -214,4 +225,23 @@ enum class ERSInputID : uint8
 	Dash,
 	Jump,
 	Interact,
+};
+
+USTRUCT(BlueprintType)
+struct FStatDisplayTableInfo : public FTableRowBase
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere)
+    FText DisplayName;
+
+    UPROPERTY(EditAnywhere)
+    FText DescriptionFormat;
+
+    UPROPERTY(EditAnywhere)
+    TObjectPtr<UPaperSprite> Icon;
+
+	// 값이 0이면 UI에서 숨길지 여부
+    UPROPERTY(EditAnywhere)
+    bool bHiddenIfZero = false;
 };

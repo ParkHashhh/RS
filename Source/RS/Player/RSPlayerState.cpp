@@ -6,9 +6,11 @@
 #include "AbilitySystemComponent.h"
 #include "RS/LogCategory.h"
 #include "RS/RSUtils.h"
+#include "RS/Inventory/InventoryComponent.h"
 
 ARSPlayerState::ARSPlayerState()
 {
+	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(InventoryComponentName);
 }
 
 void ARSPlayerState::NotifyPlayerStateReady()

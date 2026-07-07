@@ -3,6 +3,7 @@
 
 #include "DataSubsystem.h"
 
+#include "GameplayEffect.h"
 #include "RS/Data/RSDataSettings.h"
 #include "Engine/AssetManager.h"
 #include "Engine/DataTable.h"
@@ -11,6 +12,7 @@
 #include "RS/Data/DataAsset/ItemInfoTableAsset.h"
 #include "RS/Data/DataAsset/MiscInfoTableAsset.h"
 #include "RS/Data/DataAsset/PlayerDefaultInfoTableAsset.h"
+#include "RS/Data/DataAsset/StatDisplayInfoTableAsset.h"
 #include "RS/Data/DataAsset/ZombieDefaultInfoTableAsset.h"
 
 UDataSubsystem::UDataSubsystem()
@@ -24,6 +26,7 @@ void UDataSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	LoadPlayerDefaultInfoTable();
 	LoadItemInfoTable();
 	LoadMiscInfoTable();
+	LoadStatDisplayInfoTable();
 	LoadZombieDefaultInfoTable();
 }
 
@@ -131,6 +134,36 @@ bool UDataSubsystem::K2_GetPlayerDefaultTableInfo(FPlayerDefaultInfo& OutPlayerD
 	return false;
 }
 
+const FStatDisplayTableInfo* UDataSubsystem::GetStatDisplayInfoTableInfo(FName Name) const
+{
+	if (!StatDisplayInfoTable)
+	{
+		RS_LOG_DEBUG(LogRSData, Warning, TEXT("%s: StatDisplayInfoTable is NOT valid when getting row %s. It might still be loading."), *LOG_LINE_INFO, *Name.ToString());
+		return nullptr;
+	}
+
+	const auto* Row = StatDisplayInfoTable->FindRow<FStatDisplayTableInfo>(Name, TEXT("StatDisplayInfo"));
+	if (!Row)
+	{
+		RS_LOG_DEBUG(LogRSData, Warning, TEXT("%s: Failed to find row %s in StatDisplayInfoTable"), *LOG_LINE_INFO, *Name.ToString());
+	}
+
+	return Row;
+}
+
+bool UDataSubsystem::K2_GetStatDisplayInfoTableInfo(FName Name, FStatDisplayTableInfo& OutStatDisplayInfo) const
+{
+
+	if (const FStatDisplayTableInfo* StatDisplayInfo = GetStatDisplayInfoTableInfo(Name))
+	{
+		OutStatDisplayInfo = *StatDisplayInfo;
+		return true;
+	}
+
+	OutStatDisplayInfo = FStatDisplayTableInfo();
+	return false;
+}
+
 void UDataSubsystem::LoadItemInfoTable()
 {
 	const URSDataSettings* Settings = GetDefault<URSDataSettings>();
@@ -168,6 +201,10 @@ void UDataSubsystem::OnItemInfoTableLoaded(FPrimaryAssetId LoadedAssetID)
 	}
 
 	RS_LOG_DEBUG(LogRSData, Log, TEXT("%s: ItemInfoTable loaded successfully: %s"), *LOG_LINE_INFO, *ItemInfoTable->GetName());
+
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+	ValidateItemInfoTable(ItemInfoTable);
+#endif
 
 	OnItemInfoLoadedDelegate.Broadcast();
 }
@@ -252,6 +289,79 @@ void UDataSubsystem::OnPlayerDefaultInfoTableLoaded(FPrimaryAssetId LoadedAssetI
 	RS_LOG_DEBUG(LogRSData, Log, TEXT("%s: PlayerDefaultInfoTable loaded successfully: %s"), *LOG_LINE_INFO, *PlayerDefaultInfoTable->GetName());
 
 	OnPlayerDefaultInfoLoadedDelegate.Broadcast();
+}
+
+void UDataSubsystem::LoadStatDisplayInfoTable()
+{
+	const URSDataSettings* Settings = GetDefault<URSDataSettings>();
+	if (!Settings || !Settings->StatDisplayInfoTableAsset.IsValid())
+	{
+		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: StatDisplayInfoTableAssetId is invalid. Check Project Settings -> RS Data Settings."), *LOG_LINE_INFO);
+		return;
+	}
+
+	const FPrimaryAssetId& TargetAssetId = Settings->StatDisplayInfoTableAsset;
+
+	RS_LOG_DEBUG(LogRSData, Log, TEXT("%s: Starting to load StatDisplayInfoTableAsset (%s)"), *LOG_LINE_INFO, *TargetAssetId.ToString());
+
+	auto& AssetManager = UAssetManager::Get();
+	AssetManager.LoadPrimaryAsset(TargetAssetId, TArray<FName>{},
+								  FStreamableDelegate::CreateUObject(
+									  this, &UDataSubsystem::OnStatDisplayInfoTableLoaded, TargetAssetId));
+}
+
+void UDataSubsystem::OnStatDisplayInfoTableLoaded(FPrimaryAssetId LoadedAssetID)
+{
+	const auto& AssetManager = UAssetManager::Get();
+	const auto* DataAsset = AssetManager.GetPrimaryAssetObject<UStatDisplayInfoTableAsset>(LoadedAssetID);
+	if (!IsValid(DataAsset))
+	{
+		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to get Primary Asset Object for %s"), *LOG_LINE_INFO, *LoadedAssetID.ToString());
+		return;
+	}
+
+	StatDisplayInfoTable = DataAsset->DataTable.LoadSynchronous();
+	if (!StatDisplayInfoTable)
+	{
+		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to load DataTable from DataAsset %s"), *LOG_LINE_INFO, *LoadedAssetID.ToString());
+		return;
+	}
+
+	RS_LOG_DEBUG(LogRSData, Log, TEXT("%s: StatDisplayInfoTable loaded successfully: %s"), *LOG_LINE_INFO, *StatDisplayInfoTable->GetName());
+
+
+	OnStatDisplayInfoLoadedDelegate.Broadcast();
+}
+
+void UDataSubsystem::ValidateItemInfoTable(const UDataTable* Table) const
+{
+	TArray<FItemTableInfo*> Rows;
+	Table->GetAllRows(TEXT("ValidateItemInfoTable"), Rows);
+
+	for (const FItemTableInfo* Row : Rows)
+	{
+		TSubclassOf<UGameplayEffect> EffectClass = Row->MasterItemEffectClass;
+		const UGameplayEffect* GE = EffectClass->GetDefaultObject<UGameplayEffect>();
+		ensureMsgf(GE, TEXT("%s: Invalid GameplayEffect class: %s"), *LOG_LINE_INFO, *EffectClass->GetName());
+
+		for (auto& Modifier : GE->Modifiers)
+		{
+			if (Modifier.ModifierMagnitude.GetMagnitudeCalculationType() != EGameplayEffectMagnitudeCalculation::SetByCaller)
+			{
+				RS_LOG_DEBUG(LogRSProperties, Error, TEXT("%s: %s must use SetByCaller"), *LOG_LINE_INFO, *EffectClass->GetName());
+
+				ensureMsgf(false, TEXT("%s: %s must use SetByCaller"), *LOG_LINE_INFO, *EffectClass->GetName());
+			}
+			else if (!Modifier.ModifierMagnitude.GetSetByCallerFloat().DataTag.IsValid())
+			{
+				RS_LOG_DEBUG(LogRSProperties, Error, TEXT("%s: %s must have a valid DataTag"), *LOG_LINE_INFO, *EffectClass->GetName());
+
+				ensureMsgf(false, TEXT("%s: %s must have a valid DataTag"), *LOG_LINE_INFO, *EffectClass->GetName());
+			}
+
+			// 기타 검사 로직 추가.
+		}
+	}
 }
 
 void UDataSubsystem::LoadZombieDefaultInfoTable()
