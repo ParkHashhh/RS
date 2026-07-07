@@ -155,6 +155,9 @@ struct FPlayerDefaultInfo : public FTableRowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Stat|Damage")
 	float DefensePower;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Stat|Shot")
+	int32 Ammo{};
 };
 
 UENUM(BlueprintType)

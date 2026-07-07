@@ -39,4 +39,14 @@ namespace RSUtils
 	}
 
 	FText GetStatDescription(const FStatDisplayTableInfo& StatInfo, const TArray<FFormatArgumentValue>& Arguments);
+
+	FORCEINLINE bool IsEven(int32 Value)
+	{
+		return (Value & 1) == 0;
+	}
+
+	FORCEINLINE bool IsOdd(int32 Value)
+	{
+		return (Value & 1) != 0;
+	}
 }

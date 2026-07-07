@@ -27,7 +27,7 @@ public:
 
 	URSUserWidget* FindWidget(const FName WidgetName) const;
 
-	int32 FindCombatWidget(TArray<TObjectPtr<URSUserWidget>> OutCombatWidgets) const;
+	int32 FindCombatWidget(TArray<TObjectPtr<URSUserWidget>>& OutCombatWidgets) const;
 
 	const TMap<FName, TWeakObjectPtr<URSUserWidget>>& GetUserWidgets() const
 	{

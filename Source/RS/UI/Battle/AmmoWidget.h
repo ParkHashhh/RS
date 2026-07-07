@@ -21,8 +21,20 @@ private:
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UImage> AmmoBar;
 
+	UPROPERTY(Transient)
+	TWeakObjectPtr<UMaterialInterface> CurrentMI;
+
+	UPROPERTY(EditDefaultsOnly, meta=(AllowPrivateAccess=true))
+	TObjectPtr<UMaterialInterface> MI_UseDivisions_True;
+
+	UPROPERTY(EditDefaultsOnly, meta=(AllowPrivateAccess=true))
+	TObjectPtr<UMaterialInterface> MI_UseDivisions_False;
+
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UTextBlock> AmmoText;
+
+	UPROPERTY(EditDefaultsOnly, meta=(AllowPrivateAccess=true))
+	int32 HideDivisionLineCount = 50;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInstanceDynamic> AmmoBarMaterialInstance;
@@ -35,10 +47,11 @@ protected:
 
 	virtual bool TryBindCharacterDelegates(APlayerCharacterBase* Character) override;
 
-	UFUNCTION(BlueprintImplementableEvent, DisplayName="On Ammo Changed")
-	void K2_OnAmmoChanged(float AmmoRatio);
-
 private:
 	void OnCurrAmmoChanged(const FOnAttributeChangeData& Data);
 	void OnMaxAmmoChanged(const FOnAttributeChangeData& Data);
+
+	void OnAmmoChanged();
+
+	void RefreshWidget();
 };

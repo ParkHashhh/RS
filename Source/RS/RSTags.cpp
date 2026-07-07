@@ -40,5 +40,8 @@ namespace RSTags
 		UE_DEFINE_GAMEPLAY_TAG(MaxHP, "SetByCaller.Stat.MaxHP");
 		UE_DEFINE_GAMEPLAY_TAG(MaxRange, "SetByCaller.Stat.MaxRange");
 		UE_DEFINE_GAMEPLAY_TAG(WalkSpeed, "SetByCaller.Stat.WalkSpeed");
+		UE_DEFINE_GAMEPLAY_TAG(CurrentAmmo, "SetByCaller.Stat.CurrentAmmo");
+		UE_DEFINE_GAMEPLAY_TAG(MaxAmmo, "SetByCaller.Stat.MaxAmmo");
+
 	}
 }

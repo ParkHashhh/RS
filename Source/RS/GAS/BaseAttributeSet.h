@@ -55,7 +55,7 @@ public:
 
 	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
 
-	virtual void OnHpChanged(AActor* Instigator);
+	virtual void OnHPChanged(AActor* Instigator);
 
 protected:
 

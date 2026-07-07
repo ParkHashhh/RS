@@ -12,7 +12,7 @@ void UPlayerAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 
 	DOREPLIFETIME(UPlayerAttributeSet, AttackSpeed);
 	DOREPLIFETIME(UPlayerAttributeSet, ShotSpreadRadius);
-	DOREPLIFETIME(UPlayerAttributeSet, CurrAmmo);
+	DOREPLIFETIME(UPlayerAttributeSet, CurrentAmmo);
 	DOREPLIFETIME(UPlayerAttributeSet, MaxAmmo);
 	DOREPLIFETIME(UPlayerAttributeSet, CriticalChance);
 	DOREPLIFETIME(UPlayerAttributeSet, CriticalDamage);
@@ -42,7 +42,7 @@ void UPlayerAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCall
 
 	if (Data.EvaluatedData.Attribute == GetCurrentHPAttribute())
 	{
-		OnHpChanged(Instigator);
+		OnHPChanged(Instigator);
 
 		if (GetCurrentHP() <= 0.0f)
 		{
@@ -61,7 +61,7 @@ void UPlayerAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCall
 }
 
 
-void UPlayerAttributeSet::OnHpChanged(AActor* Instigator)
+void UPlayerAttributeSet::OnHPChanged(AActor* Instigator)
 {
 
 }
@@ -79,13 +79,17 @@ void UPlayerAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribut
 	}
 	else if (Attribute == GetCurrentHPAttribute())
 	{
+		if (GetCurrentHP() > GetMaxHP())
+		{
+			SetCurrentHP(GetMaxHP());
+		}
 		RS_LOG_DEBUG(LogRSBattle, Log, TEXT("%s: HP가 변경됨! 현재 값: %.2f"), *LOG_LINE_INFO, NewValue);
 	}
 	else if (Attribute == GetMaxHPAttribute())
 	{
 		RS_LOG_DEBUG(LogRSBattle, Log, TEXT("%s: Max HP가 변경됨! 현재 값: %.2f"), *LOG_LINE_INFO, NewValue);
 	}
-	else if (Attribute == GetCurrAmmoAttribute())
+	else if (Attribute == GetCurrentAmmoAttribute())
 	{
 		RS_LOG_DEBUG(LogRSBattle, Log, TEXT("%s: Ammo가 변경됨! 현재 값: %.2f"), *LOG_LINE_INFO, NewValue);
 	}
@@ -113,9 +117,9 @@ void UPlayerAttributeSet::OnRep_ShotSpreadRadius(const FGameplayAttributeData& O
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UPlayerAttributeSet, ShotSpreadRadius, OldValue);
 }
 
-void UPlayerAttributeSet::OnRep_CurrAmmo(const FGameplayAttributeData& OldValue)
+void UPlayerAttributeSet::OnRep_CurrentAmmo(const FGameplayAttributeData& OldValue)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UPlayerAttributeSet, CurrAmmo, OldValue);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UPlayerAttributeSet, CurrentAmmo, OldValue);
 }
 
 void UPlayerAttributeSet::OnRep_MaxAmmo(const FGameplayAttributeData& OldValue)

@@ -23,6 +23,8 @@ private:
 
 	FActiveGameplayEffectHandle AttackEffectHandle;
 
+	FTimerHandle EmptyAttackTimerHandle;
+
 	bool bStop = false;
 
 protected:

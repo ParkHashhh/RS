@@ -34,7 +34,7 @@ URSUserWidget* UUISubsystem::FindWidget(const FName WidgetName) const
 	return UserWidgets.FindRef(WidgetName).Get();
 }
 
-int32 UUISubsystem::FindCombatWidget(TArray<TObjectPtr<URSUserWidget>> OutCombatWidgets) const
+int32 UUISubsystem::FindCombatWidget(TArray<TObjectPtr<URSUserWidget>>& OutCombatWidgets) const
 {
 	OutCombatWidgets.Empty();
 

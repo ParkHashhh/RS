@@ -25,13 +25,13 @@ void UBaseAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 
 	if (Data.EvaluatedData.Attribute == GetCurrentHPAttribute())
 	{
-		OnHpChanged(Instigator);
+		OnHPChanged(Instigator);
 	}
 }
 
 
 
-void UBaseAttributeSet::OnHpChanged(AActor* Instigator)
+void UBaseAttributeSet::OnHPChanged(AActor* Instigator)
 {
 }
 

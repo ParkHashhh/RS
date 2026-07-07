@@ -20,8 +20,8 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing=OnRep_ShotSpreadRadius, Category="Attribute", meta=(AllowPrivateAccess=true))
 	FGameplayAttributeData ShotSpreadRadius;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing=OnRep_CurrAmmo, Category="Attribute", meta=(AllowPrivateAccess=true))
-	FGameplayAttributeData CurrAmmo;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing=OnRep_CurrentAmmo, Category="Attribute", meta=(AllowPrivateAccess=true))
+	FGameplayAttributeData CurrentAmmo;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing=OnRep_MaxAmmo, Category="Attribute", meta=(AllowPrivateAccess=true))
 	FGameplayAttributeData MaxAmmo;
@@ -35,7 +35,7 @@ protected:
 public:
 	ATTRIBUTE_ACCESSORS_BASIC(UPlayerAttributeSet, AttackSpeed)
 	ATTRIBUTE_ACCESSORS_BASIC(UPlayerAttributeSet, ShotSpreadRadius)
-	ATTRIBUTE_ACCESSORS_BASIC(UPlayerAttributeSet, CurrAmmo)
+	ATTRIBUTE_ACCESSORS_BASIC(UPlayerAttributeSet, CurrentAmmo)
 	ATTRIBUTE_ACCESSORS_BASIC(UPlayerAttributeSet, MaxAmmo)
 	ATTRIBUTE_ACCESSORS_BASIC(UPlayerAttributeSet, CriticalChance)
 	ATTRIBUTE_ACCESSORS_BASIC(UPlayerAttributeSet, CriticalDamage)
@@ -45,7 +45,7 @@ public:
 	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
 	virtual void PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue) override;
 
-	virtual void OnHpChanged(AActor* Instigator);
+	virtual void OnHPChanged(AActor* Instigator);
 protected:
 	UFUNCTION()
 	virtual void OnRep_AttackSpeed(const FGameplayAttributeData& OldValue);
@@ -54,7 +54,7 @@ protected:
 	virtual void OnRep_ShotSpreadRadius(const FGameplayAttributeData& OldValue);
 
 	UFUNCTION()
-	virtual void OnRep_CurrAmmo(const FGameplayAttributeData& OldValue);
+	virtual void OnRep_CurrentAmmo(const FGameplayAttributeData& OldValue);
 
 	UFUNCTION()
 	virtual void OnRep_MaxAmmo(const FGameplayAttributeData& OldValue);
