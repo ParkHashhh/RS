@@ -45,7 +45,7 @@ public:
 	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
 	virtual void PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue) override;
 
-	virtual void OnHPChanged(AActor* Instigator);
+	virtual void OnHpChanged(AActor* Instigator);
 protected:
 	UFUNCTION()
 	virtual void OnRep_AttackSpeed(const FGameplayAttributeData& OldValue);

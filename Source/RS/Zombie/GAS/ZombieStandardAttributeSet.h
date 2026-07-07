@@ -26,6 +26,6 @@ public:
 	ATTRIBUTE_ACCESSORS_BASIC(UZombieStandardAttributeSet, Rarity)
 
 public:
-	virtual void OnHPChanged(AActor* Instigator) override;
+	virtual void OnHpChanged(AActor* Instigator) override;
 
 };

@@ -75,8 +75,18 @@ void AHealPack::PerformHealing()
 		{ UEngineTypes::ConvertToObjectType(ECC_GameTraceChannel3) }, APlayerCharacterBase::StaticClass(),
 		IgnoreActors, OverlappingActors);
 
+	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("OverlappingActorsNum : %d"), OverlappingActors.Num());
 
 	NiagaraComponent->ResetSystem();
+
+	if (OverlappingActors.Num() >= 1)	
+	{
+		DrawDebugSphere(GetWorld(), GetActorLocation(), 300.f, 24, FColor::Red, false, 2.0f, 0, 2.0f);
+	}
+	else
+	{
+		DrawDebugSphere(GetWorld(), GetActorLocation(), 300.f, 24, FColor::Green, false, 2.0f, 0, 2.0f);
+	}
 
 	for (AActor* Actor : OverlappingActors)
 	{
@@ -84,7 +94,7 @@ void AHealPack::PerformHealing()
 		APlayerCharacterBase* Player = Cast<APlayerCharacterBase>(GetOwner());
 		if (IsValid(Player))
 		{
-			Player->Server_ApplyHP(Actor, FHitResult(), 10.f);
+			Player->Server_ApplyDamage(Actor, FHitResult(), -10.f);
 		}
 	}
 	HealingTicks++;

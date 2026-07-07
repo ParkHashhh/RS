@@ -18,6 +18,6 @@ public:
 	UZombieBossAttributeSet();
 
 public:
-	virtual void OnHPChanged(AActor* Instigator) override;
+	virtual void OnHpChanged(AActor* Instigator) override;
 
 };

@@ -70,12 +70,6 @@ void UGameplayAbility_Attack::LoopAttackSequence()
 	APlayerCharacterBase* PlayerChar = Cast<APlayerCharacterBase>(GetAvatarActorFromActorInfo());
 	if (PlayerChar)
 	{
-		if (!PlayerChar->UseAmmo())
-		{
-			float AttackInterval = 0.25f;
-			GetWorld()->GetTimerManager().SetTimer(EmptyAttackTimerHandle, this, &UGameplayAbility_Attack::OnAttackSequenceStep, AttackInterval, false);
-			return;
-		}
 		TObjectPtr<UAnimMontage> AttackMontage = PlayerChar->GetBaseAttackMontage();
 
 		FVector MuzzleLocation = PlayerChar->GetWeaponComponent()->GetSocketLocation(FName("Muzzle"));
@@ -88,7 +82,6 @@ void UGameplayAbility_Attack::LoopAttackSequence()
 			RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("Have Not AttackMontage"));
 			return;
 		}
-	
 		float DefaultAttackSpeed = 0.1f;
 
 		if (PlayerChar->GetAttributeSet())
@@ -100,6 +93,7 @@ void UGameplayAbility_Attack::LoopAttackSequence()
 
 		UAbilityTask_PlayMontageAndWait* Task =
 			UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, NAME_None, AttackMontage, 0.7f);
+
 
 		Task->OnCompleted.AddDynamic(this, &UGameplayAbility_Attack::OnAttackSequenceStep);
 		Task->OnBlendOut.AddDynamic(this, &UGameplayAbility_Attack::OnAttackSequenceStep);

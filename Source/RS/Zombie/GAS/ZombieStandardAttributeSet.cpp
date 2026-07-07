@@ -5,7 +5,7 @@
 #include "RS/Zombie/ZombieBase.h"
 
 
-void UZombieStandardAttributeSet::OnHPChanged(AActor* Instigator)
+void UZombieStandardAttributeSet::OnHpChanged(AActor* Instigator)
 {
 	//좀비의 HP변화를 처리하는 함수를 호출한다.
 	UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent();

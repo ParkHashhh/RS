@@ -40,8 +40,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "FX")
 	TObjectPtr<class USoundBase> Sound;
 
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Timer")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "FX")
 	FTimerHandle HealingTimerHandle;
 
 	int32 HealingTicks = 0;
