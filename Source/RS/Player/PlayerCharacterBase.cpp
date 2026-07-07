@@ -17,7 +17,6 @@
 #include "Actor/Grenade.h"
 #include "Actor/HealPack.h"
 #include "GameplayCueManager.h"
-#include "PlayerControllerBase.h"
 #include "RS/Inventory/InventoryComponent.h"
 #include "RS/UI/Battle/BattleHUDWidget.h"
 #include "RS/UI/Battle/Inventory/Popup/InventoryPopupWidget.h"
@@ -1128,6 +1127,36 @@ void APlayerCharacterBase::GiveAbilities()
 	}
 }
 
+void APlayerCharacterBase::ReloadAmmo()
+{
+	FVector MuzzleLocation = WeaponMeshComponent->GetSocketLocation(FName("Muzzle"));
+	FGameplayCueParameters CueParams;
+	CueParams.Location = MuzzleLocation;
+	if (ASC)
+	{
+		ASC->ExecuteGameplayCue(FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Weapon.MagazineInsertFinal")), CueParams);
+	}
+	AttributeSet->SetCurrentAmmo(AttributeSet->GetMaxAmmo());
+}
+
+bool APlayerCharacterBase::UseAmmo()
+{
+	if (AttributeSet->GetCurrentAmmo() < 1)
+	{
+
+		FVector MuzzleLocation = WeaponMeshComponent->GetSocketLocation(FName("Muzzle"));
+		FGameplayCueParameters CueParams;
+		CueParams.Location = MuzzleLocation;
+		if (ASC)
+		{
+			ASC->ExecuteGameplayCue(FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Weapon.EmptyAmmo")), CueParams);
+		}
+		return false;
+	}
+	AttributeSet->SetCurrentAmmo(AttributeSet->GetCurrentAmmo() - 1);
+	return true;
+}
+
 void APlayerCharacterBase::SetAimAlpha(float NewAimAlpha)
 {
 	if (AimAlpha == NewAimAlpha)
@@ -1263,6 +1292,30 @@ void APlayerCharacterBase::PlayFootStepSound()
 	}
 
 }
+
+void APlayerCharacterBase::PlayMagazineRemove()
+{
+
+	FVector MuzzleLocation = WeaponMeshComponent->GetSocketLocation(FName("Muzzle"));
+	FGameplayCueParameters CueParams;
+	CueParams.Location = MuzzleLocation;
+	if (ASC)
+	{
+		ASC->ExecuteGameplayCue(FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Weapon.MagazineRemove")), CueParams);
+	}
+}
+
+void APlayerCharacterBase::PlayMagazineInsert()
+{
+	FVector MuzzleLocation = WeaponMeshComponent->GetSocketLocation(FName("Muzzle"));
+	FGameplayCueParameters CueParams;
+	CueParams.Location = MuzzleLocation;
+	if (ASC)
+	{
+		ASC->ExecuteGameplayCue(FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Weapon.MagazineInsert")), CueParams);
+	}
+}
+
 
 void APlayerCharacterBase::ExecuteBulletTrailEffect(const FVector& MuzzleLocation,const FVector& TrailEnd)
 {
@@ -1477,7 +1530,11 @@ void APlayerCharacterBase::Server_ApplyDamage_Implementation(AActor* TargetActor
 	{
 		return;
 	}
-
+	AZombieBase* Zombie = Cast<AZombieBase>(TargetActor);
+	if (!IsValid(Zombie))
+	{
+		return;
+	}
 	FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
 	EffectContext.AddHitResult(Hit);
 
@@ -1488,6 +1545,31 @@ void APlayerCharacterBase::Server_ApplyDamage_Implementation(AActor* TargetActor
 	                                               -Damage);
 
 	ASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
+}
+
+void APlayerCharacterBase::Server_ApplyHP_Implementation(AActor* TargetActor, FHitResult Hit, float HP)
+{
+	APlayerCharacterBase* Player = Cast<APlayerCharacterBase>(TargetActor);
+	if (!IsValid(Player))
+	{
+		return;
+	}
+	auto* PlayerASC = Player->GetASC();
+	if (!PlayerASC)
+	{
+		return;
+	}
+
+	FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
+	EffectContext.AddHitResult(Hit);
+
+	TSubclassOf<UGameplayEffect> Effect = GetEffect(TEXT("Damage"));
+
+	FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(Effect, 1.0f, EffectContext);
+	SpecHandle.Data.Get()->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(TEXT("SetByCaller.State.HP")),
+		HP);
+
+	ASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), PlayerASC);
 }
 
 void APlayerCharacterBase::OnPlayerDefaultInfoLoaded()

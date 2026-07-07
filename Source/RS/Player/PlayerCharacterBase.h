@@ -120,6 +120,8 @@ protected:
 	UPROPERTY(Transient, VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true))
 	TObjectPtr<UPlayerAnimInstance> AnimInst;
 
+
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, BlueprintGetter=K2_IsDashing, meta=(AllowPrivateAccess=true))
 	bool bIsDashing = false;
 
@@ -426,6 +428,10 @@ protected:
 public:
 	void ExecuteMuzzleEffect(const FVector& MuzzleLocation, const FRotator& MuzzleRotation);
 	void PlayFootStepSound();
+	void PlayMagazineRemove();
+	void PlayMagazineInsert();
+	void ReloadAmmo();
+	bool UseAmmo();
 
 public:
 	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode) override;
@@ -461,6 +467,9 @@ public:
 protected:
 	UFUNCTION(Server, Reliable)
 	void Server_ApplyDamage(AActor* TargetActor, FHitResult Hit,float Damage);
+
+	UFUNCTION(Server, Reliable)
+	void Server_ApplyHP(AActor* TargetActor, FHitResult Hit, float Hp);
 
 	UFUNCTION(Server, Reliable)
 	void Server_ShootAttackRay();

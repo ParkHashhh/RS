@@ -42,8 +42,6 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 			bIsInAir = Movement->IsFalling();
 		}
 
-		//  앉기 상태
-
 		bIsAiming = PlayerChar->IsAiming();
 
 		bIsAttacking = PlayerChar->IsAttacking();
@@ -191,7 +189,33 @@ void UPlayerAnimInstance::AnimNotify_FootStep()
 void UPlayerAnimInstance::AnimNotify_Reload()
 {
 	// 총알갈기
+	TObjectPtr<APlayerCharacterBase> PlayerChar = Cast<APlayerCharacterBase>(TryGetPawnOwner());
 
+	if (IsValid(PlayerChar))
+	{
+
+		PlayerChar->ReloadAmmo();
+	}
+}
+
+void UPlayerAnimInstance::AnimNotify_MagazineRemove()
+{
+	TObjectPtr<APlayerCharacterBase> PlayerChar = Cast<APlayerCharacterBase>(TryGetPawnOwner());
+
+	if (IsValid(PlayerChar))
+	{
+		PlayerChar->PlayMagazineRemove();
+	}
+}
+
+void UPlayerAnimInstance::AnimNotify_MagazineInsert()
+{
+	TObjectPtr<APlayerCharacterBase> PlayerChar = Cast<APlayerCharacterBase>(TryGetPawnOwner());
+
+	if (IsValid(PlayerChar))
+	{
+		PlayerChar->PlayMagazineInsert();
+	}
 }
 
 

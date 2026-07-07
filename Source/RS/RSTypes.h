@@ -248,3 +248,75 @@ struct FStatDisplayTableInfo : public FTableRowBase
     UPROPERTY(EditAnywhere)
     bool bHiddenIfZero = false;
 };
+
+UENUM(BlueprintType)
+enum class EClearCondition : uint8
+{
+	None = 0,
+	KillBoss,
+	KillEnemy,
+	SurviveTime,
+	Escape,
+	GetItem,
+};
+
+USTRUCT(BlueprintType)
+struct FStageObjective
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stage|Objective")
+	EClearCondition ClearCondition;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stage|Objective")
+	int32 Current;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stage|Objective")
+	int32 Goal;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stage|Objective")
+	TArray<FDataTableRowHandle> Targets;
+
+	bool IsCleared() const
+	{
+		return Current >= Goal;
+	}
+
+	float GetProgressRatio() const
+	{
+		return Goal > 0 ? FMath::Clamp(static_cast<float>(Current) / Goal, 0.0f, 1.0f) : 1.0f;
+	}
+
+	void Reset()
+	{
+		Current = 0.0f;
+	}
+
+	int32 AddProgress(int32 Amount = 1)
+	{
+		Current += Amount;
+		return Current;
+	}
+
+	friend bool operator==(const FStageObjective& Lhs, const FStageObjective& RHS)
+	{
+		return Lhs.ClearCondition == RHS.ClearCondition
+			&& Lhs.Current == RHS.Current
+			&& Lhs.Goal == RHS.Goal
+			&& Lhs.Targets == RHS.Targets;
+	}
+
+	friend bool operator!=(const FStageObjective& Lhs, const FStageObjective& RHS)
+	{
+		return !(Lhs == RHS);
+	}
+
+	FStageObjective() = default;
+
+	FStageObjective(EClearCondition ClearCondition, int32 Current, int32 Goal)
+		: ClearCondition(ClearCondition),
+		  Current(Current),
+		  Goal(Goal)
+	{
+	}
+};

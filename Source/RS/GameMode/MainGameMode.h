@@ -7,7 +7,7 @@
 #include "MainGameMode.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class RS_API AMainGameMode : public AGameModeBase
@@ -17,4 +17,9 @@ class RS_API AMainGameMode : public AGameModeBase
 public:
 	AMainGameMode();
 
+	virtual void StartPlay() override;
+
+protected:
+	// TODO: 데이터로 스테이지 초기화 변경 필요
+	virtual void StartStage();
 };

@@ -24,8 +24,6 @@ void UGameplayAbility_SubSkill::ActivateAbility(const FGameplayAbilitySpecHandle
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-
-
 	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
 
 	{

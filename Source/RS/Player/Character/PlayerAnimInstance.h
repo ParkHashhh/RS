@@ -104,6 +104,13 @@ protected:
 
 	UFUNCTION()
 	void AnimNotify_Reload();
+
+	UFUNCTION()
+	void AnimNotify_MagazineRemove();
+
+	UFUNCTION()
+	void AnimNotify_MagazineInsert();
+
 	UFUNCTION()
 	void AnimNotify_ReloadFinish();
 

@@ -42,7 +42,7 @@ void UPlayerAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCall
 
 	if (Data.EvaluatedData.Attribute == GetCurrentHPAttribute())
 	{
-		OnHpChanged(Instigator);
+		OnHPChanged(Instigator);
 
 		if (GetCurrentHP() <= 0.0f)
 		{
@@ -61,7 +61,7 @@ void UPlayerAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCall
 }
 
 
-void UPlayerAttributeSet::OnHpChanged(AActor* Instigator)
+void UPlayerAttributeSet::OnHPChanged(AActor* Instigator)
 {
 
 }
@@ -79,6 +79,10 @@ void UPlayerAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribut
 	}
 	else if (Attribute == GetCurrentHPAttribute())
 	{
+		if (GetCurrentHP() > GetMaxHP())
+		{
+			SetCurrentHP(GetMaxHP());
+		}
 		RS_LOG_DEBUG(LogRSBattle, Log, TEXT("%s: HP가 변경됨! 현재 값: %.2f"), *LOG_LINE_INFO, NewValue);
 	}
 	else if (Attribute == GetMaxHPAttribute())

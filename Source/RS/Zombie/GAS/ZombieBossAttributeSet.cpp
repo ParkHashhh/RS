@@ -10,7 +10,7 @@ UZombieBossAttributeSet::UZombieBossAttributeSet()
 
 }
 
-void UZombieBossAttributeSet::OnHpChanged(AActor* Instigator)
+void UZombieBossAttributeSet::OnHPChanged(AActor* Instigator)
 {
 	RS_LOG_DEBUG(LogRSBattle, Log, TEXT("좀비가 공격받음"));
 
