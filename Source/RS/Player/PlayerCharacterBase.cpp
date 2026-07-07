@@ -751,16 +751,12 @@ void APlayerCharacterBase::VisibleWeapon()
 
 	WeaponMeshComponent->SetVisibility(true, true);
 	WeaponMeshComponent->SetHiddenInGame(false);
-
-	WeaponMeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 }
 
 void APlayerCharacterBase::HideWeapon()
 {
 	WeaponMeshComponent->SetVisibility(false, true);
 	WeaponMeshComponent->SetHiddenInGame(true);
-
-	WeaponMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 void APlayerCharacterBase::CallAttackAbility()
@@ -1362,13 +1358,13 @@ void APlayerCharacterBase::ExecuteHitEffect(const FHitResult& Hit)
 	ASC->ExecuteGameplayCue(CueTag, CueParams);
 }
 
-bool APlayerCharacterBase::CalculateHit(FHitResult& Hit)
+bool APlayerCharacterBase::CalculateHit(FHitResult& Hit, float RandomX, float RandomY)
 {
 	float Dist = AttributeSet->GetAttackDistance();
 
 	FVector CameraLocation;
 	FRotator CameraRotation;
-	if (IsValid(PlayerController))
+	if (IsLocallyControlled() && IsValid(PlayerController))
 	{
 		// 로컬 클라이언트: 카메라 기준
 		// 카메라 위치가 어디있고 회전이 얼마나된지 가져오기.
@@ -1381,15 +1377,21 @@ bool APlayerCharacterBase::CalculateHit(FHitResult& Hit)
 		CameraRotation = GetBaseAimRotation();
 	}
 
+	FRotationMatrix CameraRotationMatrix(CameraRotation);
+	FVector RightVector = CameraRotationMatrix.GetScaledAxis(EAxis::Y);
+	FVector UpVector = CameraRotationMatrix.GetScaledAxis(EAxis::Z);
+
 	// 카메라 방향으로 Ray쏘기위해 카메라 위치에서 방향에 거리만큼 곱해주기
 	FVector CameraEnd = CameraLocation + (CameraRotation.Vector() * Dist);
+	// 클라에서 가져온 랜덤값 카메라기준 X,Y 에 더해주기
+	FVector RandomEnd = CameraEnd + (RightVector * RandomX) + (UpVector * RandomY);
 
 	FHitResult CameraHit;
 	FCollisionQueryParams Params(NAME_None, false, this);
 	Params.bReturnPhysicalMaterial = true;
 
 	// 카메라 시작점부터 카메라가 보는방향의 끝 점 까지 히트된게 있는지 확인
-	GetWorld()->LineTraceSingleByChannel(CameraHit, CameraLocation, CameraEnd, ECC_GameTraceChannel1, Params);
+	GetWorld()->LineTraceSingleByChannel(CameraHit, CameraLocation, RandomEnd, ECC_GameTraceChannel1, Params);
 
 	// 카메라가 조준한 물체가 있다면 그 맞은 지점을, 없다면 그냥 사거리 끝을 목표물 위치로 설정
 	FVector TargetLocation;
@@ -1399,7 +1401,7 @@ bool APlayerCharacterBase::CalculateHit(FHitResult& Hit)
 	}
 	else
 	{
-		TargetLocation = CameraEnd;
+		TargetLocation = RandomEnd;
 	}
 	// 무기 메쉬에서 실제 총알이 나갈 총구소켓의 위치 가져오기
 	FVector MuzzleLocation = WeaponMeshComponent->GetSocketLocation(FName("Muzzle"));
@@ -1430,21 +1432,20 @@ void APlayerCharacterBase::Multicast_ExecuteVisualEffect_Implementation(const FH
 	UGameplayCueManager::ExecuteGameplayCue_NonReplicated(this, Tag, CueParams);
 }
 
-void APlayerCharacterBase::Server_ShootAttackRay_Implementation()
+void APlayerCharacterBase::Server_ShootAttackRay_Implementation(float RandomX, float RandomY)
 {
 	// 충돌결과를 받을 구조체
 	FHitResult Hit;
 
-	if (CalculateHit(Hit))
+	if (CalculateHit(Hit, RandomX,RandomY))
 	{
 		AActor* TargetActor = Hit.GetActor();
-		ETeamAttitude::Type Attitude = GetTeamAttitudeTowards(*TargetActor);
-
 		// 맞은 액터(TargetActor) 가져오기
 		if (!TargetActor)
 		{
 			return;
 		}
+		ETeamAttitude::Type Attitude = GetTeamAttitudeTowards(*TargetActor);
 		// 적군인지 확인
 		if (Attitude == ETeamAttitude::Hostile)
 		{
@@ -1477,30 +1478,47 @@ void APlayerCharacterBase::ShootAttackRay()
 
 	FVector CameraLocation;
 	FRotator CameraRotation;
-
-
 	PlayerController->GetPlayerViewPoint(CameraLocation, CameraRotation);
 
 	float Dist = AttributeSet->GetAttackDistance();
+	float RandomX,RandomY;
+
+	if (IsAiming())
+	{
+		RandomX = FMath::FRandRange(-5.f,5.f);
+		RandomY = FMath::FRandRange(-5.f,5.f);
+	}
+	else
+	{
+		RandomX = FMath::FRandRange(-70.f, 70.f);
+		RandomY = FMath::FRandRange(-70.f, 70.f);
+	}
+
+	FRotationMatrix CameraRotationMatrix(CameraRotation);
+	FVector RightVector = CameraRotationMatrix.GetScaledAxis(EAxis::Y);
+	FVector UpVector = CameraRotationMatrix.GetScaledAxis(EAxis::Z);
 
 	FVector CameraEnd = CameraLocation + (CameraRotation.Vector() * Dist);
+
+	FVector RandomEnd = CameraEnd + (RightVector * RandomX) + (UpVector * RandomY);
 
 	FHitResult CameraHit;
 
 	FCollisionQueryParams Params(NAME_None, false, this);
 	Params.bReturnPhysicalMaterial = true;
 
-	GetWorld()->LineTraceSingleByChannel(CameraHit, CameraLocation, CameraEnd, ECC_GameTraceChannel1, Params);
+	GetWorld()->LineTraceSingleByChannel(CameraHit, CameraLocation, RandomEnd, ECC_GameTraceChannel1, Params);
 
 
 	FVector TargetLocation;
+
 	if (CameraHit.bBlockingHit)
 	{
 		TargetLocation = CameraHit.ImpactPoint;
 	}
 	else
 	{
-		TargetLocation = CameraEnd;
+		TargetLocation = RandomEnd;
 	}
 
 	FVector MuzzleLocation = WeaponMeshComponent->GetSocketLocation(FName("Muzzle"));
@@ -1512,13 +1530,14 @@ void APlayerCharacterBase::ShootAttackRay()
 
 	FVector TrailEnd = FinalEnd;
 
-	if (CalculateHit(Hit))
+	if (CalculateHit(Hit,RandomX,RandomY))
 	{
 		TrailEnd = Hit.ImpactPoint;
-		Server_ShootAttackRay();
+		Server_ShootAttackRay(RandomX, RandomY);
 	}
 	else
 	{
+	
 	}
 	ExecuteBulletTrailEffect(MuzzleLocation, TrailEnd);
 }

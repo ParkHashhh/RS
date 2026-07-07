@@ -472,9 +472,9 @@ protected:
 	void Server_ApplyHP(AActor* TargetActor, FHitResult Hit, float Hp);
 
 	UFUNCTION(Server, Reliable)
-	void Server_ShootAttackRay();
+	void Server_ShootAttackRay(float RandomX,float RandomY);
 
-	bool CalculateHit(FHitResult& Hit);
+	bool CalculateHit(FHitResult& Hit, float RandomX, float RandomY);
 
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_ExecuteVisualEffect(const FHitResult& Hit, bool bIsHit);

@@ -139,7 +139,7 @@ void UPlayerAnimInstance::AnimNotify_StartHeal()
 
 void UPlayerAnimInstance::AnimNotify_EndHeal()
 {
-	
+
 }
 
 void UPlayerAnimInstance::AnimNotify_MakeHeal()
