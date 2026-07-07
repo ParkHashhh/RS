@@ -52,7 +52,7 @@ EBTNodeResult::Type UBTTask_TraceNoneBoss::ExecuteTask(UBehaviorTreeComponent& O
 	float Distance = Zombie->CalcDistanceToTarget(Target);
 	UBaseAttributeSet* ZombieAttri = Zombie->GetAttributeSet();
 	float AttackRange = ZombieAttri->GetAttackDistance();
-	if (Distance <= AttackRange)
+	if (Distance < AttackRange)
 	{
 		return EBTNodeResult::Failed;
 	}
@@ -145,6 +145,7 @@ void UBTTask_TraceNoneBoss::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, ui
 	AZombieBase* Zombie = Ctrl->GetOwner<AZombieBase>();
 	if (IsValid(Zombie))
 	{
+		Zombie->ChangeAnim(EZombieAnimType::CombatIdle);
 		Zombie->ChangeSpeed_Walk();
 	}
 }

@@ -25,7 +25,6 @@ void UGameplayAbility_SubSkill::ActivateAbility(const FGameplayAbilitySpecHandle
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
 
-	RS_PRINT_SCREEN(10.f, FColor::Red, TEXT("Activate UGameplayAbility_Grenade"));
 
 	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
 
@@ -55,15 +54,14 @@ void UGameplayAbility_SubSkill::ActivateAbility(const FGameplayAbilitySpecHandle
 	}
 
 	// 여기만 Grenade로 바꿔주기
-	TObjectPtr<UAnimMontage> GrenadeMontage = PlayerChar->GetSubSkillMontage();
+	TObjectPtr<UAnimMontage> SubSkillMontage = PlayerChar->GetSubSkillMontage();
 
-	if (!GrenadeMontage)
+	if (!SubSkillMontage)
 	{
-		RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("Have Not GetSubSkillMontage"));
 		return;
 	}
 	UAbilityTask_PlayMontageAndWait* Task =
-		UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, NAME_None, GrenadeMontage, 1.5f);
+		UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, NAME_None, SubSkillMontage, 1.0f);
 	Task->OnCompleted.AddDynamic(this, &UGameplayAbility_SubSkill::OnFinishSubSkill);
 	Task->OnInterrupted.AddDynamic(this, &UGameplayAbility_SubSkill::OnFinishSubSkill);
 	Task->OnCancelled.AddDynamic(this, &UGameplayAbility_SubSkill::OnFinishSubSkill);
@@ -81,7 +79,6 @@ void UGameplayAbility_SubSkill::EndAbility(const FGameplayAbilitySpecHandle Hand
 {
 
 	APlayerCharacterBase* PlayerChar = Cast<APlayerCharacterBase>(GetAvatarActorFromActorInfo());
-	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("EndAbility SubSkilling %d "), PlayerChar->IsAttackKeyPressed());
 
 	if (SubSkillEffectHandle.IsValid())
 	{

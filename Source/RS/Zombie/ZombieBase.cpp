@@ -82,8 +82,6 @@ void AZombieBase::PostInitProperties()
 void AZombieBase::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
-	//Beginplay는 상황에 따라 확실하지 않을 수 있으므로 확실한 타이밍인 이곳에서 멤버 변수에 넣어준다.
-	//AnimInstance = Cast<UZombieAnimInstance>(Mesh->GetAnimInstance());
 
 	if (Movement && Body)
 	{
@@ -179,6 +177,11 @@ TSubclassOf<UGameplayEffect> AZombieBase::GetEffect(const FName& Name)
 }
 void AZombieBase::ChangeAnim(EZombieAnimType Type)
 {
+	if (AnimType == EZombieAnimType::Death)
+	{
+		return;
+	}
+
 	AnimType = Type;
 
 	if (HasAuthority())
@@ -198,6 +201,8 @@ void AZombieBase::ChangeAnim(EZombieAnimType Type)
 		{
 			AtkMontageIndex = FMath::RandRange(1, AnimInstance->GetMontageNum());
 			AnimInstance->PlayAttackMontage(AtkMontageIndex);
+			//좀비가 공격을 한다면 기저에 재생되고 있는 애니메이션을 전투 대기로 바꿔준다.
+			AnimInstance->SetAnim(EZombieAnimType::CombatIdle);
 			return;
 		}
 
@@ -241,7 +246,6 @@ void AZombieBase::CallBackHP(AActor* InstigatorActor)
 		return;
 	}
 	
-
 	if (AttributeSet->GetCurrentHP() <= 0)
 	{
 		//좀비의 사망 애니메이션을 동작시킨다
@@ -359,7 +363,6 @@ void AZombieBase::PlayFootStepCue(const FName& FootName)
 	//발바닥 위치와 라인트레이스를 발사할 위치를 구한다.
 	FVector FootLoc = Mesh->GetSocketLocation(FootName);
 	FootLoc.Z += 20.f;
-	RS_PRINT_SCREEN(1.f, FColor::Blue, TEXT("FootLoc : %s"), *FootLoc.ToString());
 	FVector EndLoc = FootLoc - FVector(0.0, 0.0, 100.0);
 
 	FHitResult Result;

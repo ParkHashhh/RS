@@ -28,6 +28,9 @@ protected:
 	UPROPERTY(ReplicatedUsing = OnRep_ChangeMesh)
 	int32 MeshIndex = -1;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, ReplicatedUsing = OnRep_ChangeAnimSet)
+	int32 AnimIndex = -1;
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -43,4 +46,7 @@ private:
 public:
 	UFUNCTION()
 	void OnRep_ChangeMesh();
+
+	UFUNCTION()
+	void OnRep_ChangeAnimSet();
 };

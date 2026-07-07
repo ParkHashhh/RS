@@ -10,6 +10,7 @@
 #include "GameFramework/FloatingPawnMovement.h"
 #include "RS/LogCategory.h"
 #include "RS/Zombie/AI/ZombieAIController.h"
+#include "RS/Zombie/Animation/ZombieAnimInstance.h"
 
 AZombieNormal::AZombieNormal()
 {
@@ -33,14 +34,26 @@ void AZombieNormal::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (!ZombiePresetArray.IsEmpty() && HasAuthority())
+	if (HasAuthority())
 	{
-		//서버에서 앞으로 사용할 메쉬 번호를 추첨한다.
-		MeshIndex = FMath::RandRange(0, ZombiePresetArray.Num() - 1);
+		if (!ZombiePresetArray.IsEmpty())
+		{
+			//서버에서 앞으로 사용할 메쉬 번호를 추첨한다.
+			MeshIndex = FMath::RandRange(0, ZombiePresetArray.Num() - 1);
 
-		SetZombieMesh();
+			SetZombieMesh();
 
-		SetDynamicMI();
+			SetDynamicMI();
+		}
+
+		if (!AnimInstance->IsAnimPresetArrayEmpty())
+		{
+			//서버에서 앞으로 사용할 애님 프리셋 인덱스를 추첨한다.
+			AnimIndex = FMath::RandRange(0, AnimInstance->GetAnimPresetNum() - 1);
+
+			//호스트도 애님 인스턴스에 인덱스 백업을 넣어둔다.
+			OnRep_ChangeAnimSet();
+		}
 	}
 
 	NormalAttributeSet = Cast<UZombieStandardAttributeSet>(AttributeSet);
@@ -54,6 +67,7 @@ void AZombieNormal::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AZombieNormal, MeshIndex);
+	DOREPLIFETIME(AZombieNormal, AnimIndex);
 }
 
 void AZombieNormal::Attack()
@@ -181,6 +195,10 @@ void AZombieNormal::SetZombieMesh()
 		//이후 머티리얼에 접근해 파라미터를 변경하기 쉽게 하기 위해 컴포넌트를 따로 보관한다.
 		ClothMeshCompArray.Add(SMComp);
 	}
+
+	//스켈레탈 메쉬가 지정되는 순간 새로운 애님 인스턴스가 생긴다
+	//이 애님 인스턴스를 멤버 변수에 넣어주고 이후 사용해야 한다.
+	AnimInstance = Cast<UZombieAnimInstance>(Mesh->GetAnimInstance());
 }
 
 void AZombieNormal::OnRep_ChangeMesh()
@@ -188,4 +206,18 @@ void AZombieNormal::OnRep_ChangeMesh()
 	SetZombieMesh();
 
 	SetDynamicMI();
+}
+
+void AZombieNormal::OnRep_ChangeAnimSet()
+{
+	AnimInstance->SetAnimPresetIndexBackup(AnimIndex);
+
+	//블루프린트의 변수에 스피드를 넣어주어야 하므로 커스텀 이벤트를 호출한다.
+	FName FuncName = FName(TEXT("SetNativeSpeed"));
+	UFunction* Func = AnimInstance->FindFunction(FuncName);
+	if (Func)
+	{
+		//인자는 필요 없으므로 nullptr을 넣는다.
+		AnimInstance->ProcessEvent(Func, nullptr);
+	}
 }

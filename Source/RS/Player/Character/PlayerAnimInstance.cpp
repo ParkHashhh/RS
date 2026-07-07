@@ -129,6 +129,31 @@ void UPlayerAnimInstance::AnimNotify_MakeGrenade()
 	}
 }
 
+void UPlayerAnimInstance::AnimNotify_StartHeal()
+{
+	TObjectPtr<APlayerCharacterBase> PlayerChar = Cast<APlayerCharacterBase>(TryGetPawnOwner());
+
+	if (IsValid(PlayerChar))
+	{
+		PlayerChar->HideWeapon();
+	}
+}
+
+void UPlayerAnimInstance::AnimNotify_EndHeal()
+{
+	
+}
+
+void UPlayerAnimInstance::AnimNotify_MakeHeal()
+{
+	TObjectPtr<APlayerCharacterBase> PlayerChar = Cast<APlayerCharacterBase>(TryGetPawnOwner());
+
+	if (IsValid(PlayerChar))
+	{
+		PlayerChar->MakeHeal();
+	}
+}
+
 void UPlayerAnimInstance::AnimNotify_StartDead()
 {
 	TObjectPtr<APlayerCharacterBase> PlayerChar = Cast<APlayerCharacterBase>(TryGetPawnOwner());

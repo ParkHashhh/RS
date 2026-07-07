@@ -2,7 +2,6 @@
 
 
 #include "Grenade.h"
-
 #include "Components/SphereComponent.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"       
@@ -80,11 +79,11 @@ void AGrenade::Explode()
 	TArray<AActor*> IgnoreActors;
 	IgnoreActors.Add(this);
 
-
 	UKismetSystemLibrary::SphereOverlapActors(GetWorld(),GetActorLocation(),ExplosionRadius,
 		{ UEngineTypes::ConvertToObjectType(ECC_GameTraceChannel2) },AZombieBase::StaticClass(),
 		IgnoreActors,OverlappingActors);
-	RS_PRINT_SCREEN(5.f, FColor::Yellow, TEXT("Found Actors: %d"), OverlappingActors.Num());
+
+
 	if (OverlappingActors.Num() >= 1)
 	{
 		DrawDebugSphere(GetWorld(), GetActorLocation(), 300.f, 24, FColor::Red, false, 2.0f, 0, 2.0f);
@@ -95,7 +94,6 @@ void AGrenade::Explode()
 	}
 	for (AActor* Actor : OverlappingActors)
 	{
-		RS_PRINT_SCREEN(10.f, FColor::Red, TEXT("Zombie Actor"));
 		APlayerCharacterBase* Player = Cast<APlayerCharacterBase>(GetOwner());
 		if (IsValid(Player))
 		{

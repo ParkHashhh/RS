@@ -30,8 +30,6 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnAimAlphaChangedDelegate, float);
 
 DECLARE_MULTICAST_DELEGATE(FOnASCReadyDelegate);
 
-class AGrenade;
-
 UCLASS()
 class RS_API APlayerCharacterBase : public ARSCharacter,
                                     public IGenericTeamAgentInterface,
@@ -40,6 +38,7 @@ class RS_API APlayerCharacterBase : public ARSCharacter,
 {
 	GENERATED_BODY()
 	friend class AGrenade;
+	friend class AHealPack;
 public:
 	// Sets default values for this pawn's properties
 	APlayerCharacterBase();
@@ -89,8 +88,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Projectile")
 	TSubclassOf<class ABulletProjectile> ProjectileClass;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Projectile")
-	TSubclassOf<class AGrenade> GrenadeClass;
+	UPROPERTY(EditDefaultsOnly, Category = "Actor")
+	TSubclassOf<class AGrenade> GrenadeActor;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Actor")
+	TSubclassOf<class AHealPack> HealPackActor;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = true), Category = "Combat|Attack")
 	TSubclassOf<UGameplayAbility> AttackAbilityClass;
@@ -220,6 +222,7 @@ public:
 	FRotator GetSpectateViewRotation() const;
 
 	void MakeGrenade();
+	void MakeHeal();
 	void VisibleWeapon();
 	void HideWeapon();
 
@@ -362,6 +365,11 @@ protected:
 
 	UFUNCTION(Server, Reliable)
 	void Server_SpawnGrenade(const FVector& SpawnLocation, const FRotator& GrenadeRotation);
+
+
+	UFUNCTION(Server, Reliable)
+	void Server_SpawnHeal(const FVector& SpawnLocation, const FRotator& HealRotation);
+
 
 public:
 	TSubclassOf<UGameplayAbility> GetDeadAbility()

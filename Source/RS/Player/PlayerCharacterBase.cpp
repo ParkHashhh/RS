@@ -15,6 +15,7 @@
 #include "RS/Zombie/ZombieBase.h"
 #include "Actor/BulletProjectile.h"
 #include "Actor/Grenade.h"
+#include "Actor/HealPack.h"
 #include "GameplayCueManager.h"
 
 // Sets default values
@@ -603,7 +604,7 @@ void APlayerCharacterBase::SpecPrevKey(const FInputActionValue& Value)
 
 void APlayerCharacterBase::Server_SpawnGrenade_Implementation(const FVector& SpawnLocation, const FRotator& GrenadeRotation)
 {
-	if (GrenadeClass)
+	if (GrenadeActor)
 	{
 
 		FActorSpawnParameters SpawnParams;
@@ -612,7 +613,7 @@ void APlayerCharacterBase::Server_SpawnGrenade_Implementation(const FVector& Spa
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 		// 수류탄 생성
 		AGrenade* Grenade = GetWorld()->SpawnActorDeferred<AGrenade>(
-			GrenadeClass, FTransform(GrenadeRotation, SpawnLocation), this, this,
+			GrenadeActor, FTransform(GrenadeRotation, SpawnLocation), this, this,
 			ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 
 		if (Grenade)
@@ -620,6 +621,28 @@ void APlayerCharacterBase::Server_SpawnGrenade_Implementation(const FVector& Spa
 			// 보는 방향으로 초기 속도 설정
 			Grenade->LaunchDir = GrenadeRotation.Vector();
 			Grenade->FinishSpawning(FTransform(GrenadeRotation, SpawnLocation));
+		}
+	}
+}
+
+void APlayerCharacterBase::Server_SpawnHeal_Implementation(const FVector& SpawnLocation, const FRotator& HealRotation)
+{
+	if (HealPackActor)
+	{
+
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;
+		SpawnParams.Instigator = this;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		AHealPack* HealPack = GetWorld()->SpawnActorDeferred<AHealPack>(
+			HealPackActor, FTransform(HealRotation, SpawnLocation), this, this,
+			ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+
+		if (HealPack)
+		{
+			HealPack->LaunchDir = HealRotation.Vector();
+			HealPack->FinishSpawning(FTransform(HealRotation, SpawnLocation));
 		}
 	}
 }
@@ -638,7 +661,10 @@ void APlayerCharacterBase::MakeGrenade()
 	}
 
 	if (!IsValid(PlayerController))
+	{
 		return;
+	}
+
 	FHitResult Hit;
 
 	FVector CameraLocation;
@@ -660,13 +686,52 @@ void APlayerCharacterBase::MakeGrenade()
 		TargetPoint = CameraHit.ImpactPoint;
 	}
 
-	FVector SpawnLocation = GetMesh()->GetSocketLocation(FName("Grenade_Socket"));
+	FVector SpawnLocation = GetMesh()->GetSocketLocation(FName("SubSkill_Socket"));
 	FVector LaunchDirection = (TargetPoint - SpawnLocation).GetSafeNormal();
 
 	FRotator LaunchRotation = LaunchDirection.Rotation();
 	LaunchRotation.Pitch += 8.f;
 
 	Server_SpawnGrenade(SpawnLocation, LaunchRotation);
+}
+
+void APlayerCharacterBase::MakeHeal()
+{
+	if (!IsLocallyControlled())
+	{
+		return;
+	}
+
+	if (!IsValid(PlayerController))
+	{
+		return;
+	}
+	FHitResult Hit;
+
+	FVector CameraLocation;
+	FRotator CameraRotation;
+
+
+	PlayerController->GetPlayerViewPoint(CameraLocation, CameraRotation);
+
+	FVector CameraEnd = CameraLocation + CameraRotation.Vector() * 5000.f;
+
+	FHitResult CameraHit;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+
+	FVector TargetPoint = CameraEnd;
+	if (GetWorld()->LineTraceSingleByChannel(CameraHit, CameraLocation, CameraEnd, ECC_Visibility, Params))
+	{
+		TargetPoint = CameraHit.ImpactPoint;
+	}
+
+	FVector SpawnLocation = GetMesh()->GetSocketLocation(FName("SubSkill_Socket"));
+	FVector LaunchDirection = (TargetPoint - SpawnLocation).GetSafeNormal();
+
+	FRotator LaunchRotation = LaunchDirection.Rotation();
+	LaunchRotation.Pitch += 12.f;
+	Server_SpawnHeal(SpawnLocation, LaunchRotation);
 }
 
 void APlayerCharacterBase::VisibleWeapon()
@@ -1128,17 +1193,14 @@ void APlayerCharacterBase::PlayFootStepSound()
 	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_GameTraceChannel1, QueryParams))
 	{
 		FString PMName = Hit.PhysMaterial.IsValid() ? Hit.PhysMaterial->GetName() : TEXT("NULL");
-		RS_PRINT_SCREEN(5.f, FColor::Yellow, TEXT("Hit: %s, PM: %s"), *Hit.GetActor()->GetName(), *PMName);
 		if (Hit.PhysMaterial.IsValid())
 		{
-			RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("Have Material"));
 
 			USoundBase* Sound = FootstepSoundMap.FindRef(Hit.PhysMaterial.Get());
 			UGameplayStatics::PlaySoundAtLocation(this, Sound, Hit.ImpactPoint);
 		}
 		else
 		{
-			RS_PRINT_SCREEN(1.f, FColor::Red, TEXT("Have Not Material"));
 		}
 	}
 
@@ -1356,18 +1418,11 @@ void APlayerCharacterBase::ShootAttackRay()
 
 void APlayerCharacterBase::Server_ApplyDamage_Implementation(AActor* TargetActor, FHitResult Hit,float Damage)
 {
-	auto* TargetChar = Cast<AZombieBase>(TargetActor);
-	if (!TargetChar)
-	{
-		return;
-	}
-
 	auto* TargetASC = TargetActor->FindComponentByClass<UAbilitySystemComponent>();
 	if (!TargetASC)
 	{
 		return;
 	}
-
 
 	FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
 	EffectContext.AddHitResult(Hit);

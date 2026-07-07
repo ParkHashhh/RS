@@ -7,6 +7,28 @@
 #include "Animation/AnimInstance.h"
 #include "ZombieAnimInstance.generated.h"
 
+USTRUCT(BlueprintType)
+struct FAnimPreset
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TMap<FName, TObjectPtr<UAnimSequence>> AnimMap;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TMap<FName, TObjectPtr<UBlendSpace>> BlendMap;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TMap<FName, TObjectPtr<UAnimMontage>> MontageMap;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	float WalkNativeSpeed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	float RunNativeSpeed;
+};
+
 UCLASS()
 class RS_API UZombieAnimInstance : public UAnimInstance
 {
@@ -20,13 +42,7 @@ protected:
 	EZombieAnimType AnimType;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TMap<FName, TObjectPtr<UAnimSequence>> AnimMap;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TMap<FName, TObjectPtr<UBlendSpace>> BlendMap;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TMap<FName, TObjectPtr<UAnimMontage>> MontageMap;
+	TArray<FAnimPreset> AnimPresetArray;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	float TurnSpeedRate_Walk;
@@ -34,16 +50,31 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	bool bIsTurn;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	int32 AnimIndex_Backup;
+
 public:
 	void SetAnim(EZombieAnimType Type)
 	{
 		AnimType = Type;
 	}
+	void SetAnimPresetIndexBackup(int32 Index)
+	{
+		AnimIndex_Backup = Index;
+	}
 
 public:
 	int32 GetMontageNum()
 	{
-		return MontageMap.Num();
+		return AnimPresetArray[AnimIndex_Backup].MontageMap.Num();
+	}
+	bool IsAnimPresetArrayEmpty() const
+	{
+		return AnimPresetArray.IsEmpty();
+	}
+	int32 GetAnimPresetNum() const
+	{
+		return AnimPresetArray.Num();
 	}
 
 public:
@@ -63,6 +94,9 @@ public:
 
 	UFUNCTION()
 	void AnimNotify_Death();
+
+	UFUNCTION()
+	void AnimNotify_RoarEnd();
 
 	UFUNCTION()
 	void AnimNotify_RFootStep();

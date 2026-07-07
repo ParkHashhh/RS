@@ -27,7 +27,7 @@ void UZombieAnimInstance::PlayAttackMontage(int32 Number)
 {
 	FName Key = *FString::Printf(TEXT("Attack%d"), Number);
 	//만든 키로 몽타주를 찾는다.
-	UAnimMontage* Montage = *(MontageMap.Find(Key));
+	UAnimMontage* Montage = *(AnimPresetArray[AnimIndex_Backup].MontageMap.Find(Key));
 	Montage_Play(Montage);
 }
 
@@ -82,6 +82,16 @@ void UZombieAnimInstance::AnimNotify_Death()
 	if (IsValid(Zombie))
 	{
 		Zombie->Death();
+	}
+}
+
+void UZombieAnimInstance::AnimNotify_RoarEnd()
+{
+	TObjectPtr<AZombieBase> Zombie = Cast<AZombieBase>(TryGetPawnOwner());
+	if (Zombie->HasAuthority())
+	{
+		TObjectPtr<AAIController> Ctrl = Zombie->GetController<AAIController>();
+		Ctrl->GetBlackboardComponent()->SetValueAsBool(TEXT("IsRoar"), false);
 	}
 }
 

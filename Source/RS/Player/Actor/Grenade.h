@@ -13,6 +13,7 @@ class RS_API AGrenade : public AActor
 
 public:	
 	AGrenade();
+
 protected:
 	virtual void BeginPlay() override;
 

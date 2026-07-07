@@ -116,6 +116,14 @@ protected:
 	void AnimNotify_MakeGrenade();
 
 	UFUNCTION()
+	void AnimNotify_StartHeal();
+	UFUNCTION()
+	void AnimNotify_EndHeal();
+	UFUNCTION()
+	void AnimNotify_MakeHeal();
+
+
+	UFUNCTION()
 	void AnimNotify_StartDead();
 	UFUNCTION()
 	void AnimNotify_EndDead();

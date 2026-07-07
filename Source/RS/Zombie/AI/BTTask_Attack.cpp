@@ -103,7 +103,7 @@ void UBTTask_Attack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemo
 
 	if (!IsAttacking)
 	{
-		if (Distance <= AttackRange)
+		if (Distance < AttackRange)
 		{
 			//만약 첫번째 공격이였다면 후속타를 위한 머리 돌리기 로직을 수행하지 않고 바로 종료시킨다.
 			//movetoActor의 종료 전 오차 때문에 첫 공격 후에 무조건 걷기 모션이 나오기 때문이다.

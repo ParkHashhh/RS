@@ -47,19 +47,33 @@ EBTNodeResult::Type UBTTask_WaitCustom::ExecuteTask(UBehaviorTreeComponent& Owne
 		return EBTNodeResult::Failed;
 	}
 
-	//1. 애니메이션을 Idle로 바꾼다.
-	Zombie->ChangeAnim(EZombieAnimType::Idle);
+	//대기와 포효 중 하나를 선택한다.
+	double RandPercent = FMath::RandRange(0.0, 100.0);
+	if (RandPercent <= 10.0)
+	{
+		//포효를 한다.
+		Zombie->ChangeAnim(EZombieAnimType::Roar);
+		BlackboardComp->SetValueAsBool(TEXT("ActivateRoar"), true);
+		BlackboardComp->SetValueAsBool(TEXT("IsRoar"), true);
+	}
+	else
+	{
+		//대기를 한다.
+		//1. 애니메이션을 Idle로 바꾼다.
+		Zombie->ChangeAnim(EZombieAnimType::Idle);
 
-	//2. 타이머를 세팅한다.
-	FWaitTimer* Timer = (FWaitTimer*)NodeMemory;
-	Timer->Finish = false;
-	float WaitTime = FMath::RandRange(3.f, 7.f);
+		//2. 타이머를 세팅한다.
+		FWaitTimer* Timer = (FWaitTimer*)NodeMemory;
+		Timer->Finish = false;
+		float WaitTime = FMath::RandRange(3.f, 7.f);
 
-	OwnerComp.GetWorld()->GetTimerManager().SetTimer(Timer->WaitTimer,
-		FTimerDelegate::CreateUObject(this, &UBTTask_WaitCustom::WaitFinish, NodeMemory), WaitTime, false);
+		OwnerComp.GetWorld()->GetTimerManager().SetTimer(Timer->WaitTimer,
+			FTimerDelegate::CreateUObject(this, &UBTTask_WaitCustom::WaitFinish, NodeMemory), WaitTime, false);
+	}
 
 	return EBTNodeResult::InProgress;
 }
+
 void UBTTask_WaitCustom::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory,
 	float DeltaSeconds)
 {
@@ -91,22 +105,53 @@ void UBTTask_WaitCustom::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* Node
 		return;
 	}
 
-	//틱마다 타이머 종료 여부를 체크한다.
-	FWaitTimer* Timer = (FWaitTimer*)NodeMemory;
-	if (Timer->Finish)
+	bool ActivateRoar = BlackboardComp->GetValueAsBool(TEXT("ActivateRoar"));
+	if (ActivateRoar)
 	{
-		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+		//포효를 했다면 포효가 끝났는지를 확인한다.
+		bool IsRoar = BlackboardComp->GetValueAsBool(TEXT("IsRoar"));
+		if (!IsRoar)
+		{
+			//포효가 끝났다면 대기 태스크를 종료한다.
+			FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+		}
+		else
+		{
+			//포효가 아직 끝나지 않았다면 이번 프레임은 그냥 넘긴다.
+			return;
+		}
+	}
+	else
+	{
+		//틱마다 타이머 종료 여부를 체크한다.
+		FWaitTimer* Timer = (FWaitTimer*)NodeMemory;
+		if (Timer->Finish)
+		{
+			FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+		}
 	}
 }
 
 void UBTTask_WaitCustom::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory,
 	EBTNodeResult::Type TaskResult)
 {
-	//태스크가 종료되면 타이머를 제거한다.
-	FWaitTimer* Timer = (FWaitTimer*)NodeMemory;
-	if (Timer->WaitTimer.IsValid())
+	AAIController* Ctrl = OwnerComp.GetAIOwner();
+	UBlackboardComponent* BlackboardComp = Ctrl->GetBlackboardComponent();
+	bool ActivateRoar = BlackboardComp->GetValueAsBool(TEXT("ActivateRoar"));
+	//좀비가 대기시간 동안 어떤 행동을 했느냐에 따라 정리할 내용이 달라진다.
+	if (ActivateRoar)
 	{
-		OwnerComp.GetWorld()->GetTimerManager().ClearTimer(Timer->WaitTimer);
+		//포효했다면 변수를 초기화한다.
+		BlackboardComp->SetValueAsBool(TEXT("ActivateRoar"), false);
+	}
+	else
+	{
+		//대기했다면 타이머를 청소한다.
+		FWaitTimer* Timer = (FWaitTimer*)NodeMemory;
+		if (Timer->WaitTimer.IsValid())
+		{
+			OwnerComp.GetWorld()->GetTimerManager().ClearTimer(Timer->WaitTimer);
+		}
 	}
 }
 

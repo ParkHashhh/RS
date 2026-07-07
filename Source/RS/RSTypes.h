@@ -191,6 +191,7 @@ enum class EZombieAnimType : uint8
 	Walk,
 	Run,
 	Attack,
+	Roar,
 	Death
 };
 
