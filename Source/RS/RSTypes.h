@@ -194,7 +194,16 @@ struct FZombieDefaultInfo : public FTableRowBase
 	float DetectRange_Sight;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Type")
-	ENormalZombieRarity Rarity;
+	float Normal_Rarity;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Cooldown")
+	float Special_SkillCooldown;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Damage")
+	float Special_SkillDamage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Damage")
+	float Special_SkillDotDamage;
 };
 
 UENUM(BlueprintType)
@@ -206,6 +215,7 @@ enum class EZombieAnimType : uint8
 	Run,
 	Attack,
 	Roar,
+	Special_Skill,
 	Death
 };
 

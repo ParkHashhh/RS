@@ -18,7 +18,7 @@ public:
 	AZombieNormal();
 protected:
 	//좀비의 바디, 옷 배열을 담은 구조체를 블루프린트에서 지정한다.
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "NeedProperty", meta=(AllowPrivateAccess = "true"))
 	TArray<FZombieSkeletalMeshSet> ZombiePresetArray;
 
 	//부모는 관리의 편의성을 위해 Base로 들고 있으므로 사용 편의성을 위해 캐스팅을 미리 수행한다.
@@ -28,9 +28,6 @@ protected:
 	UPROPERTY(ReplicatedUsing = OnRep_ChangeMesh)
 	int32 MeshIndex = -1;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, ReplicatedUsing = OnRep_ChangeAnimSet)
-	int32 AnimIndex = -1;
-
 protected:
 	virtual void BeginPlay() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -38,6 +35,7 @@ protected:
 public:
 	virtual void Attack();
 	virtual void InitStatData(const FZombieDefaultInfo* Data);
+	virtual float GetHalfHeight();
 
 private:
 	void SetDynamicMI();
@@ -46,7 +44,4 @@ private:
 public:
 	UFUNCTION()
 	void OnRep_ChangeMesh();
-
-	UFUNCTION()
-	void OnRep_ChangeAnimSet();
 };

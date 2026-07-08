@@ -20,7 +20,10 @@ public:
 	TMap<FName, TObjectPtr<UBlendSpace>> BlendMap;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TMap<FName, TObjectPtr<UAnimMontage>> MontageMap;
+	TMap<FName, TObjectPtr<UAnimMontage>> AtkMontageMap;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TMap<FName, TObjectPtr<UAnimMontage>> SkillMontageMap;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	float WalkNativeSpeed;
@@ -51,7 +54,7 @@ protected:
 	bool bIsTurn;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	int32 AnimIndex_Backup;
+	int32 AnimIndex_Backup = 0;
 
 public:
 	void SetAnim(EZombieAnimType Type)
@@ -64,9 +67,13 @@ public:
 	}
 
 public:
-	int32 GetMontageNum()
+	int32 GetAtkMontageNum()
 	{
-		return AnimPresetArray[AnimIndex_Backup].MontageMap.Num();
+		return AnimPresetArray[AnimIndex_Backup].AtkMontageMap.Num();
+	}
+	int32 GetSkillMontageNum()
+	{
+		return AnimPresetArray[AnimIndex_Backup].SkillMontageMap.Num();
 	}
 	bool IsAnimPresetArrayEmpty() const
 	{
@@ -83,7 +90,9 @@ public:
 
 public:
 	void PlayAttackMontage(int32 Number);
+	void PlaySkillMontage(int32 Number);
 	void SetIsTurn(bool IsTurn);
+	bool ChechRoarAnimValid();
 
 public:
 	UFUNCTION()
@@ -103,4 +112,10 @@ public:
 
 	UFUNCTION()
 	void AnimNotify_LFootStep();
+
+	UFUNCTION()
+	void AnimNotify_SkillStart();
+
+	UFUNCTION()
+	void AnimNotify_SkillEnd();
 };

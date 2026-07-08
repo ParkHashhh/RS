@@ -12,7 +12,9 @@
 				"GameplayAbilities",
 				"Engine",
 				"UMG",
-				"CoreUObject"
+				"CoreUObject",
+				"AIModule",
+				"NavigationSystem"
 			]
 		}
 	],

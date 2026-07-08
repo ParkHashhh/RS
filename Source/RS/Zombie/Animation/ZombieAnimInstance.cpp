@@ -3,6 +3,7 @@
 
 #include "ZombieAnimInstance.h"
 #include "RS/Zombie/ZombieBase.h"
+#include "RS/Zombie/ZombieSpecial.h"
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "RS/LogCategory.h"
@@ -27,13 +28,35 @@ void UZombieAnimInstance::PlayAttackMontage(int32 Number)
 {
 	FName Key = *FString::Printf(TEXT("Attack%d"), Number);
 	//만든 키로 몽타주를 찾는다.
-	UAnimMontage* Montage = *(AnimPresetArray[AnimIndex_Backup].MontageMap.Find(Key));
+	UAnimMontage* Montage = *(AnimPresetArray[AnimIndex_Backup].AtkMontageMap.Find(Key));
+	Montage_Play(Montage);
+}
+
+void UZombieAnimInstance::PlaySkillMontage(int32 Number)
+{
+	FName Key = *FString::Printf(TEXT("Skill%d"), Number);
+	//만든 키로 몽타주를 찾는다.
+	UAnimMontage* Montage = *(AnimPresetArray[AnimIndex_Backup].SkillMontageMap.Find(Key));
 	Montage_Play(Montage);
 }
 
 void UZombieAnimInstance::SetIsTurn(bool IsTurn)
 {
 	bIsTurn = IsTurn;
+}
+
+bool UZombieAnimInstance::ChechRoarAnimValid()
+{
+	TObjectPtr<UAnimSequence>* RoarAnim = AnimPresetArray[AnimIndex_Backup].AnimMap.Find(TEXT("Roar"));
+
+	if (RoarAnim == nullptr)
+	{
+		return false;
+	}
+	else
+	{
+		return true;
+	}
 }
 
 void UZombieAnimInstance::AnimNotify_Attack()
@@ -54,10 +77,10 @@ void UZombieAnimInstance::AnimNotify_AttackEnd()
 		TObjectPtr<AAIController> Ctrl = Zombie->GetController<AAIController>();
 		Ctrl->GetBlackboardComponent()->SetValueAsBool(TEXT("Attacking"), false);
 
-		//자신을 대상으로 일반공격 쿨다운 이펙트를 발동시킨다.
-		//쿨다운 중임을 나타내는 태그가 지정된 시간동안 좀비에게 부착된다.
+		//행동 쿨다운을 부여한다
+		//다음 행동이 바로 나오는 것을 막아주기 위함
 		UAbilitySystemComponent* ASC = Zombie->GetAbilitySystemComponent();
-		TSubclassOf<UGameplayEffect> Effect = Zombie->GetEffect(TEXT("NAttackCooldown"));
+		TSubclassOf<UGameplayEffect> Effect = Zombie->GetEffect(TEXT("AttackCooldown"));
 		if (ASC && IsValid(Effect))
 		{
 			//이미 쿨다운 태그가 있다면 이펙트 적용 과정을 무시한다.
@@ -110,5 +133,23 @@ void UZombieAnimInstance::AnimNotify_LFootStep()
 	if (IsValid(Zombie))
 	{
 		Zombie->PlayFootStepCue(TEXT("foot_l"));
+	}
+}
+
+void UZombieAnimInstance::AnimNotify_SkillStart()
+{
+	TObjectPtr<AZombieSpecial> Zombie = Cast<AZombieSpecial>(TryGetPawnOwner());
+	if (Zombie->HasAuthority())
+	{
+		Zombie->SkillStart();
+	}
+}
+
+void UZombieAnimInstance::AnimNotify_SkillEnd()
+{
+	TObjectPtr<AZombieSpecial> Zombie = Cast<AZombieSpecial>(TryGetPawnOwner());
+	if (Zombie->HasAuthority())
+	{
+		Zombie->SkillEnd();
 	}
 }

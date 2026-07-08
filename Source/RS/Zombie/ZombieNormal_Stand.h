@@ -21,4 +21,5 @@ protected:
 
 public:
 	virtual void Attack();
+	virtual float GetHalfHeight();
 };

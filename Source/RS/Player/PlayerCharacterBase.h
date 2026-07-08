@@ -75,6 +75,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSubclassOf<UCameraShakeBase> HitShake;
 
+	UPROPERTY()
+	TObjectPtr<UCameraShakeBase> ActiveHitShakeInstance;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
 	TObjectPtr<UPlayerAbilitySystemComponent> ASC;
 
@@ -377,6 +380,7 @@ public:
 	{
 		return DeadAbilityClass;
 	}
+	void HitShakeCamera();
 
 private:
 	// Input Function

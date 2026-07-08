@@ -20,13 +20,6 @@ AZombieNormal::AZombieNormal()
 	if (IsValid(NormalAttributeSet))
 	{
 		ASC->AddAttributeSetSubobject<UZombieStandardAttributeSet>(NormalAttributeSet);
-
-		////테스트를 위해 공격 사거리를 이곳에서 임시로 어트리뷰트셋에 넣어준다.
-		//NormalAttributeSet->InitAttackPower(30.f);
-		//NormalAttributeSet->InitDefensePower(0.f);
-		//NormalAttributeSet->InitCurrentHP(150.f);
-		//NormalAttributeSet->InitMaxHP(150.f);
-		//NormalAttributeSet->InitAttackDistance(200.f);
 	}
 }
 
@@ -73,36 +66,6 @@ void AZombieNormal::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 void AZombieNormal::Attack()
 {
 	Super::Attack();
-
-	AAIController* Ctrl = GetController<AAIController>();
-	if (IsValid(Ctrl))
-	{
-		AActor* Target = Cast<AActor>(Ctrl->GetBlackboardComponent()->GetValueAsObject(TEXT("AttackTarget")));
-		if (IsValid(Target))
-		{
-			FGameplayEventData EventData;
-
-			EventData.Target = Target;
-			EventData.Instigator = this;
-			EventData.EventTag = FGameplayTag::RequestGameplayTag(TEXT("Zombie.Battle.Attack"));
-
-			FHitResult Hit;
-			Hit.bBlockingHit = true;
-			Hit.Location = Target->GetActorLocation();
-			Hit.ImpactPoint = Target->GetActorLocation();
-			Hit.TraceStart = GetActorLocation();
-			Hit.TraceEnd = Hit.Location;
-			Hit.Component = Cast<UPrimitiveComponent>(Target->GetRootComponent());
-			Hit.HitObjectHandle = FActorInstanceHandle(Target);
-
-			FGameplayAbilityTargetData_SingleTargetHit* TargetData =
-				new FGameplayAbilityTargetData_SingleTargetHit(Hit);
-
-			EventData.TargetData.Add(TargetData);
-
-			UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, EventData.EventTag, EventData);
-		}
-	}
 }
 
 void AZombieNormal::InitStatData(const FZombieDefaultInfo* Data)
@@ -123,6 +86,7 @@ void AZombieNormal::InitStatData(const FZombieDefaultInfo* Data)
 	NormalAttributeSet->SetCurrentHP(Data->MaxHP);
 	NormalAttributeSet->SetAttackPower(Data->AttackPower);
 	NormalAttributeSet->SetDetectRange_Sight(Data->DetectRange_Sight);
+	NormalAttributeSet->SetNormal_Rarity(Data->Normal_Rarity);
 
 	//초기 스탯 지정이 완료되면 이동속도, 감지거리를 넣어준다.
 	ChangeSpeed_Walk();
@@ -132,6 +96,11 @@ void AZombieNormal::InitStatData(const FZombieDefaultInfo* Data)
 	{
 		Ctrl->SetDetectRange_Sight(NormalAttributeSet->GetDetectRange_Sight());
 	}
+}
+
+float AZombieNormal::GetHalfHeight()
+{
+	return 0.f;
 }
 
 void AZombieNormal::SetDynamicMI()
@@ -206,18 +175,4 @@ void AZombieNormal::OnRep_ChangeMesh()
 	SetZombieMesh();
 
 	SetDynamicMI();
-}
-
-void AZombieNormal::OnRep_ChangeAnimSet()
-{
-	AnimInstance->SetAnimPresetIndexBackup(AnimIndex);
-
-	//블루프린트의 변수에 스피드를 넣어주어야 하므로 커스텀 이벤트를 호출한다.
-	FName FuncName = FName(TEXT("SetNativeSpeed"));
-	UFunction* Func = AnimInstance->FindFunction(FuncName);
-	if (Func)
-	{
-		//인자는 필요 없으므로 nullptr을 넣는다.
-		AnimInstance->ProcessEvent(Func, nullptr);
-	}
 }

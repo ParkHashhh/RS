@@ -48,7 +48,6 @@ void UPlayerAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCall
 		{
 			if (IsValid(Player))
 			{
-
 				Player->GetAbilitySystemComponent()->TryActivateAbilityByClass(Player->GetDeadAbility());
 			}
 			else
@@ -79,6 +78,13 @@ void UPlayerAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribut
 	}
 	else if (Attribute == GetCurrentHPAttribute())
 	{
+		if (OldValue - NewValue > 0)
+		{
+			AActor* OwnerActor = GetOwningAbilitySystemComponent()->GetAvatarActor();
+			APlayerCharacterBase* Player = Cast<APlayerCharacterBase>(OwnerActor);
+
+			Player->HitShakeCamera();
+		}
 		if (GetCurrentHP() > GetMaxHP())
 		{
 			SetCurrentHP(GetMaxHP());

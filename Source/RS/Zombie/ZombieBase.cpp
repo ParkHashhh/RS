@@ -17,6 +17,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "RS/Data/Subsystem/DataSubsystem.h"
+#include "AbilitySystemBlueprintLibrary.h"
 
 // Sets default values
 AZombieBase::AZombieBase()
@@ -65,23 +66,25 @@ void AZombieBase::BeginPlay()
 		SpawnDefaultController();
 	}
 
-	ASC->InitAbilityActorInfo(this, this);
-	if (AttackAbility && HasAuthority())
+	if (HasAuthority())
 	{
-		ASC->GiveAbility(FGameplayAbilitySpec(AttackAbility, 1));
+		InitAbility();
 	}
 }
 
 void AZombieBase::PostInitProperties()
 {
 	Super::PostInitProperties();
-
-	//디테일에서 지정한 값은 이 타이밍에 들어가게 된다.
 }
 
 void AZombieBase::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
+
+	if (IsValid(Mesh))
+	{
+		AnimInstance = Cast<UZombieAnimInstance>(Mesh->GetAnimInstance());
+	}
 
 	if (Movement && Body)
 	{
@@ -127,14 +130,18 @@ void AZombieBase::PossessedBy(AController* NewController)
 	{
 		Ctrl->ActivateBT();
 	}
+
 	Super::PossessedBy(NewController);
 }
 
 void AZombieBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(AZombieBase, AnimType);
+	DOREPLIFETIME(AZombieBase, AnimType)
 	DOREPLIFETIME(AZombieBase, bDissolveEnable)
+	DOREPLIFETIME(AZombieBase, AnimIndex)
+	DOREPLIFETIME(AZombieBase, AtkMontageNumber)
+	DOREPLIFETIME(AZombieBase, SkillMontageNumber)
 }
 
 void AZombieBase::SetGenericTeamId(const FGenericTeamId& ID)
@@ -163,7 +170,63 @@ ETeamAttitude::Type AZombieBase::GetTeamAttitudeTowards(const AActor& Other) con
 
 void AZombieBase::Attack()
 {
+	AAIController* Ctrl = GetController<AAIController>();
+	if (IsValid(Ctrl))
+	{
+		//좀비의 공격 캡슐을 생성할 위치와 각도를 정한다.
+		TArray<FHitResult> HitArray;
+		FVector StartLoc = GetActorLocation() + GetActorForwardVector() * 100.f;
+		FVector EndLoc = StartLoc + GetActorForwardVector() * 50.f;
+		FQuat CapsuleRot = FQuat::FindBetweenNormals(FVector::UpVector,
+			GetActorRightVector());
 
+		//나 자신은 무시하도록 파라미터를 만든다.
+		FCollisionQueryParams Param(NAME_None, false, this);
+
+		//캡슐 모양으로 임시 충돌체를 생성해서 범위 충돌을 체크한다.
+		bool Collision = GetWorld()->SweepMultiByChannel(HitArray, StartLoc, EndLoc, CapsuleRot, ECollisionChannel::ECC_GameTraceChannel6,
+			FCollisionShape::MakeCapsule(20.f, 20.f), Param);
+
+		FColor DebugColor = FColor::Green;
+
+		//SweepMultiByChannel 함수는 블록 충돌판정이 나와야 true를 반환한다.
+		//클리빙 어택 허용 : 현재 코드 유지
+		//클리빙 어택 금지 : 트레이스와 플레이어가 block이 되도록 하고, 조건을 Collision이 true 인지 체크한다.
+		if (HitArray.Num() > 0)
+		{
+			for (auto Hit : HitArray)
+			{
+				AActor* HitActor = Hit.GetActor();
+				if (!HitActor)
+				{
+					continue;
+				}
+
+				DebugColor = FColor::Red;
+
+				FGameplayEventData EventData;
+
+				EventData.Target = HitActor;
+				EventData.Instigator = this;
+				EventData.EventTag = FGameplayTag::RequestGameplayTag(TEXT("Zombie.Battle.Attack"));
+
+				FGameplayAbilityTargetData_SingleTargetHit* TargetData =
+					new FGameplayAbilityTargetData_SingleTargetHit(Hit);
+
+				EventData.TargetData.Add(TargetData);
+
+				UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, EventData.EventTag, EventData);
+			}
+		}
+
+#if WITH_EDITOR
+
+		DrawDebugCapsule(GetWorld(), (StartLoc + EndLoc) * 0.5f, 20.f, 20.f, CapsuleRot,
+			DebugColor, false, 1.f);
+
+#endif
+
+	}
 }
 
 TSubclassOf<UGameplayEffect> AZombieBase::GetEffect(const FName& Name)
@@ -196,18 +259,34 @@ void AZombieBase::ChangeAnim(EZombieAnimType Type)
 			return;
 		}
 
-		//공격 신호가 들어왔다면 몽타주를 재생하라고 한 뒤 바로 탈출한다.
-		if (Type == EZombieAnimType::Attack)
+		//몽타주 재생 신호가 들어온 경우
+		if (Type == EZombieAnimType::Attack || Type == EZombieAnimType::Special_Skill)
 		{
-			AtkMontageIndex = FMath::RandRange(1, AnimInstance->GetMontageNum());
-			AnimInstance->PlayAttackMontage(AtkMontageIndex);
-			//좀비가 공격을 한다면 기저에 재생되고 있는 애니메이션을 전투 대기로 바꿔준다.
-			AnimInstance->SetAnim(EZombieAnimType::CombatIdle);
+			UseAnimMontage(Type);
 			return;
 		}
 
 		AnimInstance->SetAnim(Type);
 	}
+}
+
+void AZombieBase::UseAnimMontage(EZombieAnimType Type)
+{
+	//일반 공격은 모든 좀비의 공통 기능이므로 부모에서 호출한다.
+	
+	//공격 신호가 들어왔다면 몽타주를 재생하라고 한 뒤 바로 탈출한다.
+	if (Type == EZombieAnimType::Attack)
+	{
+		AtkMontageNumber = FMath::RandRange(1, AnimInstance->GetAtkMontageNum());
+		AnimInstance->PlayAttackMontage(AtkMontageNumber);
+		//좀비가 공격을 한다면 기저에 재생되고 있는 애니메이션을 전투 대기로 바꿔준다.
+		AnimInstance->SetAnim(EZombieAnimType::CombatIdle);
+	}
+}
+
+bool AZombieBase::CheckRoar()
+{
+	return AnimInstance->ChechRoarAnimValid();;
 }
 
 void AZombieBase::CalcNextPointLocation()
@@ -393,6 +472,21 @@ void AZombieBase::PlayFootStepCue(const FName& FootName)
 	}
 }
 
+void AZombieBase::InitAbility()
+{
+	ASC->InitAbilityActorInfo(this, this);
+
+	if (AttackAbility)
+	{
+		ASC->GiveAbility(FGameplayAbilitySpec(AttackAbility, 1));
+	}
+}
+
+float AZombieBase::GetHalfHeight()
+{
+	return 0.0f;
+}
+
 void AZombieBase::OnRep_ChangeAnimType()
 {
 	//서버는 이미 ChangeAnim에서 처리했다.
@@ -407,10 +501,10 @@ void AZombieBase::OnRep_ChangeAnimType()
 		AnimInstance = Cast<UZombieAnimInstance>(Mesh->GetAnimInstance());
 	}
 
-	//애님 타입이 Attack으로 변경되었다면 공격 몽타주를 재생하고 바로 탈출한다.
-	if (AnimType == EZombieAnimType::Attack)
+	//몽타주 재생 신호가 들어온 경우
+	if (AnimType == EZombieAnimType::Attack || AnimType == EZombieAnimType::Special_Skill)
 	{
-		AnimInstance->PlayAttackMontage(AtkMontageIndex);
+		UseAnimMontage(AnimType);
 		return;
 	}
 
@@ -418,6 +512,27 @@ void AZombieBase::OnRep_ChangeAnimType()
 	if (IsValid(AnimInstance))
 	{
 		AnimInstance->SetAnim(AnimType);
+	}
+}
+
+void AZombieBase::OnRep_ChangeAnimSet()
+{
+	UZombieAnimInstance* AnimInst = Cast<UZombieAnimInstance>(Mesh->GetAnimInstance());
+	if (!IsValid(AnimInst))
+	{
+		return;
+	}
+	AnimInstance = AnimInst;
+
+	AnimInstance->SetAnimPresetIndexBackup(AnimIndex);
+
+	//블루프린트의 변수에 스피드를 넣어주어야 하므로 커스텀 이벤트를 호출한다.
+	FName FuncName = FName(TEXT("SetNativeSpeed"));
+	UFunction* Func = AnimInstance->FindFunction(FuncName);
+	if (Func)
+	{
+		//인자는 필요 없으므로 nullptr을 넣는다.
+		AnimInstance->ProcessEvent(Func, nullptr);
 	}
 }
 

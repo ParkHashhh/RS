@@ -22,8 +22,6 @@ AZombieNormal_Crawler::AZombieNormal_Crawler()
 	}
 
 	Mesh->SetRelativeLocationAndRotation(FVector(0.0, 0.0, -BoxHeight), FRotator(0.0, -90.0, 0.0));
-
-	ZombieName = TEXT("Crawler");
 }
 
 void AZombieNormal_Crawler::BeginPlay()

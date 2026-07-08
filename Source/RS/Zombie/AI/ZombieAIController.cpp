@@ -9,6 +9,8 @@
 #include "BehaviorTree/BlackboardData.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "RS/LogCategory.h"
+#include "Navigation/PathFollowingComponent.h"
+#include "RS/Zombie/ZombieBase.h"
 
 AZombieAIController::AZombieAIController()
 {
@@ -42,6 +44,65 @@ void AZombieAIController::BeginPlay()
 	Super::BeginPlay();
 	AIPerception->RequestStimuliListenerUpdate();
 }
+
+void AZombieAIController::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	UPathFollowingComponent* PFComp = GetPathFollowingComponent();
+	UBlackboardComponent* BB = GetBlackboardComponent();
+	AZombieBase* Zombie = GetPawn<AZombieBase>();
+
+	if (!PFComp || !BB || !Zombie)
+	{
+		return;
+	}
+
+	//내비링크 이용을 시작하면 불리언 변수를 활성화하고 도착 지점을 백업한다.
+	if (PFComp && PFComp->IsCurrentSegmentNavigationLink())
+	{
+		//내비링크 사용중 변수를 on 한다.
+		GetBlackboardComponent()->SetValueAsBool(TEXT("IsUsingNavLink"), true);
+
+		//현재 내비 데이터로부터 좌표 배열을 가져온다.
+		FNavigationPath* PathData = PFComp->GetPath().Get();
+		TArray<FNavPathPoint> PathPointArray = PathData->GetPathPoints();
+
+		//배열에서 내비링크 도착점 좌표를 백업한다.
+		int EndIndex = PFComp->GetNextPathIndex();
+		EndLoc = PathPointArray[EndIndex].Location;
+	}
+
+	bool bIsUsingNavLink = BB->GetValueAsBool(TEXT("IsUsingNavLink"));
+
+	//불리언이 true인데 내비링크 사용중이 false라고 뜬다면 길이 막혀서 강제로 꺼진 것이다.
+	if (PFComp && bIsUsingNavLink && !PFComp->IsCurrentSegmentNavigationLink())
+	{
+		StuckTime += DeltaTime;
+
+		if (StuckTime >= 0.5f)
+		{
+			StuckTime = 0.f;
+
+			//좀비를 내비링크 도착 지점으로 보낸다.
+			float UpLocScale = Zombie->GetHalfHeight();
+			FVector EscapeLoc = EndLoc + FVector(0.0, 0.0, UpLocScale);
+			Zombie->SetActorLocation(EscapeLoc);
+			BB->SetValueAsBool(TEXT("IsUsingNavLink"), false);
+			StopMovement();
+		}
+	}
+
+	//내비링크 사용을 무사히 마친 경우 : 내비링크 사용중인데 착지-추적태스크 발동으로 이동이 시작된 경우
+	if (bIsUsingNavLink && !PFComp->IsCurrentSegmentNavigationLink() && GetMoveStatus() == EPathFollowingStatus::Moving)
+	{
+		//내비링크를 정상적으로 이용한 경우
+		StuckTime = 0.f;
+		EndLoc = FVector::ZeroVector;
+		BB->SetValueAsBool(TEXT("IsUsingNavLink"), false);
+	}
+}
+
 void AZombieAIController::SetDetectRange_Sight(float Range)
 {
 	//어차피 탐지에 실패했을 때, 타겟을 제거하는 기능을 없애버릴 예정이므로 상실 거리는 설정할 필요가 없다.
@@ -91,12 +152,13 @@ void AZombieAIController::ActivateBT()
 {
 	if (!IsValid(BT))
 	{
+		RS_PRINT_SCREEN(30.f, FColor::Red, TEXT("NO BT!"));
 		return;
 	}
 
 	if (!RunBehaviorTree(BT))
 	{
+		RS_PRINT_SCREEN(30.f, FColor::Red, TEXT("BT Run Failed!"));
 		return;
 	}
-
 }

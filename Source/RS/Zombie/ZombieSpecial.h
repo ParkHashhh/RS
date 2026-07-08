@@ -20,10 +20,22 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UZombieStandardAttributeSet> SpecialAttributeSet;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "NeedProperty", meta = (AllowPrivateAccess = "true"))
+	bool bEnableNormalAttack;
+
 protected:
 	virtual void BeginPlay() override;
+	virtual void PossessedBy(AController* NewController);
 
 public:
 	virtual void Attack();
+	virtual void InitStatData(const FZombieDefaultInfo* Data);
+	virtual void UseAnimMontage(EZombieAnimType Type);
+	virtual void InitAbility();
+	virtual float GetHalfHeight();
+
+public:
+	virtual void SkillStart();
+	virtual void SkillEnd();
 	
 };

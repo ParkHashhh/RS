@@ -19,12 +19,23 @@ protected:
 	FGameplayAttributeData	DetectRange_Sight;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute", meta = (AllowPrivateAccess = true))
-	FGameplayAttributeData	Rarity;
+	FGameplayAttributeData	Normal_Rarity;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute", meta = (AllowPrivateAccess = true))
+	FGameplayAttributeData	Special_SkillCooldown;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute", meta = (AllowPrivateAccess = true))
+	FGameplayAttributeData	Special_SkillDamage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute", meta = (AllowPrivateAccess = true))
+	FGameplayAttributeData	Special_SkillDotDamage;
 
 public:
 	ATTRIBUTE_ACCESSORS_BASIC(UZombieStandardAttributeSet, DetectRange_Sight)
-	ATTRIBUTE_ACCESSORS_BASIC(UZombieStandardAttributeSet, Rarity)
-
+	ATTRIBUTE_ACCESSORS_BASIC(UZombieStandardAttributeSet, Normal_Rarity)
+	ATTRIBUTE_ACCESSORS_BASIC(UZombieStandardAttributeSet, Special_SkillCooldown)
+	ATTRIBUTE_ACCESSORS_BASIC(UZombieStandardAttributeSet, Special_SkillDamage)
+	ATTRIBUTE_ACCESSORS_BASIC(UZombieStandardAttributeSet, Special_SkillDotDamage)
 public:
 	virtual void OnHPChanged(AActor* Instigator) override;
 

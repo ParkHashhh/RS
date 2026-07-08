@@ -46,9 +46,6 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 		return EBTNodeResult::Failed;
 	}
 
-	//현재 추적중인 대상이 공격 타겟이 된다.
-	BlackboardComp->SetValueAsObject(TEXT("AttackTarget"), Target);
-
 	//좀비에게 일반공격 쿨다운 태그가 있는지 확인한다.
 	UAbilitySystemComponent* ASC = Zombie->GetAbilitySystemComponent();
 	if (!ASC || ASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(TEXT("Zombie.Battle.AttackCooldown"))))
@@ -105,16 +102,6 @@ void UBTTask_Attack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemo
 	{
 		if (Distance < AttackRange)
 		{
-			//만약 첫번째 공격이였다면 후속타를 위한 머리 돌리기 로직을 수행하지 않고 바로 종료시킨다.
-			//movetoActor의 종료 전 오차 때문에 첫 공격 후에 무조건 걷기 모션이 나오기 때문이다.
-			bool IsFirstAttack = BlackboardComp->GetValueAsBool(TEXT("IsFirstAttack"));
-			if (IsFirstAttack)
-			{
-				BlackboardComp->SetValueAsBool(TEXT("IsFirstAttack"), false);
-				Zombie->ChangeAnim(EZombieAnimType::CombatIdle);
-				return;
-			}
-
 			//공격이 끝났을 때 여전히 사거리 안이라면 다음 공격을 위해 좀비의 방향을 돌려준다.
 			FVector ZombieLoc = Zombie->GetActorLocation();
 			FVector TargetLoc = Target->GetActorLocation();
@@ -131,7 +118,7 @@ void UBTTask_Attack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemo
 			//좀비가 머리를 돌리는 동안 걷기 애니메이션을 출력한다
 			//타겟과 좀비의 현재 회전값의 차이를 이용한다.
 			float DegreeGap = FMath::Abs(FRotator::NormalizeAxis(TargetRot.Yaw - CurrentRot.Yaw));
-			if (DegreeGap > 10.f)
+			if (DegreeGap > 2.f)
 			{
 				Zombie->ChangeAnim(EZombieAnimType::Walk);
 				Zombie->GetAnimInst()->SetIsTurn(true);
@@ -142,12 +129,14 @@ void UBTTask_Attack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemo
 				Zombie->ChangeAnim(EZombieAnimType::CombatIdle);
 				Zombie->GetAnimInst()->SetIsTurn(false);
 				FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+				return;
 			}
 		}
 		else
 		{
 			//사거리 밖이라면 머리를 돌릴 필요 없이 바로 종료시키면 된다.
 			FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+			return;
 		}
 	}
 }
@@ -156,10 +145,6 @@ void UBTTask_Attack::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* No
 	EBTNodeResult::Type TaskResult)
 {
 	AAIController* Ctrl = OwnerComp.GetAIOwner();
-	//사용한 공격 타겟 변수를 초기화한다.
-	UBlackboardComponent* BBComp = Ctrl->GetBlackboardComponent();
-	BBComp->SetValueAsObject(TEXT("AttackTarget"), nullptr);
-
 	//연속 공격을 대비해서 타입 변수를 한번 바꿔준다.
 	AZombieBase* Zombie = Ctrl->GetPawn<AZombieBase>();
 	if (IsValid(Zombie))

@@ -9,6 +9,7 @@
 #include "Components/CapsuleComponent.h"
 #include "RS/GAS/BaseAttributeSet.h"
 #include "RS/RSTypes.h"
+#include "NavigationSystem.h"
 
 UBTTask_TraceNoneBoss::UBTTask_TraceNoneBoss()
 {
@@ -48,6 +49,13 @@ EBTNodeResult::Type UBTTask_TraceNoneBoss::ExecuteTask(UBehaviorTreeComponent& O
 		return EBTNodeResult::Failed;
 	}
 
+	//만약 내비링크를 사용중이라면 자체 이동중이므로 이동 명령을 내리지 않는다.
+	bool bIsUsingNavLink = BlackboardComp->GetValueAsBool(TEXT("IsUsingNavLink"));
+	if (bIsUsingNavLink)
+	{
+		return EBTNodeResult::InProgress;
+	}
+
 	//이미 공격 사거리 안이라면 추적을 할 필요가 없다.
 	float Distance = Zombie->CalcDistanceToTarget(Target);
 	UBaseAttributeSet* ZombieAttri = Zombie->GetAttributeSet();
@@ -57,11 +65,8 @@ EBTNodeResult::Type UBTTask_TraceNoneBoss::ExecuteTask(UBehaviorTreeComponent& O
 		return EBTNodeResult::Failed;
 	}
 
-	//추적이 시작되면 이후 발동되는 공격은 첫번째 공격임을 주지시킨다.
-	BlackboardComp->SetValueAsBool(TEXT("IsFirstAttack"), true);
-
 	//좀비를 이동시킨다.
-	EPathFollowingRequestResult::Type MoveRequestResult = Ctrl->MoveToActor(Target, -1.f, true, true, false);
+	EPathFollowingRequestResult::Type MoveRequestResult = Ctrl->MoveToActor(Target, -1.f, false, true, false);
 	if (MoveRequestResult == EPathFollowingRequestResult::Failed)
 	{
 		return EBTNodeResult::Failed;
@@ -114,28 +119,62 @@ void UBTTask_TraceNoneBoss::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* N
 		return;
 	}
 
-	//현재 움직임 상태를 체크한다
-	//대기중 이라면 추적을 완료하고 타겟 앞에 도달했다고 판단할 수 있다.
-	EPathFollowingStatus::Type MoveResult = Ctrl->GetMoveStatus();
-	if (MoveResult == EPathFollowingStatus::Idle)
+	//좀비가 내비링크를 사용 중이라면 사용을 종료할때까지 기다린다.
+	bool bIsUsingNavLink = BlackboardComp->GetValueAsBool(TEXT("IsUsingNavLink"));
+	if (bIsUsingNavLink)
 	{
-		//다음 전투 태스크를 수행해야 하므로 실패를 반환한다.
-		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
 		return;
 	}
 
-	float Distance = Zombie->CalcDistanceToTarget(Target);
-
-	//몬스터의 어트리뷰트 셋으로부터 몬스터의 사거리를 얻어와야 한다.
-	UBaseAttributeSet* ZombieAttri = Zombie->GetAttributeSet();
-	float AttackRange = ZombieAttri->GetAttackDistance();
-
-	if (Distance <= AttackRange)
+	//좀비가 내비메쉬 안인지 체크한다.
+	bool bIsZombieIn = false;
+	UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
+	if (IsValid(NavSys))
 	{
-		//추적을 통해 사거리 내로 접근했으므로 다음 전투 태스크를 진행한다.
-		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+		FNavLocation ZCurrentLoc;
+		bIsZombieIn = NavSys->ProjectPointToNavigation(Zombie->GetActorLocation(), ZCurrentLoc, FVector(10.f, 10.f, 200.f));
+	}
+
+	//좀비가 내비메쉬 영역 안에 있을 때에만
+	if (bIsZombieIn)
+	{
+		//타겟이 사거리 안으로 들어왔다면 공격 태스크로 진입한다.
+		float Distance = Zombie->CalcDistanceToTarget(Target);
+		UBaseAttributeSet* ZombieAttri = Zombie->GetAttributeSet();
+		float AttackRange = ZombieAttri->GetAttackDistance();
+
+		if (Distance <= AttackRange)
+		{
+			FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+			return;
+		}
+
+		//좀비가 타겟에 도착해 이동 함수가 종료되었을 때 공격 태스크로 진입한다.
+		EPathFollowingStatus::Type MoveResult = Ctrl->GetMoveStatus();
+		if (MoveResult == EPathFollowingStatus::Idle)
+		{
+			FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+			return;
+		}
+	}
+
+	//플레이어가 내비메쉬 밖으로 나갔는지 체크한다.
+	if (IsValid(NavSys))
+	{
+		FNavLocation TCurrentLoc;
+		bool bIsTargetIn = NavSys->ProjectPointToNavigation(Target->GetActorLocation(), TCurrentLoc, FVector(100.f, 100.f, 200.f));
+		if (!bIsTargetIn)
+		{
+			//플레이어가 만약 내비메쉬 밖으로 나가면
+			//일단 비전투 상태로 만든다 - 추후 수정해야 함
+			Ctrl->StopMovement();
+			BlackboardComp->SetValueAsObject(TEXT("Target"), nullptr);
+			FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+			return;
+		}
 	}
 }
+
 void UBTTask_TraceNoneBoss::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory,
 	EBTNodeResult::Type TaskResult)
 {

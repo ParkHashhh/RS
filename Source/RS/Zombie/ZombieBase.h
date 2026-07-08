@@ -72,10 +72,16 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta =(AllowPrivateAccess = "true"))
 	TSubclassOf<AZombieAIController> AICtrl;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS", meta = (AllowPrivateAccess = "true"));
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "NeedProperty", meta = (AllowPrivateAccess = "true"));
 	TSubclassOf<UGameplayAbility> AttackAbility;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "NeedProperty", meta = (AllowPrivateAccess = "true"));
+	TSubclassOf<UGameplayAbility> SkillLaunchAbility;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "NeedProperty", meta = (AllowPrivateAccess = "true"));
+	TSubclassOf<UGameplayAbility> SkillHitAbility;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "NeedProperty", meta = (AllowPrivateAccess = "true"))
 	TMap<FName, TSubclassOf<UGameplayEffect>> EffectMap;
 
 	UPROPERTY(VisibleAnywhere, ReplicatedUsing = OnRep_ChangeAnimType)
@@ -87,7 +93,10 @@ protected:
 	FVector NextPointLocation;
 
 	UPROPERTY(Replicated)
-	int32 AtkMontageIndex;
+	int32 AtkMontageNumber = 1;
+
+	UPROPERTY(Replicated)
+	int32 SkillMontageNumber = 1;
 
 	FGenericTeamId TeamID;
 
@@ -99,14 +108,18 @@ protected:
 	UPROPERTY(Replicated)
 	bool bDissolveEnable = false;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta=(AllowPirvateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "NeedProperty", meta=(AllowPirvateAccess = "true"))
 	float TurnSpeed;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, Category = "NeedProperty", BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
 	TMap<TEnumAsByte<EPhysicalSurface>, TObjectPtr<USoundBase>> SoundCueMap;
 
 	//행 이름으로써 검색을 위해 좀비이름을 들고 있게 한다.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "NeedProperty", meta = (AllowPrivateAccess = "true"))
 	FName ZombieName;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, ReplicatedUsing = OnRep_ChangeAnimSet)
+	int32 AnimIndex = 0;
 
 protected:
 	// Called when the game starts or when spawned
@@ -161,6 +174,8 @@ public:
 	virtual void Attack();
 	TSubclassOf<UGameplayEffect> GetEffect(const FName& Name);
 	void ChangeAnim(EZombieAnimType Type);
+	virtual void UseAnimMontage(EZombieAnimType Type);
+	bool CheckRoar();
 	void CalcNextPointLocation();
 	virtual void CallBackHP(AActor* InstigatorActor);
 	virtual void Death();
@@ -170,11 +185,16 @@ public:
 	void ChangeSpeed_Run();
 	virtual float CalcDistanceToTarget(AActor* Target);
 	void PlayFootStepCue(const FName& FootName);
+	virtual void InitAbility();
+	virtual float GetHalfHeight();
 	
 
 public:
 	UFUNCTION()
 	void OnRep_ChangeAnimType();
+
+	UFUNCTION()
+	void OnRep_ChangeAnimSet();
 
 protected:
 	UFUNCTION()

@@ -492,6 +492,20 @@ TObjectPtr<UAnimMontage> APlayerCharacterBase::GetDeadMontage()
 	return AnimInst->GetDeadMontage();
 }
 
+void APlayerCharacterBase::HitShakeCamera()
+{
+	if (IsLocallyControlled())
+	{
+		APlayerController* PC = Cast<APlayerController>(GetController());
+		if (IsValid(ActiveHitShakeInstance) && ActiveHitShakeInstance->IsActive())
+		{
+			return;
+		}
+		// CameraShake는 재생 시 Instance를 return한다.
+		ActiveHitShakeInstance = PC->PlayerCameraManager->StartCameraShake(HitShake); 
+	}
+}
+
 void APlayerCharacterBase::MoveKey(const FInputActionValue& Value)
 {
 	FVector2D MovementVector = Value.Get<FVector2D>();

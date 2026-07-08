@@ -8,6 +8,7 @@
 #include "Navigation/PathFollowingComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "RS/LogCategory.h"
+#include "RS/Zombie/AI/WanderNavFilter.h"
 
 
 UBTTask_Wander::UBTTask_Wander()
@@ -112,6 +113,7 @@ void UBTTask_Wander::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemo
 	if (Distance <= 5.f)
 	{
 		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+		return;
 	}
 }
 

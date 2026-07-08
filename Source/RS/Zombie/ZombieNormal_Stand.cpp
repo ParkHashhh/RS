@@ -22,8 +22,6 @@ AZombieNormal_Stand::AZombieNormal_Stand()
 	}
 
 	Mesh->SetRelativeLocationAndRotation(FVector(0.0, 0.0, -HalfHeight), FRotator(0.0, -90.0, 0.0));
-
-	ZombieName = TEXT("Stand");
 }
 
 void AZombieNormal_Stand::BeginPlay()
@@ -34,4 +32,9 @@ void AZombieNormal_Stand::BeginPlay()
 void AZombieNormal_Stand::Attack()
 {
 	Super::Attack();
+}
+
+float AZombieNormal_Stand::GetHalfHeight()
+{
+	return Cast<UCapsuleComponent>(Body)->GetScaledCapsuleHalfHeight();
 }
