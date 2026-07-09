@@ -18,6 +18,7 @@ class UBaseAttributeSet;
 class UGameplayAbility;
 class UGameplayEffect;
 class UZombieAnimInstance;
+class UNiagaraSystem;
 
 USTRUCT(BlueprintType)
 struct FZombieSkeletalMeshSet
@@ -87,6 +88,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, ReplicatedUsing = OnRep_ChangeAnimType)
 	EZombieAnimType AnimType;
 
+	UPROPERTY(Replicated)
+	EZombieAnimType PrevAnimType;
+
 	UPROPERTY();
 	FVector SpawnPointLocation;
 	UPROPERTY();
@@ -112,7 +116,16 @@ protected:
 	float TurnSpeed;
 
 	UPROPERTY(EditDefaultsOnly, Category = "NeedProperty", BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
-	TMap<TEnumAsByte<EPhysicalSurface>, TObjectPtr<USoundBase>> SoundCueMap;
+	TMap<TEnumAsByte<EPhysicalSurface>, TObjectPtr<USoundBase>> FootStepSoundCueMap;
+
+	UPROPERTY(EditDefaultsOnly, Category = "NeedProperty", BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TMap<FName, TObjectPtr<USoundBase>> SoundCueMap;
+
+	UPROPERTY(EditDefaultsOnly, Category = "NeedProperty", BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TMap<FName, TObjectPtr<UParticleSystem>> ParticleMap;
+
+	UPROPERTY(EditDefaultsOnly, Category = "NeedProperty", BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TMap<FName, TObjectPtr<UNiagaraSystem>> NiagaraParticleMap;
 
 	//행 이름으로써 검색을 위해 좀비이름을 들고 있게 한다.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "NeedProperty", meta = (AllowPrivateAccess = "true"))
@@ -120,6 +133,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, ReplicatedUsing = OnRep_ChangeAnimSet)
 	int32 AnimIndex = 0;
+
+	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_ChangeJumpMontageSection)
+	bool bIsJumpEnd = false;
 
 protected:
 	// Called when the game starts or when spawned
@@ -142,6 +158,7 @@ public:
 	{
 		SpawnPointLocation = Loc;
 	}
+	void SetIsJumpEnd(bool IsEnd);
 
 public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const
@@ -174,7 +191,7 @@ public:
 	virtual void Attack();
 	TSubclassOf<UGameplayEffect> GetEffect(const FName& Name);
 	void ChangeAnim(EZombieAnimType Type);
-	virtual void UseAnimMontage(EZombieAnimType Type);
+	virtual void UseAnimMontage(EZombieAnimType Type, EZombieAnimType BeforeType);
 	bool CheckRoar();
 	void CalcNextPointLocation();
 	virtual void CallBackHP(AActor* InstigatorActor);
@@ -187,14 +204,20 @@ public:
 	void PlayFootStepCue(const FName& FootName);
 	virtual void InitAbility();
 	virtual float GetHalfHeight();
+	virtual void PlayZombieAttackSound();
+	virtual void PlayZombieSkillSound();
+	virtual void SpawnZombieAttackParticle();
+	virtual void PlayZombieRoarSound();
 	
-
 public:
 	UFUNCTION()
 	void OnRep_ChangeAnimType();
 
 	UFUNCTION()
 	void OnRep_ChangeAnimSet();
+
+	UFUNCTION()
+	void OnRep_ChangeJumpMontageSection();
 
 protected:
 	UFUNCTION()

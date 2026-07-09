@@ -3,7 +3,6 @@
 
 #include "InventoryPopupWidget.h"
 
-#include "GameplayTagContainer.h"
 #include "Components/InventoryPopupSlotObject.h"
 #include "Components/StatEntryObject.h"
 #include "Components/TileView.h"
@@ -33,14 +32,21 @@ void UInventoryPopupWidget::RefreshInventory()
 		return;
 	}
 
-	SlotObjects.Reset();
+	SlotObjects.Reset(MaxSlotCount);
 
 	InventoryTileView->ClearListItems();
 
-	for (auto& Entry : InventoryComponent->GetEntries())
+	for (const FInventoryEntry& Entry : InventoryComponent->GetEntries())
 	{
 		auto* NewObj = NewObject<UInventoryPopupSlotObject>(this);
 		NewObj->Initialize(Entry.Item);
+		SlotObjects.Add(NewObj);
+	}
+
+	for (int32 i = SlotObjects.Num(); i < MaxSlotCount; i++)
+	{
+		auto* NewObj = NewObject<UInventoryPopupSlotObject>(this);
+		NewObj->Initialize(NewObject<UItemInstance>());
 		SlotObjects.Add(NewObj);
 	}
 
@@ -76,6 +82,11 @@ void UInventoryPopupWidget::RefreshStatList()
 
 void UInventoryPopupWidget::AddBasicStats()
 {
+	if (!InventoryComponent || InventoryComponent->GetItemModifiedStats().IsEmpty())
+	{
+		return;
+	}
+
 	UGameInstance* GI = GetGameInstance();
 	check(GI);
 
@@ -89,71 +100,24 @@ void UInventoryPopupWidget::AddBasicStats()
 		return;
 	}
 
-	auto* PlayerCharacter = GetOwningPlayerPawn<APlayerCharacterBase>();
-	if (!PlayerCharacter)
+	const TMap<FGameplayTag, float>& ModifiedStats = InventoryComponent->GetItemModifiedStats();
+	for (const auto& RowName : StatDisplayInfoTable->GetRowNames())
 	{
-		RS_LOG_DEBUG(LogRSInventory, Error, TEXT("%s: Failed to get PlayerCharacter"), *LOG_LINE_INFO);
-		return;
+		FGameplayTag Tag = FGameplayTag::RequestGameplayTag(RowName);
+		if (!ModifiedStats.Contains(Tag))
+		{
+			continue;
+		}
+
+		if (const auto* Info = StatDisplayInfoTable->FindRow<FStatDisplayTableInfo>(
+			RowName, TEXT("UInventoryPopupWidget::AddBasicStats")))
+		{
+			UStatEntryObject* StatEntryObject = NewObject<UStatEntryObject>(this);
+			StatEntryObject->Initialize(Info->DisplayName,
+			                            RSUtils::GetStatDescription(*Info, {ModifiedStats[Tag]}), Info->Icon);
+			StatObjects.Add(StatEntryObject);
+		}
 	}
-
-	UAbilitySystemComponent* ASC = PlayerCharacter->GetAbilitySystemComponent();
-	if (!ASC)
-	{
-		RS_LOG_DEBUG(LogRSInventory, Error, TEXT("%s: Failed to get ASC"), *LOG_LINE_INFO);
-		return;
-	}
-
-	auto* Attr = Cast<UPlayerAttributeSet>(ASC->GetAttributeSet(UPlayerAttributeSet::StaticClass()));
-	if (!Attr)
-	{
-		RS_LOG_DEBUG(LogRSInventory, Error, TEXT("%s: Failed to get Attr"), *LOG_LINE_INFO);
-		return;
-	}
-
-	UStatEntryObject* StatEntryObject;
-	const auto* ContextString = TEXT("UInventoryPopupWidget::AddBasicStats");
-
-	if (auto Info = StatDisplayInfoTable->FindRow<FStatDisplayTableInfo>(FName(TEXT("max_hp")), ContextString))
-	{
-		StatEntryObject = NewObject<UStatEntryObject>(this);
-		StatEntryObject->Initialize(Info->DisplayName, RSUtils::GetStatDescription(*Info, {Attr->GetMaxHP()}),
-		                            Info->Icon);
-		StatObjects.Add(StatEntryObject);
-	}
-
-	if (auto Info = StatDisplayInfoTable->FindRow<FStatDisplayTableInfo>(FName(TEXT("attack_power")), ContextString))
-	{
-		StatEntryObject = NewObject<UStatEntryObject>(this);
-		StatEntryObject->Initialize(Info->DisplayName, RSUtils::GetStatDescription(*Info, {Attr->GetAttackPower()}),
-		                            Info->Icon);
-		StatObjects.Add(StatEntryObject);
-	}
-
-	if (auto Info = StatDisplayInfoTable->FindRow<FStatDisplayTableInfo>(FName(TEXT("attack_speed")), ContextString))
-	{
-		StatEntryObject = NewObject<UStatEntryObject>(this);
-		StatEntryObject->Initialize(Info->DisplayName, RSUtils::GetStatDescription(*Info, {Attr->GetAttackSpeed() * 100.0f}),
-									Info->Icon);
-		StatObjects.Add(StatEntryObject);
-	}
-
-	if (auto Info = StatDisplayInfoTable->FindRow<FStatDisplayTableInfo>(FName(TEXT("critical_chance")), ContextString))
-	{
-		StatEntryObject = NewObject<UStatEntryObject>(this);
-		StatEntryObject->Initialize(Info->DisplayName, RSUtils::GetStatDescription(*Info, {Attr->GetCriticalChance() * 100.0f}),
-									Info->Icon);
-		StatObjects.Add(StatEntryObject);
-	}
-
-	if (auto Info = StatDisplayInfoTable->FindRow<FStatDisplayTableInfo>(FName(TEXT("critical_damage")), ContextString))
-	{
-		StatEntryObject = NewObject<UStatEntryObject>(this);
-		StatEntryObject->Initialize(Info->DisplayName, RSUtils::GetStatDescription(*Info, {Attr->GetCriticalDamage() * 100.0f}),
-									Info->Icon);
-		StatObjects.Add(StatEntryObject);
-	}
-
-	// TODO: 이후로 추가
 }
 
 void UInventoryPopupWidget::AddItemEffects()

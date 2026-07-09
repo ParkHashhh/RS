@@ -19,6 +19,7 @@
 #include "NiagaraComponent.h"
 #include "PlayerCharacterBase.generated.h"
 
+class UInteractableComponent;
 class UDataSubsystem;
 class USpringArmComponent;
 class UCameraComponent;
@@ -424,6 +425,7 @@ private:
 	void LoadDefaultData();
 
 	void ApplyRecoil();
+	void ShowEndPopUp();
 
 protected:
 	// Called when the game starts or when spawned
@@ -538,6 +540,8 @@ private:
 public:
 	UFUNCTION()
 	void OnDead();
+	
+
 
 #pragma region Inventory
 private:
@@ -546,4 +550,17 @@ private:
 	void ToggleInventory(bool bShow);
 	void ToggleCombatWidgets(bool bShow);
 #pragma endregion
+
+#pragma region Interaction
+private:
+	UPROPERTY(Transient)
+	TWeakObjectPtr<UInteractableComponent> CurrentFocusedInteractable;
+
+	void OnInteractPressed();
+
+	UFUNCTION(Server, Reliable)
+	void Server_StartInteraction(UInteractableComponent* TargetComp);
+
+	void CheckInteractable();
+#pragma endregion Interaction
 };

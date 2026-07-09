@@ -26,6 +26,9 @@ public:
 	TMap<FName, TObjectPtr<UAnimMontage>> SkillMontageMap;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TMap<FName, TObjectPtr<UAnimMontage>> CommonMontageMap;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	float WalkNativeSpeed;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
@@ -91,8 +94,10 @@ public:
 public:
 	void PlayAttackMontage(int32 Number);
 	void PlaySkillMontage(int32 Number);
+	void PlayCommonMontage(const FName& Name);
 	void SetIsTurn(bool IsTurn);
 	bool ChechRoarAnimValid();
+	void FinishJump();
 
 public:
 	UFUNCTION()
@@ -103,6 +108,9 @@ public:
 
 	UFUNCTION()
 	void AnimNotify_Death();
+
+	UFUNCTION()
+	void AnimNotify_RoarStart();
 
 	UFUNCTION()
 	void AnimNotify_RoarEnd();
@@ -118,4 +126,7 @@ public:
 
 	UFUNCTION()
 	void AnimNotify_SkillEnd();
+
+	UFUNCTION()
+	void AnimNotify_MoveStart();
 };

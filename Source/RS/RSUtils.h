@@ -1,5 +1,9 @@
 ﻿#pragma once
+#include "GameplayTagContainer.h"
 
+class UGameplayEffect;
+struct FGameplayTag;
+struct FGameplayAttribute;
 struct FStatDisplayTableInfo;
 class UAbilitySystemComponent;
 
@@ -49,4 +53,9 @@ namespace RSUtils
 	{
 		return (Value & 1) != 0;
 	}
+
+	const FGameplayAttribute* GetAttributeFromTag(const FGameplayTag& AttributeTag,
+	                                              const TSubclassOf<UGameplayEffect>& MasterEffectClass);
+
+	int32 GetStatPriority(const FGameplayTag& StatTag);
 }

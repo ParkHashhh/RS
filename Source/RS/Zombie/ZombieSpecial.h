@@ -30,9 +30,10 @@ protected:
 public:
 	virtual void Attack();
 	virtual void InitStatData(const FZombieDefaultInfo* Data);
-	virtual void UseAnimMontage(EZombieAnimType Type);
+	virtual void UseAnimMontage(EZombieAnimType Type, EZombieAnimType BeforeType);
 	virtual void InitAbility();
 	virtual float GetHalfHeight();
+	virtual void SpawnZombieAttackParticle();
 
 public:
 	virtual void SkillStart();

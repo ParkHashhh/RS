@@ -9,6 +9,7 @@
 #include "RS/LogCategory.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemBlueprintLibrary.h"
+#include "Navigation/PathFollowingComponent.h"
 
 UZombieAnimInstance::UZombieAnimInstance()
 {
@@ -40,6 +41,12 @@ void UZombieAnimInstance::PlaySkillMontage(int32 Number)
 	Montage_Play(Montage);
 }
 
+void UZombieAnimInstance::PlayCommonMontage(const FName& Name)
+{
+	UAnimMontage* Montage = *(AnimPresetArray[AnimIndex_Backup].CommonMontageMap.Find(Name));
+	Montage_Play(Montage);
+}
+
 void UZombieAnimInstance::SetIsTurn(bool IsTurn)
 {
 	bIsTurn = IsTurn;
@@ -59,6 +66,16 @@ bool UZombieAnimInstance::ChechRoarAnimValid()
 	}
 }
 
+void UZombieAnimInstance::FinishJump()
+{
+	//점프 몽타주가 재생중인지 확인한다.
+	UAnimMontage* Montage = *(AnimPresetArray[AnimIndex_Backup].CommonMontageMap.Find(TEXT("Jump")));
+	if (Montage_IsPlaying(Montage))
+	{
+		Montage_JumpToSection(TEXT("End"), Montage);
+	}
+}
+
 void UZombieAnimInstance::AnimNotify_Attack()
 {
 	TObjectPtr<AZombieBase> Zombie = Cast<AZombieBase>(TryGetPawnOwner());
@@ -66,6 +83,12 @@ void UZombieAnimInstance::AnimNotify_Attack()
 	{
 		Zombie->Attack();
 	}
+
+	//좀비 공격 사운드 재생
+	Zombie->PlayZombieAttackSound();
+
+	//좀비 공격 파티클 생성
+	Zombie->SpawnZombieAttackParticle();
 }
 
 void UZombieAnimInstance::AnimNotify_AttackEnd()
@@ -105,6 +128,15 @@ void UZombieAnimInstance::AnimNotify_Death()
 	if (IsValid(Zombie))
 	{
 		Zombie->Death();
+	}
+}
+
+void UZombieAnimInstance::AnimNotify_RoarStart()
+{
+	TObjectPtr<AZombieBase> Zombie = Cast<AZombieBase>(TryGetPawnOwner());
+	if (IsValid(Zombie))
+	{
+		Zombie->PlayZombieRoarSound();
 	}
 }
 
@@ -151,5 +183,22 @@ void UZombieAnimInstance::AnimNotify_SkillEnd()
 	if (Zombie->HasAuthority())
 	{
 		Zombie->SkillEnd();
+	}
+}
+
+void UZombieAnimInstance::AnimNotify_MoveStart()
+{
+	TObjectPtr<AZombieBase> Zombie = Cast<AZombieBase>(TryGetPawnOwner());
+	if (Zombie->HasAuthority())
+	{
+		AAIController* Ctrl = Zombie->GetController<AAIController>();
+		if (IsValid(Ctrl))
+		{
+			UPathFollowingComponent* PFComp = Ctrl->GetPathFollowingComponent();
+			if (PFComp->GetStatus() == EPathFollowingStatus::Paused)
+			{
+				PFComp->ResumeMove();
+			}
+		}
 	}
 }

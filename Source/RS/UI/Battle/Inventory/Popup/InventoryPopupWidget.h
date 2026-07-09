@@ -22,6 +22,9 @@ class RS_API UInventoryPopupWidget : public URSUserWidget
 {
 	GENERATED_BODY()
 
+	UPROPERTY(EditDefaultsOnly, meta=(AllowPrivateAccess=true))
+	int32 MaxSlotCount = 24;
+
 	UPROPERTY(Transient)
 	TObjectPtr<UInventoryComponent> InventoryComponent;
 

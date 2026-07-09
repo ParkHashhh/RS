@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "RS/Player/RSPlayerController.h"
+#include "RS/UI/Battle/EndPopUpWidget.h"
+
 #include "PlayerControllerBase.generated.h"
 
 class UBattleHUDWidget;
@@ -26,6 +28,11 @@ protected:
 
 	UPROPERTY()
 	TArray<class APlayerCharacterBase*>SpectateTargets;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UUserWidget> EndPopUpWidgetClass;
+
+	TObjectPtr<UUserWidget> EndPopUpWidget;
 
 	int32 CurrentSpectateIndex = 0;
 
@@ -54,6 +61,8 @@ public:
 		PlayerName = NewPlayerName;
 	}
 
+	void ShowEndPopUp();
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void OnPossess(APawn* aPawn) override;
@@ -64,5 +73,6 @@ public:
 
 private:
 	void CreateBattleHUD();
+	void CreateEndPopUp();
 
 };

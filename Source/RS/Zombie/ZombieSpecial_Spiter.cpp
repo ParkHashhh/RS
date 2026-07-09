@@ -9,6 +9,9 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "RS/Zombie/AI/ZombieAIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
 
 
 AZombieSpecial_Spiter::AZombieSpecial_Spiter()
@@ -59,6 +62,8 @@ void AZombieSpecial_Spiter::SpawnSpitProjectile()
 		TObjectPtr<AZombieProjectileBase>	Proj = GetWorld()->SpawnActor<AZombieProjectileBase>(SkillProjectile, LaunchLoc, LaunchRot, param);
 		Proj->SetOwnerController(GetController());
 	}
+
+	SpawnZombieAttackParticle();
 }
 
 void AZombieSpecial_Spiter::Attack()
@@ -98,6 +103,8 @@ void AZombieSpecial_Spiter::SkillStart()
 	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, EventData.EventTag, EventData);
 
 	StartSpit();
+
+	PlayZombieSkillSound();
 }
 
 void AZombieSpecial_Spiter::SkillEnd()
@@ -119,4 +126,26 @@ void AZombieSpecial_Spiter::EndSpit()
 float AZombieSpecial_Spiter::GetHalfHeight()
 {
 	return Cast<UCapsuleComponent>(Body)->GetUnscaledCapsuleHalfHeight();
+}
+
+void AZombieSpecial_Spiter::SpawnZombieAttackParticle()
+{
+	//스피터는 입에서 머즐 파티클이 스폰되어야 한다.
+	TObjectPtr<UParticleSystem>* ParticlePtr = ParticleMap.Find(TEXT("Attack"));
+	if (ParticlePtr)
+	{
+		UParticleSystem* Particle = *ParticlePtr;
+		FVector SpawnLoc = Mesh->GetSocketLocation(TEXT("Mouth"));
+		FRotator SpawnRot= Mesh->GetSocketRotation(TEXT("Mouth"));
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Particle, SpawnLoc, SpawnRot, FVector(0.3, 0.3, 0.3));
+	}
+
+	TObjectPtr<UNiagaraSystem>* NiagaraPtr = NiagaraParticleMap.Find(TEXT("Attack"));
+	if (NiagaraPtr)
+	{
+		UNiagaraSystem* Niagara = *NiagaraPtr;
+		FVector SpawnLoc = Mesh->GetSocketLocation(TEXT("Mouth"));
+		FRotator SpawnRot = Mesh->GetSocketRotation(TEXT("Mouth"));
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), Niagara, SpawnLoc, SpawnRot, FVector(0.3, 0.3, 0.3));
+	}
 }

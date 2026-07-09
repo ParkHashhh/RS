@@ -111,9 +111,14 @@ float AZombieSpecial::GetHalfHeight()
 	return 0.f;
 }
 
-void AZombieSpecial::UseAnimMontage(EZombieAnimType Type)
+void AZombieSpecial::SpawnZombieAttackParticle()
 {
-	Super::UseAnimMontage(Type);
+	Super::SpawnZombieAttackParticle();
+}
+
+void AZombieSpecial::UseAnimMontage(EZombieAnimType Type, EZombieAnimType BeforeType)
+{
+	Super::UseAnimMontage(Type, BeforeType);
 
 	//특수 스킬 신호가 들어왔다면 특수스킬 몽타주를 재생한다.
 	if (Type == EZombieAnimType::Special_Skill)

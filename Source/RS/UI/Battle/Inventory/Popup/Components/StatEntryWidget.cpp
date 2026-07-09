@@ -4,6 +4,7 @@
 #include "StatEntryWidget.h"
 
 #include "StatEntryObject.h"
+#include "Components/Image.h"
 #include "Components/TextBlock.h"
 #include "RS/LogCategory.h"
 
@@ -20,6 +21,7 @@ void UStatEntryWidget::NativeOnListItemObjectSet(UObject* ListItemObject)
 
 	RS_LOG_DEBUG(LogRSInventory, Log, TEXT("%s: StatEntryWidget initialized with StatName: %s"), *LOG_LINE_INFO, *StatObj->StatName.ToString());
 
+	StatIcon->SetBrushFromAtlasInterface(StatObj->Icon);
 	NameText->SetText(StatObj->StatName);
 	DescriptionText->SetText(StatObj->StatDescription);
 }

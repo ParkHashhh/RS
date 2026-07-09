@@ -7,6 +7,7 @@
 #include "RS/UI/CharacterBoundUserWidget.h"
 #include "StatEntryWidget.generated.h"
 
+class UImage;
 class UTextBlock;
 /**
  *
@@ -16,7 +17,9 @@ class RS_API UStatEntryWidget : public UCharacterBoundUserWidget, public IUserOb
 {
 	GENERATED_BODY()
 
-private:
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UImage> StatIcon;
+
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UTextBlock> NameText;
 

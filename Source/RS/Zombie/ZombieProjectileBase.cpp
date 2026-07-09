@@ -7,6 +7,8 @@
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "RS/Player/PlayerCharacterBase.h"
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
 
 // Sets default values
 AZombieProjectileBase::AZombieProjectileBase()
@@ -16,10 +18,12 @@ AZombieProjectileBase::AZombieProjectileBase()
 
 	Body = CreateDefaultSubobject<UBoxComponent>(TEXT("Body"));
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
+	Niagara = CreateDefaultSubobject<UNiagaraComponent>(TEXT("Niagara"));
 	Movement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("Movement"));
 
 	SetRootComponent(Body);
 	Mesh->SetupAttachment(Body);
+	Niagara->SetupAttachment(Body);
 
 	Movement->SetUpdatedComponent(Body);
 

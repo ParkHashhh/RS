@@ -146,6 +146,8 @@ void UInventoryComponent::BeginPlay()
 	Super::BeginPlay();
 
 	InventoryList.Owner = this;
+
+	OnInventoryChangedDelegate.AddUObject(this, &ThisClass::CalculateItemModifiedStats);
 }
 
 void UInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -247,9 +249,9 @@ UItemInstance* UInventoryComponent::AddItem(const FDataTableRowHandle& RowHandle
 		return nullptr;
 	}
 
-	OnItemAdded(NewItem);
-
 	InventoryList.AddEntry(NewItem);
+	
+	OnItemAdded(NewItem);
 
 	// 이후 게임플레이 이펙트 + 브로드캐스트
 
@@ -289,9 +291,13 @@ bool UInventoryComponent::RemoveItem(const FDataTableRowHandle& RowHandle, int32
 		return true;
 	}
 
-	OnItemRemoved(Item);
+	const bool bRemoved = InventoryList.RemoveEntry(Item->GetItemGUID());
+	if (bRemoved)
+	{
+		OnItemRemoved(Item);
+	}
 
-	return InventoryList.RemoveEntry(Item->GetItemGUID());
+	return bRemoved;
 }
 
 UItemInstance* UInventoryComponent::FindItem(const FGuid& ItemGuid)
@@ -529,4 +535,31 @@ void UInventoryComponent::OnItemRemoved(UItemInstance* Item)
 
 	OnItemRemovedDelegate.Broadcast(Item);
 	OnInventoryChangedDelegate.Broadcast();
+}
+
+void UInventoryComponent::CalculateItemModifiedStats()
+{
+	ItemModifiedStats.Empty();
+
+	for (const FInventoryEntry& Entry : InventoryList.Entries)
+	{
+		if (const UItemInstance* Item = Entry.Item)
+		{
+			if (const auto* ItemInfo = RSUtils::GetTableInfo<FItemTableInfo>(
+				Item->GetItemRowHandle(), TEXT("CalculateItemModifiedStats")))
+			{
+				for (const auto& [OptionTag, Value, bScaleWithStack] : ItemInfo->ItemOptions)
+				{
+					const float Magnitude = bScaleWithStack ? (Value * Item->GetItemCount()) : Value;
+					ItemModifiedStats.FindOrAdd(OptionTag) += Magnitude;
+				}
+			}
+		}
+	}
+
+	// 스탯을 우선순위에 따라 정렬
+	ItemModifiedStats.KeySort([](const FGameplayTag& A, const FGameplayTag& B)
+	{
+		return RSUtils::GetStatPriority(A) < RSUtils::GetStatPriority(B);
+	});
 }

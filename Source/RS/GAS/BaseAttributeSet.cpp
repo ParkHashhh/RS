@@ -50,23 +50,35 @@ void UBaseAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 void UBaseAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
 {
 	Super::PreAttributeChange(Attribute, NewValue);
+}
+
+void UBaseAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue)
+{
+	Super::PostAttributeChange(Attribute, OldValue, NewValue);
 
 	if (Attribute == GetMaxHPAttribute())
 	{
-		// 최대 체력 변화에 따른 현재 체력 변화
-		float Diff = NewValue - GetMaxHP();
-		if (Diff > 0)
+		if (GetOwningActor() && GetOwningActor()->HasAuthority())
 		{
-			if (UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent())
+			// 최대 체력 변화에 따른 현재 체력 변화
+			float Diff = NewValue - OldValue;
+			RS_LOG_DEBUG(LogRSGAS, Log, TEXT("%s: MaxHP Changed. Diff: %.2f"), *LOG_LINE_INFO, Diff);
+			if (Diff > 0)
 			{
-				ASC->SetNumericAttributeBase(GetCurrentHPAttribute(), GetCurrentHP() + Diff);
+				if (UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent())
+				{
+					float TargetCurrentHP = FMath::Clamp(GetCurrentHP() + Diff, 0.0f, NewValue);
+					RS_LOG_DEBUG(LogRSGAS, Log, TEXT("%s: MaxHP increased. Target Current HP: %.2f"), *LOG_LINE_INFO, TargetCurrentHP);
+					ASC->SetNumericAttributeBase(GetCurrentHPAttribute(), TargetCurrentHP);
+				}
 			}
-		}
-		else if (GetCurrentHP() < NewValue)
-		{
-			if (UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent())
+			else if (GetCurrentHP() < NewValue)
 			{
-				ASC->SetNumericAttributeBase(GetCurrentHPAttribute(), NewValue);
+				if (UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent())
+				{
+					RS_LOG_DEBUG(LogRSGAS, Log, TEXT("%s: MaxHP decreased under current HP. Target Current HP: %.2f"), *LOG_LINE_INFO, NewValue);
+					ASC->SetNumericAttributeBase(GetCurrentHPAttribute(), NewValue);
+				}
 			}
 		}
 	}

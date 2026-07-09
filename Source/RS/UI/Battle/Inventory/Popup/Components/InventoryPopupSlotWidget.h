@@ -18,6 +18,9 @@ class RS_API UInventoryPopupSlotWidget : public UIconWidgetBase, public IUserObj
 
 private:
 	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UImage> BackgroundImage;
+
+	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UTextBlock> ItemCountText;
 
 protected:

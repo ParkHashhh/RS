@@ -39,13 +39,18 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetIconTexture(UTexture2D* NewTexture);
 
-	FORCEINLINE UPaperSprite* GetIconSprite() const;
+	UImage* GetIconImage() const
+	{
+		return IconImage;
+	}
 
-	FORCEINLINE UTexture2D* GetIconTexture() const;
+	UPaperSprite* GetIconSprite() const;
 
-	FORCEINLINE USlotWidget* GetParentSlotWidget() const;
+	UTexture2D* GetIconTexture() const;
 
-	FORCEINLINE void SetParentSlotWidget(USlotWidget* Parent);
+	USlotWidget* GetParentSlotWidget() const;
+
+	void SetParentSlotWidget(USlotWidget* Parent);
 
 protected:
 	virtual void NativeOnInitialized() override;

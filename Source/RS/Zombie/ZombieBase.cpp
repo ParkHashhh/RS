@@ -18,6 +18,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "RS/Data/Subsystem/DataSubsystem.h"
 #include "AbilitySystemBlueprintLibrary.h"
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
 
 // Sets default values
 AZombieBase::AZombieBase()
@@ -142,6 +144,18 @@ void AZombieBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 	DOREPLIFETIME(AZombieBase, AnimIndex)
 	DOREPLIFETIME(AZombieBase, AtkMontageNumber)
 	DOREPLIFETIME(AZombieBase, SkillMontageNumber)
+	DOREPLIFETIME(AZombieBase, bIsJumpEnd)
+	DOREPLIFETIME(AZombieBase, PrevAnimType)
+}
+
+void AZombieBase::SetIsJumpEnd(bool IsEnd)
+{
+	bIsJumpEnd = IsEnd;
+
+	if (HasAuthority() && bIsJumpEnd)
+	{
+		AnimInstance->FinishJump();
+	}
 }
 
 void AZombieBase::SetGenericTeamId(const FGenericTeamId& ID)
@@ -245,6 +259,7 @@ void AZombieBase::ChangeAnim(EZombieAnimType Type)
 		return;
 	}
 
+	PrevAnimType = AnimType;
 	AnimType = Type;
 
 	if (HasAuthority())
@@ -260,9 +275,9 @@ void AZombieBase::ChangeAnim(EZombieAnimType Type)
 		}
 
 		//몽타주 재생 신호가 들어온 경우
-		if (Type == EZombieAnimType::Attack || Type == EZombieAnimType::Special_Skill)
+		if (Type == EZombieAnimType::Attack || Type == EZombieAnimType::Special_Skill || Type == EZombieAnimType::Jump)
 		{
-			UseAnimMontage(Type);
+			UseAnimMontage(Type, PrevAnimType);
 			return;
 		}
 
@@ -270,10 +285,9 @@ void AZombieBase::ChangeAnim(EZombieAnimType Type)
 	}
 }
 
-void AZombieBase::UseAnimMontage(EZombieAnimType Type)
+void AZombieBase::UseAnimMontage(EZombieAnimType Type, EZombieAnimType BeforeType)
 {
 	//일반 공격은 모든 좀비의 공통 기능이므로 부모에서 호출한다.
-	
 	//공격 신호가 들어왔다면 몽타주를 재생하라고 한 뒤 바로 탈출한다.
 	if (Type == EZombieAnimType::Attack)
 	{
@@ -281,6 +295,21 @@ void AZombieBase::UseAnimMontage(EZombieAnimType Type)
 		AnimInstance->PlayAttackMontage(AtkMontageNumber);
 		//좀비가 공격을 한다면 기저에 재생되고 있는 애니메이션을 전투 대기로 바꿔준다.
 		AnimInstance->SetAnim(EZombieAnimType::CombatIdle);
+	}
+
+	if (Type == EZombieAnimType::Jump)
+	{
+		AnimInstance->PlayCommonMontage(TEXT("Jump"));
+		//점프 직전 어떤 애니메이션을 재생 중이였는지를 확인하고 맞는 애니메이션으로 연결한다.
+		if (BeforeType == EZombieAnimType::Walk)
+		{
+			AnimInstance->SetAnim(EZombieAnimType::Walk);
+		}
+		else if (BeforeType == EZombieAnimType::Run)
+		{
+			AnimInstance->SetAnim(EZombieAnimType::Run);
+		}
+		
 	}
 }
 
@@ -459,7 +488,7 @@ void AZombieBase::PlayFootStepCue(const FName& FootName)
 		EPhysicalSurface Surface = PMtrl->SurfaceType;
 
 		//맵에서 꺼내온 사운드 큐 포인터가 유효한지 확인 : 머티리얼은 있는데 Surface 지정을 안한 경우도 있으므로
-		const TObjectPtr<USoundBase>* SoundCuePtr = SoundCueMap.Find(Surface);
+		const TObjectPtr<USoundBase>* SoundCuePtr = FootStepSoundCueMap.Find(Surface);
 
 		if (!SoundCuePtr)
 		{
@@ -468,7 +497,7 @@ void AZombieBase::PlayFootStepCue(const FName& FootName)
 
 		USoundBase* SoundCue = *SoundCuePtr;
 
-		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SoundCue,	Result.ImpactPoint, 0.1f);
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SoundCue,	Result.ImpactPoint, 0.5f);
 	}
 }
 
@@ -485,6 +514,63 @@ void AZombieBase::InitAbility()
 float AZombieBase::GetHalfHeight()
 {
 	return 0.0f;
+}
+
+void AZombieBase::PlayZombieAttackSound()
+{
+	TObjectPtr<USoundBase>* SoundPtr = SoundCueMap.Find(TEXT("Attack"));
+	if (SoundPtr)
+	{
+		USoundBase* Sound = *SoundPtr;
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), Sound, GetActorLocation());
+	}
+}
+
+void AZombieBase::PlayZombieSkillSound()
+{
+	TObjectPtr<USoundBase>* SoundPtr = SoundCueMap.Find(TEXT("Skill"));
+	if (SoundPtr)
+	{
+		USoundBase* Sound = *SoundPtr;
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), Sound, GetActorLocation());
+	}
+}
+
+void AZombieBase::SpawnZombieAttackParticle()
+{
+	TObjectPtr<UParticleSystem>* ParticlePtr = ParticleMap.Find(TEXT("Attack"));
+	if (ParticlePtr)
+	{
+		UParticleSystem* Particle = *ParticlePtr;
+		FVector ForwardDir = GetActorForwardVector();
+		FVector RightDir = GetActorRightVector();
+		FVector SpawnLoc = GetActorLocation() - (ForwardDir * 40.f) - (RightDir * 40.f) - FVector(0.0, 0.0, 160.0);
+		FRotator ActorRot = GetActorRotation();
+		FRotator SpawnRot = ActorRot - FRotator(0.0, 90.0, 0.0);
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Particle, SpawnLoc, SpawnRot);
+	}
+
+	TObjectPtr<UNiagaraSystem>* NiagaraPtr = NiagaraParticleMap.Find(TEXT("Attack"));
+	if (NiagaraPtr)
+	{
+		UNiagaraSystem* Niagara = *NiagaraPtr;
+		FVector ForwardDir = GetActorForwardVector();
+		FVector RightDir = GetActorRightVector();
+		FVector SpawnLoc = GetActorLocation() - (ForwardDir * 40.f) - (RightDir * 40.f) - FVector(0.0, 0.0, 160.0);
+		FRotator ActorRot = GetActorRotation();
+		FRotator SpawnRot = ActorRot - FRotator(0.0, 90.0, 0.0);
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), Niagara, SpawnLoc, SpawnRot, FVector(0.3, 0.3, 0.3));
+	}
+}
+
+void AZombieBase::PlayZombieRoarSound()
+{
+	TObjectPtr<USoundBase>* SoundPtr = SoundCueMap.Find(TEXT("Roar"));
+	if (SoundPtr)
+	{
+		USoundBase* Sound = *SoundPtr;
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), Sound, GetActorLocation());
+	}
 }
 
 void AZombieBase::OnRep_ChangeAnimType()
@@ -504,7 +590,7 @@ void AZombieBase::OnRep_ChangeAnimType()
 	//몽타주 재생 신호가 들어온 경우
 	if (AnimType == EZombieAnimType::Attack || AnimType == EZombieAnimType::Special_Skill)
 	{
-		UseAnimMontage(AnimType);
+		UseAnimMontage(AnimType, PrevAnimType);
 		return;
 	}
 
@@ -533,6 +619,15 @@ void AZombieBase::OnRep_ChangeAnimSet()
 	{
 		//인자는 필요 없으므로 nullptr을 넣는다.
 		AnimInstance->ProcessEvent(Func, nullptr);
+	}
+}
+
+void AZombieBase::OnRep_ChangeJumpMontageSection()
+{
+	//값이 true로 변했을 때에만 몽타주 섹션 변경을 수행한다.
+	if (bIsJumpEnd)
+	{
+		AnimInstance->FinishJump();
 	}
 }
 

@@ -26,6 +26,7 @@ void APlayerControllerBase::BeginPlay()
 		SetInputMode(InputMode);
 
 		CreateBattleHUD();
+		CreateEndPopUp();
 	}
 }
 
@@ -62,6 +63,36 @@ void APlayerControllerBase::CreateBattleHUD()
 	RS_LOG_DEBUG(LogRSInit, Log, TEXT("%s: BattleHUDWidget is created"), *LOG_LINE_INFO);
 
 	BattleHUDWidget->AddToViewport();
+}
+
+void APlayerControllerBase::CreateEndPopUp()
+{
+	if (!IsValid(EndPopUpWidgetClass))
+	{
+		return;
+	}
+
+	EndPopUpWidget = CreateWidget<UEndPopUpWidget>(this, EndPopUpWidgetClass);
+	if (!IsValid(EndPopUpWidget))
+	{
+		return;
+	}
+}
+
+void APlayerControllerBase::ShowEndPopUp()
+{
+	if (!IsValid(EndPopUpWidget))
+	{
+		return;
+	}
+	RS_PRINT_SCREEN(10.f, FColor::Red, TEXT("Controller ShowEndPopUp"));
+
+	bShowMouseCursor = true;
+	FInputModeUIOnly InputMode;
+	InputMode.SetWidgetToFocus(EndPopUpWidget->TakeWidget());
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	SetInputMode(InputMode);
+	EndPopUpWidget->AddToViewport();
 }
 
 

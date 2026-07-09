@@ -119,6 +119,9 @@ private:
 	UPROPERTY(Replicated)
 	FInventoryList InventoryList;
 
+	UPROPERTY()
+	TMap<FGameplayTag, float> ItemModifiedStats;
+
 public:
 	FOnItemChanged OnItemAddedDelegate;
 	FOnItemChanged OnItemChangedDelegate;
@@ -158,19 +161,24 @@ public:
 	void HandleEntryChanged(const FInventoryEntry& Entry);
 	void HandleEntryRemoved(const FInventoryEntry& Entry);
 
-	FORCEINLINE const TArray<FInventoryEntry>& GetEntries() const
+	const TArray<FInventoryEntry>& GetEntries() const
 	{
 		return InventoryList.Entries;
 	}
 
-	FORCEINLINE const FInventoryEntry* GetEntry(int32 SlotIndex) const
+	const FInventoryEntry* GetEntry(int32 SlotIndex) const
 	{
 		return InventoryList.Entries.IsValidIndex(SlotIndex) ? &InventoryList.Entries[SlotIndex] : nullptr;
 	}
 
-	FORCEINLINE int32 GetEntryCount() const
+	int32 GetEntryCount() const
 	{
 		return InventoryList.Entries.Num();
+	}
+
+	const TMap<FGameplayTag, float>& GetItemModifiedStats() const
+	{
+		return ItemModifiedStats;
 	}
 
 protected:
@@ -182,5 +190,7 @@ private:
 	void OnItemAdded(UItemInstance* Item);
 	void OnItemChanged(UItemInstance* Item);
 	void OnItemRemoved(UItemInstance* Item);
+
+	void CalculateItemModifiedStats();
 #pragma endregion
 };

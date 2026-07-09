@@ -17,6 +17,7 @@
 #include "Actor/Grenade.h"
 #include "Actor/HealPack.h"
 #include "GameplayCueManager.h"
+#include "RS/Interaction/InteractableComponent.h"
 #include "RS/Inventory/InventoryComponent.h"
 #include "RS/UI/Battle/BattleHUDWidget.h"
 #include "RS/UI/Battle/Inventory/Popup/InventoryPopupWidget.h"
@@ -145,7 +146,6 @@ void APlayerCharacterBase::OnMovementModeChanged(EMovementMode PrevMovementMode,
 	if (GetCharacterMovement()->IsWalking())
 	{
 		bCanJump = true;
-
 	}
 }
 
@@ -228,7 +228,6 @@ void APlayerCharacterBase::Tick(float DeltaTime)
 	{
 		ReplicatedViewPitch = ClampedPitch;
 	}
-
 
 
 	float InterpSpeed = 10.f;
@@ -511,7 +510,7 @@ void APlayerCharacterBase::HitShakeCamera()
 			return;
 		}
 		// CameraShake는 재생 시 Instance를 return한다.
-		ActiveHitShakeInstance = PC->PlayerCameraManager->StartCameraShake(HitShake); 
+		ActiveHitShakeInstance = PC->PlayerCameraManager->StartCameraShake(HitShake);
 	}
 }
 
@@ -590,7 +589,7 @@ void APlayerCharacterBase::JumpKey(const FInputActionValue& Value)
 
 void APlayerCharacterBase::AimKey(const FInputActionValue& Value)
 {
-	if (!IsValid(ASC) || !GetMovementComponent() )
+	if (!IsValid(ASC) || !GetMovementComponent())
 	{
 		return;
 	}
@@ -666,11 +665,11 @@ void APlayerCharacterBase::CursorReleaseKey(const FInputActionValue& Value)
 }
 
 
-void APlayerCharacterBase::Server_SpawnGrenade_Implementation(const FVector& SpawnLocation, const FRotator& GrenadeRotation)
+void APlayerCharacterBase::Server_SpawnGrenade_Implementation(const FVector& SpawnLocation,
+                                                              const FRotator& GrenadeRotation)
 {
 	if (GrenadeActor)
 	{
-
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.Owner = this;
 		SpawnParams.Instigator = this;
@@ -693,7 +692,6 @@ void APlayerCharacterBase::Server_SpawnHeal_Implementation(const FVector& SpawnL
 {
 	if (HealPackActor)
 	{
-
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.Owner = this;
 		SpawnParams.Instigator = this;
@@ -716,7 +714,7 @@ void APlayerCharacterBase::Server_SpawnHeal_Implementation(const FVector& SpawnL
 
 FRotator APlayerCharacterBase::GetSpectateViewRotation() const
 {
-	return FRotator(ReplicatedViewPitch, GetActorRotation().Yaw,0.f);
+	return FRotator(ReplicatedViewPitch, GetActorRotation().Yaw, 0.f);
 }
 
 void APlayerCharacterBase::MakeGrenade()
@@ -802,7 +800,6 @@ void APlayerCharacterBase::MakeHeal()
 
 void APlayerCharacterBase::VisibleWeapon()
 {
-
 	WeaponMeshComponent->SetVisibility(true, true);
 	WeaponMeshComponent->SetHiddenInGame(false);
 }
@@ -888,7 +885,7 @@ void APlayerCharacterBase::DebugKey1(const FInputActionValue& Value)
 	{
 		if (UInventoryComponent* Inventory = PS->GetInventoryComponent())
 		{
-			Inventory->AddItem(FName("bullet_recycle"), 1);
+			Inventory->AddItem(FName("attack_power"), 1);
 		}
 	}
 }
@@ -915,7 +912,7 @@ void APlayerCharacterBase::DebugKey3(const FInputActionValue& Value)
 	{
 		if (UInventoryComponent* Inventory = PS->GetInventoryComponent())
 		{
-			Inventory->AddItem(FName("ignite"), 1);
+			Inventory->AddItem(FName("critical_chance"), 1);
 		}
 	}
 }
@@ -943,7 +940,8 @@ void APlayerCharacterBase::DebugKey5(const FInputActionValue& Value)
 	{
 		float MaxAmmo = AttributeSet->GetMaxAmmo();
 		AttributeSet->SetCurrentAmmo(MaxAmmo);
-		RS_LOG_DEBUG(LogRSCommon, Warning, TEXT("%s: Debug reload ammo. curr ammo: %.0f"), *LOG_LINE_INFO, AttributeSet->GetCurrentAmmo());
+		RS_LOG_DEBUG(LogRSCommon, Warning, TEXT("%s: Debug reload ammo. curr ammo: %.0f"), *LOG_LINE_INFO,
+		             AttributeSet->GetCurrentAmmo());
 	}
 }
 
@@ -951,6 +949,8 @@ void APlayerCharacterBase::DebugKey6(const FInputActionValue& Value)
 {
 	RS_LOG_DEBUG(LogRSCommon, Log, TEXT("DebugKey6"));
 	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("DebugKey6"));
+
+	ShowEndPopUp();
 }
 
 void APlayerCharacterBase::DebugKey7(const FInputActionValue& Value)
@@ -1062,6 +1062,21 @@ void APlayerCharacterBase::ApplyRecoil()
 	// Yaw범위만큼 랜덤
 	RecoilPitchCurrent += RecoilPitch;
 	RecoilYawCurrent += FMath::RandRange(-RecoilYawRange, RecoilYawRange);
+}
+
+void APlayerCharacterBase::ShowEndPopUp()
+{
+	ToggleInventory(false);
+	ToggleCombatWidgets(false);
+	GetCharacterMovement()->StopMovementImmediately();
+	DisableInput(PlayerController);
+
+	if (IsValid(PlayerController))
+	{
+		RS_PRINT_SCREEN(10.f, FColor::Red, TEXT("CharacterBase ShowEndPopUp"));
+
+		PlayerController->ShowEndPopUp();
+	}
 }
 
 void APlayerCharacterBase::OnConstruction(const FTransform& Transform)
@@ -1184,7 +1199,8 @@ void APlayerCharacterBase::ReloadAmmo()
 	CueParams.Location = MuzzleLocation;
 	if (ASC)
 	{
-		ASC->ExecuteGameplayCue(FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Weapon.MagazineInsertFinal")), CueParams);
+		ASC->ExecuteGameplayCue(FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Weapon.MagazineInsertFinal")),
+		                        CueParams);
 	}
 	AttributeSet->SetCurrentAmmo(AttributeSet->GetMaxAmmo());
 }
@@ -1193,13 +1209,13 @@ bool APlayerCharacterBase::UseAmmo()
 {
 	if (AttributeSet->GetCurrentAmmo() < 1)
 	{
-
 		FVector MuzzleLocation = WeaponMeshComponent->GetSocketLocation(FName("Muzzle"));
 		FGameplayCueParameters CueParams;
 		CueParams.Location = MuzzleLocation;
 		if (ASC)
 		{
-			ASC->ExecuteGameplayCue(FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Weapon.EmptyAmmo")), CueParams);
+			ASC->ExecuteGameplayCue(FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Weapon.EmptyAmmo")),
+			                        CueParams);
 		}
 		return false;
 	}
@@ -1271,7 +1287,6 @@ void APlayerCharacterBase::OnAttackingTagChanged(const FGameplayTag Tag, int32 N
 
 void APlayerCharacterBase::OnDashingTagChanged(const FGameplayTag Tag, int32 NewCount)
 {
-
 	UpdatePlayerCameraState();
 	UpdatePlayerSpeedState();
 }
@@ -1305,17 +1320,18 @@ void APlayerCharacterBase::ExecuteMuzzleEffect(const FVector& MuzzleLocation, co
 	CueParams.Location = MuzzleLocation;
 	CueParams.Normal = MuzzleRotation.Vector();
 	// AI가 들을 수 있는 함수
-	MakeNoise(20.f,this, MuzzleLocation,50.f);
+	MakeNoise(20.f, this, MuzzleLocation, 50.f);
 	if (ASC)
 	{
-		ASC->ExecuteGameplayCue(FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Weapon.MuzzleFlash")), CueParams);
-		ASC->ExecuteGameplayCue(FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Weapon.MuzzleSmoke")), CueParams);
+		ASC->ExecuteGameplayCue(FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Weapon.MuzzleFlash")),
+		                        CueParams);
+		ASC->ExecuteGameplayCue(FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Weapon.MuzzleSmoke")),
+		                        CueParams);
 	}
 }
 
 void APlayerCharacterBase::PlayFootStepSound()
 {
-
 	FHitResult Hit;
 	FVector Start = GetActorLocation();
 	FVector End = Start - FVector(0, 0, 200.f);
@@ -1332,7 +1348,6 @@ void APlayerCharacterBase::PlayFootStepSound()
 		FString PMName = Hit.PhysMaterial.IsValid() ? Hit.PhysMaterial->GetName() : TEXT("NULL");
 		if (Hit.PhysMaterial.IsValid())
 		{
-
 			USoundBase* Sound = FootstepSoundMap.FindRef(Hit.PhysMaterial.Get());
 			UGameplayStatics::PlaySoundAtLocation(this, Sound, Hit.ImpactPoint);
 		}
@@ -1340,18 +1355,17 @@ void APlayerCharacterBase::PlayFootStepSound()
 		{
 		}
 	}
-
 }
 
 void APlayerCharacterBase::PlayMagazineRemove()
 {
-
 	FVector MuzzleLocation = WeaponMeshComponent->GetSocketLocation(FName("Muzzle"));
 	FGameplayCueParameters CueParams;
 	CueParams.Location = MuzzleLocation;
 	if (ASC)
 	{
-		ASC->ExecuteGameplayCue(FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Weapon.MagazineRemove")), CueParams);
+		ASC->ExecuteGameplayCue(FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Weapon.MagazineRemove")),
+		                        CueParams);
 	}
 }
 
@@ -1362,12 +1376,13 @@ void APlayerCharacterBase::PlayMagazineInsert()
 	CueParams.Location = MuzzleLocation;
 	if (ASC)
 	{
-		ASC->ExecuteGameplayCue(FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Weapon.MagazineInsert")), CueParams);
+		ASC->ExecuteGameplayCue(FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Weapon.MagazineInsert")),
+		                        CueParams);
 	}
 }
 
 
-void APlayerCharacterBase::ExecuteBulletTrailEffect(const FVector& MuzzleLocation,const FVector& TrailEnd)
+void APlayerCharacterBase::ExecuteBulletTrailEffect(const FVector& MuzzleLocation, const FVector& TrailEnd)
 {
 	if (ProjectileClass)
 	{
@@ -1480,8 +1495,8 @@ void APlayerCharacterBase::Multicast_ExecuteVisualEffect_Implementation(const FH
 
 	// 타격인지 데칼(벽)인지 태그로 구분하여 실행
 	FGameplayTag Tag = bIsHit
-		? FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Damage"))
-		: FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Weapon.Impact"));
+		                   ? FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Damage"))
+		                   : FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Weapon.Impact"));
 
 	UGameplayCueManager::ExecuteGameplayCue_NonReplicated(this, Tag, CueParams);
 }
@@ -1491,7 +1506,7 @@ void APlayerCharacterBase::Server_ShootAttackRay_Implementation(float RandomX, f
 	// 충돌결과를 받을 구조체
 	FHitResult Hit;
 
-	if (CalculateHit(Hit, RandomX,RandomY))
+	if (CalculateHit(Hit, RandomX, RandomY))
 	{
 		AActor* TargetActor = Hit.GetActor();
 		// 맞은 액터(TargetActor) 가져오기
@@ -1503,7 +1518,7 @@ void APlayerCharacterBase::Server_ShootAttackRay_Implementation(float RandomX, f
 		// 적군인지 확인
 		if (Attitude == ETeamAttitude::Hostile)
 		{
-			Server_ApplyDamage(TargetActor, Hit,GetAttributeSet()->GetAttackPower());
+			Server_ApplyDamage(TargetActor, Hit, GetAttributeSet()->GetAttackPower());
 			Multicast_ExecuteVisualEffect(Hit, true);
 		}
 		// 아닐경우 벽으로 판정
@@ -1535,12 +1550,12 @@ void APlayerCharacterBase::ShootAttackRay()
 	PlayerController->GetPlayerViewPoint(CameraLocation, CameraRotation);
 
 	float Dist = AttributeSet->GetAttackDistance();
-	float RandomX,RandomY;
+	float RandomX, RandomY;
 
 	if (IsAiming())
 	{
-		RandomX = FMath::FRandRange(-5.f,5.f);
-		RandomY = FMath::FRandRange(-5.f,5.f);
+		RandomX = FMath::FRandRange(-5.f, 5.f);
+		RandomY = FMath::FRandRange(-5.f, 5.f);
 	}
 	else
 	{
@@ -1584,19 +1599,18 @@ void APlayerCharacterBase::ShootAttackRay()
 
 	FVector TrailEnd = FinalEnd;
 
-	if (CalculateHit(Hit,RandomX,RandomY))
+	if (CalculateHit(Hit, RandomX, RandomY))
 	{
 		TrailEnd = Hit.ImpactPoint;
 		Server_ShootAttackRay(RandomX, RandomY);
 	}
 	else
 	{
-	
 	}
 	ExecuteBulletTrailEffect(MuzzleLocation, TrailEnd);
 }
 
-void APlayerCharacterBase::Server_ApplyDamage_Implementation(AActor* TargetActor, FHitResult Hit,float Damage)
+void APlayerCharacterBase::Server_ApplyDamage_Implementation(AActor* TargetActor, FHitResult Hit, float Damage)
 {
 	auto* TargetASC = TargetActor->FindComponentByClass<UAbilitySystemComponent>();
 	if (!TargetASC)
@@ -1640,7 +1654,7 @@ void APlayerCharacterBase::Server_ApplyHP_Implementation(AActor* TargetActor, FH
 
 	FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(Effect, 1.0f, EffectContext);
 	SpecHandle.Data.Get()->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(TEXT("SetByCaller.State.HP")),
-		HP);
+	                                               HP);
 
 	ASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), PlayerASC);
 }
@@ -1746,7 +1760,8 @@ void APlayerCharacterBase::ToggleInventory(bool bShow)
 		PC->SetInputMode(InputMode);
 	}
 
-	RS_LOG_DEBUG(LogRSUI, Log, TEXT("%s: Inventory popup widget visibility set to %s"), *LOG_LINE_INFO, bShow ? TEXT("visible") : TEXT("collapsed"));
+	RS_LOG_DEBUG(LogRSUI, Log, TEXT("%s: Inventory popup widget visibility set to %s"), *LOG_LINE_INFO,
+	             bShow ? TEXT("visible") : TEXT("collapsed"));
 
 	PC->bShowMouseCursor = bShow;
 	ToggleCombatWidgets(!bShow);
@@ -1754,7 +1769,8 @@ void APlayerCharacterBase::ToggleInventory(bool bShow)
 
 void APlayerCharacterBase::ToggleCombatWidgets(bool bShow)
 {
-	RS_LOG_DEBUG(LogRSUI, Log, TEXT("%s: Combat widgets visibility set to %s"), *LOG_LINE_INFO, bShow ? TEXT("visible") : TEXT("collapsed"));
+	RS_LOG_DEBUG(LogRSUI, Log, TEXT("%s: Combat widgets visibility set to %s"), *LOG_LINE_INFO,
+	             bShow ? TEXT("visible") : TEXT("collapsed"));
 	const auto* PC = GetController<APlayerControllerBase>();
 	if (!PC)
 	{
@@ -1782,8 +1798,69 @@ void APlayerCharacterBase::ToggleCombatWidgets(bool bShow)
 		for (const auto& CombatWidget : OutCombatWidgets)
 		{
 			CombatWidget->SetVisibility(bShow ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-			RS_LOG_DEBUG(LogRSUI, Log, TEXT("%s: %s visibility set to %s"), *LOG_LINE_INFO, *CombatWidget->GetName(), bShow ? TEXT("Visible") : TEXT("Collapsed"));
+			RS_LOG_DEBUG(LogRSUI, Log, TEXT("%s: %s visibility set to %s"), *LOG_LINE_INFO, *CombatWidget->GetName(),
+			             bShow ? TEXT("Visible") : TEXT("Collapsed"));
 		}
+	}
+}
+
+void APlayerCharacterBase::OnInteractPressed()
+{
+	if (CurrentFocusedInteractable.IsValid())
+	{
+		Server_StartInteraction(CurrentFocusedInteractable.Get());
+	}
+}
+
+void APlayerCharacterBase::CheckInteractable()
+{
+	FVector LookAtLocation = Camera->GetComponentLocation();
+	FVector LookAtDirection = Camera->GetForwardVector();
+	FVector Start = LookAtLocation;
+	FVector End = Start + LookAtDirection * 1000.f;
+
+	FHitResult HitResult;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+
+	if (GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility, Params))
+	{
+		if (const AActor* HitActor = HitResult.GetActor())
+		{
+			auto* Interactable = HitActor->FindComponentByClass<UInteractableComponent>();
+			// TODO: 필요하다면 캐릭터에 상호작용 범위 검증 필요
+			// 조준 성공
+			if (Interactable)
+			{
+				if (CurrentFocusedInteractable != Interactable)
+				{
+					if (CurrentFocusedInteractable.IsValid())
+					{
+						CurrentFocusedInteractable.Get()->SetFocus(false);
+					}
+
+					CurrentFocusedInteractable = Interactable;
+					Interactable->SetFocus(true);
+				}
+
+				return;
+			}
+		}
+	}
+
+	// 조준 실패
+	if (CurrentFocusedInteractable.IsValid())
+	{
+		CurrentFocusedInteractable.Get()->SetFocus(false);
+		CurrentFocusedInteractable.Reset();
+	}
+}
+
+void APlayerCharacterBase::Server_StartInteraction_Implementation(UInteractableComponent* TargetComp)
+{
+	if (TargetComp)
+	{
+		TargetComp->StartInteraction(this);
 	}
 }
 
@@ -1808,5 +1885,4 @@ void APlayerCharacterBase::OnDead()
 	{
 		PlayerController->Server_RequestSpectateTargets();
 	}
-
 }

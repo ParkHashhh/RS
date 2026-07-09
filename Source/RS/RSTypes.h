@@ -216,6 +216,7 @@ enum class EZombieAnimType : uint8
 	Attack,
 	Roar,
 	Special_Skill,
+	Jump,
 	Death
 };
 
@@ -256,7 +257,7 @@ struct FStatDisplayTableInfo : public FTableRowBase
 
 	// 값이 0이면 UI에서 숨길지 여부
     UPROPERTY(EditAnywhere)
-    bool bHiddenIfZero = false;
+    bool bHiddenIfZero = true;
 };
 
 UENUM(BlueprintType)
