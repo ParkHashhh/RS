@@ -78,6 +78,11 @@ void UPlayerAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribut
 	}
 	else if (Attribute == GetCurrentHPAttribute())
 	{
+		if (bIsClampHP)
+		{
+			bIsClampHP = false;
+			return;
+		}
 		if (OldValue - NewValue > 0)
 		{
 			AActor* OwnerActor = GetOwningAbilitySystemComponent()->GetAvatarActor();
@@ -87,6 +92,7 @@ void UPlayerAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribut
 		}
 		if (GetCurrentHP() > GetMaxHP())
 		{
+			bIsClampHP = true;
 			SetCurrentHP(GetMaxHP());
 		}
 		RS_LOG_DEBUG(LogRSBattle, Log, TEXT("%s: HP가 변경됨! 현재 값: %.2f"), *LOG_LINE_INFO, NewValue);

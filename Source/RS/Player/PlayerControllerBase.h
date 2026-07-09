@@ -27,7 +27,7 @@ protected:
 	TSubclassOf<UBattleHUDWidget> BattleHUDWidgetClass;
 
 	UPROPERTY()
-	TArray<class APlayerCharacterBase*>SpectateTargets;
+	TArray<class APlayerCharacterBase*> SpectateTargets;
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> EndPopUpWidgetClass;

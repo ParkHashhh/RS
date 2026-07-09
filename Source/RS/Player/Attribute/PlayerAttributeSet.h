@@ -32,6 +32,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing=OnRep_CriticalDamage, Category="Attribute", meta=(AllowPrivateAccess = true))
 	FGameplayAttributeData	CriticalDamage;
 
+	bool bIsClampHP = false;
 public:
 	ATTRIBUTE_ACCESSORS_BASIC(UPlayerAttributeSet, AttackSpeed)
 	ATTRIBUTE_ACCESSORS_BASIC(UPlayerAttributeSet, ShotSpreadRadius)

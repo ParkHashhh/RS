@@ -85,7 +85,6 @@ void APlayerControllerBase::ShowEndPopUp()
 	{
 		return;
 	}
-	RS_PRINT_SCREEN(10.f, FColor::Red, TEXT("Controller ShowEndPopUp"));
 
 	bShowMouseCursor = true;
 	FInputModeUIOnly InputMode;

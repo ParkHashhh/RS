@@ -647,7 +647,6 @@ void APlayerCharacterBase::CursorKey(const FInputActionValue& Value)
 			ColonyPC->SetInputMode(InputMode);
 		}
 	}
-	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("CursorKey"));
 
 }
 
@@ -660,7 +659,6 @@ void APlayerCharacterBase::CursorReleaseKey(const FInputActionValue& Value)
 		FInputModeGameOnly GameOnlyMode;
 		ColonyPC->SetInputMode(GameOnlyMode);
 	}
-	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("CursorReleaseKey"));
 
 }
 
@@ -1073,7 +1071,6 @@ void APlayerCharacterBase::ShowEndPopUp()
 
 	if (IsValid(PlayerController))
 	{
-		RS_PRINT_SCREEN(10.f, FColor::Red, TEXT("CharacterBase ShowEndPopUp"));
 
 		PlayerController->ShowEndPopUp();
 	}
@@ -1868,7 +1865,6 @@ void APlayerCharacterBase::OnDead()
 {
 	bIsDead = true;
 
-	RS_PRINT_SCREEN(10.f, FColor::Green, TEXT("OnDead"));
 
 	GetMesh()->SetVisibility(false, true);
 	GetMesh()->SetHiddenInGame(true, true);
