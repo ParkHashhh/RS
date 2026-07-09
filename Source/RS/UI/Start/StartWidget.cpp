@@ -20,7 +20,7 @@ void UStartWidget::NativeOnInitialized()
 
 void UStartWidget::StartClick()
 {
-	UGameplayStatics::OpenLevel(GetWorld(), TEXT("Stage_Warehouse"));
+	UGameplayStatics::OpenLevel(GetWorld(), TEXT("Colony"));
 }
 
 void UStartWidget::ExitClick()

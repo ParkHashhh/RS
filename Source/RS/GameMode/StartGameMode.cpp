@@ -8,6 +8,4 @@ AStartGameMode::AStartGameMode()
 {
 	DefaultPawnClass = nullptr;
 	PlayerControllerClass = AStartPlayerController::StaticClass();
-
-
 }

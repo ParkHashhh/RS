@@ -397,7 +397,12 @@ private:
 	void SubSkillKey(const FInputActionValue& Value);
 	void SpecNextKey(const FInputActionValue& Value);
 	void SpecPrevKey(const FInputActionValue& Value);
+	void CursorKey(const FInputActionValue& Value);
+	void CursorReleaseKey(const FInputActionValue& Value);
 	void RotationMouse(const FInputActionValue& Value);
+
+
+
 	// WeaponSkeleton Attach
 	void AttachWeapon();
 

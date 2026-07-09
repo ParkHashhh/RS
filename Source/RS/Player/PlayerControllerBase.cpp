@@ -9,9 +9,6 @@
 APlayerControllerBase::APlayerControllerBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
-
-	// 마우스 커서를 보이게 한다.
-	bShowMouseCursor = false;
 }
 
 void APlayerControllerBase::BeginPlay()

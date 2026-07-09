@@ -21,6 +21,7 @@
 #include "RS/UI/Battle/BattleHUDWidget.h"
 #include "RS/UI/Battle/Inventory/Popup/InventoryPopupWidget.h"
 #include "RS/UI/Subsystem/UISubsystem.h"
+#include "ColonyPlayerController.h"
 
 // Sets default values
 APlayerCharacterBase::APlayerCharacterBase()
@@ -127,7 +128,7 @@ void APlayerCharacterBase::BeginPlay()
 	UpdatePlayerCameraState();
 	AttachWeapon();
 	WeaponMeshComponent->SetIsReplicated(true);
-	if (AimAlphaCurve)
+	if (IsValid(AimAlphaCurve))
 	{
 		FOnTimelineFloat OnTimelineFloat;
 		OnTimelineFloat.BindUFunction(this, GET_FUNCTION_NAME_CHECKED(APlayerCharacterBase, SetAimAlpha));
@@ -386,6 +387,14 @@ void APlayerCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::ShowInventory);
 		EnhancedInput->BindAction(Action, ETriggerEvent::Completed, this, &APlayerCharacterBase::HideInventory);
 	}
+	Action = InputData->FindAction(FInputKeyNames::Cursor);
+	if (Action)
+	{
+		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::CursorKey);
+		EnhancedInput->BindAction(Action, ETriggerEvent::Completed, this, &APlayerCharacterBase::CursorReleaseKey);
+		EnhancedInput->BindAction(Action, ETriggerEvent::Canceled, this, &APlayerCharacterBase::CursorReleaseKey);
+
+	}
 
 #if !UE_BUILD_SHIPPING
 	Action = InputData->FindAction(FInputKeyNames::Debug_00);
@@ -623,6 +632,37 @@ void APlayerCharacterBase::SpecPrevKey(const FInputActionValue& Value)
 	{
 		PlayerController->SpectatePrev();
 	}
+}
+
+void APlayerCharacterBase::CursorKey(const FInputActionValue& Value)
+{
+	if (AColonyPlayerController* ColonyPC = Cast<AColonyPlayerController>(PlayerController))
+	{
+		ColonyPC->bShowMouseCursor = true;
+		TObjectPtr<UUserWidget> ColonyWidget = ColonyPC->GetColonyWidget();
+		if (IsValid(ColonyWidget))
+		{
+			FInputModeGameAndUI InputMode;
+			InputMode.SetWidgetToFocus(ColonyWidget->TakeWidget());
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			ColonyPC->SetInputMode(InputMode);
+		}
+	}
+	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("CursorKey"));
+
+}
+
+void APlayerCharacterBase::CursorReleaseKey(const FInputActionValue& Value)
+{
+	if (AColonyPlayerController* ColonyPC = Cast<AColonyPlayerController>(PlayerController))
+	{
+		ColonyPC->bShowMouseCursor = false;
+
+		FInputModeGameOnly GameOnlyMode;
+		ColonyPC->SetInputMode(GameOnlyMode);
+	}
+	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("CursorReleaseKey"));
+
 }
 
 
