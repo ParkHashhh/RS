@@ -101,6 +101,10 @@ void APlayerControllerBase::ShowEndPopUp()
 	EndPopUpWidget->AddToViewport();
 }
 
+void APlayerControllerBase::Client_ShowRewardUI_Implementation(const TArray<FName>& RewardItemRowNames)
+{
+}
+
 
 void APlayerControllerBase::Server_RequestSpectateTargets_Implementation()
 {

@@ -75,4 +75,12 @@ private:
 	void CreateBattleHUD();
 	void CreateEndPopUp();
 
+#pragma region Interaction
+
+public:
+
+	UFUNCTION(Client, Reliable)
+	void Client_ShowRewardUI(const TArray<FName>& RewardItemRowNames);
+
+#pragma endregion Interaction
 };

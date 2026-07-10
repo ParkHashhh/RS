@@ -64,7 +64,7 @@ EBTNodeResult::Type UBTTask_TraceNoneBoss::ExecuteTask(UBehaviorTreeComponent& O
 	{
 		return EBTNodeResult::Failed;
 	}
-
+		
 	//좀비를 이동시킨다.
 	EPathFollowingRequestResult::Type MoveRequestResult = Ctrl->MoveToActor(Target, -1.f, false, true, false);
 	if (MoveRequestResult == EPathFollowingRequestResult::Failed)

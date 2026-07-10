@@ -193,6 +193,9 @@ struct FZombieDefaultInfo : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Detect")
 	float DetectRange_Sight;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Detect")
+	float DetectRange_Hearing;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Type")
 	float Normal_Rarity;
 
@@ -330,4 +333,13 @@ struct FStageObjective
 		  Goal(Goal)
 	{
 	}
+};
+
+UENUM(BlueprintType)
+enum class EInteractableState : uint8
+{
+	None = 0,
+	Idle,
+	Occupied,
+	Disabled,
 };

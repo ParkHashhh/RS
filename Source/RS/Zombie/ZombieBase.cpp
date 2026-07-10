@@ -20,6 +20,7 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
+#include "Navigation/PathFollowingComponent.h"
 
 // Sets default values
 AZombieBase::AZombieBase()
@@ -57,11 +58,6 @@ void AZombieBase::BeginPlay()
 	check(DataSubSystem);
 
 	DataSubSystem->ExecuteOrBindOnZombieDefaultInfoLoaded(this, &AZombieBase::LoadZombieDefaultData);
-
-	if (IsValid(AICtrl))
-	{
-		AIControllerClass = AICtrl;
-	}
 
 	if (GetController() == nullptr)
 	{
@@ -126,13 +122,14 @@ void AZombieBase::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 void AZombieBase::PossessedBy(AController* NewController)
 {
-	//컨트롤러 빙의가 성공했을 때 비헤이비어 트리를 바로 활성화 시켜줘야 한다.
+	//컨트롤러 빙의 후 바로 비헤이비어 트리를 가동한다.
 	AZombieAIController* Ctrl = Cast<AZombieAIController>(NewController);
 	if (IsValid(Ctrl))
 	{
+		AICtrl = Ctrl;
+
 		Ctrl->ActivateBT();
 	}
-
 	Super::PossessedBy(NewController);
 }
 
@@ -485,19 +482,22 @@ void AZombieBase::PlayFootStepCue(const FName& FootName)
 		//피지컬 머티리얼을 얻어온다.
 		UPhysicalMaterial* PMtrl = Result.PhysMaterial.Get();
 
-		EPhysicalSurface Surface = PMtrl->SurfaceType;
-
-		//맵에서 꺼내온 사운드 큐 포인터가 유효한지 확인 : 머티리얼은 있는데 Surface 지정을 안한 경우도 있으므로
-		const TObjectPtr<USoundBase>* SoundCuePtr = FootStepSoundCueMap.Find(Surface);
-
-		if (!SoundCuePtr)
+		if (IsValid(PMtrl))
 		{
-			return;
+			EPhysicalSurface Surface = PMtrl->SurfaceType;
+
+			//맵에서 꺼내온 사운드 큐 포인터가 유효한지 확인 : 머티리얼은 있는데 Surface 지정을 안한 경우도 있으므로
+			const TObjectPtr<USoundBase>* SoundCuePtr = FootStepSoundCueMap.Find(Surface);
+
+			if (!SoundCuePtr)
+			{
+				return;
+			}
+
+			USoundBase* SoundCue = *SoundCuePtr;
+
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), SoundCue, Result.ImpactPoint, 0.5f);
 		}
-
-		USoundBase* SoundCue = *SoundCuePtr;
-
-		UGameplayStatics::PlaySoundAtLocation(GetWorld(), SoundCue,	Result.ImpactPoint, 0.5f);
 	}
 }
 

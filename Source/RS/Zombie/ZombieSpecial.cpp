@@ -16,6 +16,7 @@ AZombieSpecial::AZombieSpecial()
 {
 	AttributeSet = CreateDefaultSubobject<UZombieStandardAttributeSet>(TEXT("Attribute"));
 	UZombieStandardAttributeSet* StandardAttri = Cast<UZombieStandardAttributeSet>(AttributeSet);
+	SpecialAttributeSet = StandardAttri;
 	if (IsValid(StandardAttri))
 	{
 		ASC->AddAttributeSetSubobject<UZombieStandardAttributeSet>(StandardAttri);
@@ -92,6 +93,7 @@ void AZombieSpecial::InitStatData(const FZombieDefaultInfo* Data)
 	SpecialAttributeSet->SetCurrentHP(Data->MaxHP);
 	SpecialAttributeSet->SetAttackPower(Data->AttackPower);
 	SpecialAttributeSet->SetDetectRange_Sight(Data->DetectRange_Sight);
+	SpecialAttributeSet->SetDetectRange_Hearing(Data->DetectRange_Hearing);
 	SpecialAttributeSet->SetSpecial_SkillCooldown(Data->Special_SkillCooldown);
 	SpecialAttributeSet->SetSpecial_SkillDamage(Data->Special_SkillDamage);
 	SpecialAttributeSet->SetSpecial_SkillDotDamage(Data->Special_SkillDotDamage);
@@ -103,6 +105,7 @@ void AZombieSpecial::InitStatData(const FZombieDefaultInfo* Data)
 	if (IsValid(Ctrl))
 	{
 		Ctrl->SetDetectRange_Sight(SpecialAttributeSet->GetDetectRange_Sight());
+		Ctrl->SetDetectRange_Hearing(SpecialAttributeSet->GetDetectRange_Hearing());
 	}
 }
 

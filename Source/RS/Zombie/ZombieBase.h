@@ -70,8 +70,8 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UZombieAnimInstance> AnimInstance;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta =(AllowPrivateAccess = "true"))
-	TSubclassOf<AZombieAIController> AICtrl;
+	UPROPERTY()
+	TObjectPtr<AZombieAIController> AICtrl;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "NeedProperty", meta = (AllowPrivateAccess = "true"));
 	TSubclassOf<UGameplayAbility> AttackAbility;
@@ -180,6 +180,15 @@ public:
 	UZombieAnimInstance* GetAnimInst() const
 	{
 		return AnimInstance;
+	}
+
+	AZombieAIController* GetAICtrl() const
+	{
+		return AICtrl;
+	}
+	UFloatingPawnMovement* GetMovement() const
+	{
+		return Movement;
 	}
 
 public:

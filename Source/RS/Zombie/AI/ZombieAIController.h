@@ -9,6 +9,15 @@
 #include "ZombieAIController.generated.h"
 
 class UAISenseConfig_Sight;
+class UAISenseConfig_Hearing;
+
+UENUM()
+enum class EDetectPerceptionType
+{
+	None,
+	Sight,
+	Hearing
+};
 
 UCLASS()
 class RS_API AZombieAIController : public AAIController
@@ -25,6 +34,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UAISenseConfig_Sight> SightConfig;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UAISenseConfig_Hearing> HearingConfig;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta =(AllowPrivateAccess = "true"))
 	TObjectPtr<UBehaviorTree> BT;
 
@@ -34,6 +46,12 @@ protected:
 	UPROPERTY()
 	FVector EndLoc = FVector::ZeroVector;
 
+	UPROPERTY();
+	float PrevSpeed = 0.f;
+
+	UPROPERTY();
+	EDetectPerceptionType TargetPerceptionType;
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
@@ -41,6 +59,7 @@ protected:
 public:
 	//각각의 감각에 대한 설정이 필요한 경우 함수를 이곳에 추가한다.
 	void SetDetectRange_Sight(float Range);
+	void SetDetectRange_Hearing(float Range);
 
 public:
 	UFUNCTION()
@@ -48,6 +67,7 @@ public:
 
 public:
 	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const;
+	virtual void OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result);
 
 public:
 	void ActivateBT();

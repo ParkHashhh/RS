@@ -17,8 +17,10 @@
 #include "RS/Utils/ASCProvider.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
+#include "Perception/AIPerceptionStimuliSourceComponent.h"
 #include "PlayerCharacterBase.generated.h"
 
+class UInteractionWidget;
 class UInteractableComponent;
 class UDataSubsystem;
 class USpringArmComponent;
@@ -32,6 +34,8 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnCurrentShotSpreadChangedDelegate, float);
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnAimAlphaChangedDelegate, float);
 
 DECLARE_MULTICAST_DELEGATE(FOnASCReadyDelegate);
+
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnFocusedInteractableChanged, bool);
 
 UCLASS()
 class RS_API APlayerCharacterBase : public ARSCharacter,
@@ -57,6 +61,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USkeletalMeshComponent> WeaponMeshComponent;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UAIPerceptionStimuliSourceComponent> AIPerceptionComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCapsuleComponent> Body;
@@ -540,7 +547,7 @@ private:
 public:
 	UFUNCTION()
 	void OnDead();
-	
+
 
 
 #pragma region Inventory
@@ -552,15 +559,41 @@ private:
 #pragma endregion
 
 #pragma region Interaction
+
 private:
+	UPROPERTY(Transient)
+	TWeakObjectPtr<UInteractionWidget> InteractionWidget;
+
+	UInteractionWidget* GetInteractionWidget();
+
 	UPROPERTY(Transient)
 	TWeakObjectPtr<UInteractableComponent> CurrentFocusedInteractable;
 
+	UPROPERTY()
+	TArray<TWeakObjectPtr<UInteractableComponent>> OverlappedInteractables;
+
+	FOnFocusedInteractableChanged OnFocusedInteractableChanged;
+
+public:
+	void RegisterOverlappedInteractable(UInteractableComponent* InComponent);
+	void UnregisterOverlappedInteractable(UInteractableComponent* InComponent);
+
+private:
 	void OnInteractPressed();
+	void OnInteractReleased();
 
 	UFUNCTION(Server, Reliable)
 	void Server_StartInteraction(UInteractableComponent* TargetComp);
 
+	UFUNCTION(Server, Reliable)
+	void Server_CancelInteraction();
+
 	void CheckInteractable();
+
+	void HandleFocusedInteractableChange(bool bHasFocus);
+
+	UFUNCTION()
+	void HandleInteractingTimeElapsed(float Elapsed, float Max);
+
 #pragma endregion Interaction
 };

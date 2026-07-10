@@ -19,6 +19,9 @@ protected:
 	FGameplayAttributeData	DetectRange_Sight;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute", meta = (AllowPrivateAccess = true))
+	FGameplayAttributeData	DetectRange_Hearing;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute", meta = (AllowPrivateAccess = true))
 	FGameplayAttributeData	Normal_Rarity;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attribute", meta = (AllowPrivateAccess = true))
@@ -32,6 +35,7 @@ protected:
 
 public:
 	ATTRIBUTE_ACCESSORS_BASIC(UZombieStandardAttributeSet, DetectRange_Sight)
+	ATTRIBUTE_ACCESSORS_BASIC(UZombieStandardAttributeSet, DetectRange_Hearing)
 	ATTRIBUTE_ACCESSORS_BASIC(UZombieStandardAttributeSet, Normal_Rarity)
 	ATTRIBUTE_ACCESSORS_BASIC(UZombieStandardAttributeSet, Special_SkillCooldown)
 	ATTRIBUTE_ACCESSORS_BASIC(UZombieStandardAttributeSet, Special_SkillDamage)

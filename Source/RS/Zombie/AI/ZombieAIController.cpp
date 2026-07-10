@@ -3,6 +3,7 @@
 
 #include "ZombieAIController.h"
 #include "Perception/AISenseConfig_Sight.h"
+#include "Perception/AISenseConfig_Hearing.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "../ZombieBase.h"
@@ -11,6 +12,7 @@
 #include "RS/LogCategory.h"
 #include "Navigation/PathFollowingComponent.h"
 #include "RS/Zombie/ZombieBase.h"
+#include "GameFramework/FloatingPawnMovement.h"
 
 AZombieAIController::AZombieAIController()
 {
@@ -20,20 +22,31 @@ AZombieAIController::AZombieAIController()
 
 	//시각을 사용하도록 생성한다.
 	SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("Sight"));
+	HearingConfig = CreateDefaultSubobject<UAISenseConfig_Hearing>(TEXT("Hearing"));
 
-	//테스트용 임시 코드
+	//초기에 값이 오염되어 바로 포착되는 것을 방지한다.
 	SightConfig->SightRadius = 1.f;
 	SightConfig->LoseSightRadius = 1.f;
 	SightConfig->PeripheralVisionAngleDegrees = 160.f;
 
-	//탐지 대상을 지정한다
+	//시각의 탐지 대상을 지정한다
 	SightConfig->DetectionByAffiliation.bDetectEnemies = true;
 	SightConfig->DetectionByAffiliation.bDetectNeutrals = true;
 	SightConfig->DetectionByAffiliation.bDetectFriendlies = false;
 
+	//초기에 값이 오염되어 바로 포착되는 것을 방지한다.
+	HearingConfig->HearingRange = 1.f;
+
+	//청각의 탐지 대상을 지정한다
+	HearingConfig->DetectionByAffiliation.bDetectEnemies = true;
+	HearingConfig->DetectionByAffiliation.bDetectNeutrals = true;
+	HearingConfig->DetectionByAffiliation.bDetectFriendlies = false;
+
 	//시각을 사용하도록 등록하고 시각을 주 감각으로 지정한다.
 	AIPerception->ConfigureSense(*SightConfig);
 	AIPerception->SetDominantSense(SightConfig->GetSenseImplementation());
+
+	AIPerception->ConfigureSense(*HearingConfig);
 
 	SetGenericTeamId(FGenericTeamId(TeamMonster));
 
@@ -52,8 +65,9 @@ void AZombieAIController::Tick(float DeltaTime)
 	UPathFollowingComponent* PFComp = GetPathFollowingComponent();
 	UBlackboardComponent* BB = GetBlackboardComponent();
 	AZombieBase* Zombie = GetPawn<AZombieBase>();
+	UFloatingPawnMovement* FPM = Zombie->GetMovement();
 
-	if (!PFComp || !BB || !Zombie)
+	if (!PFComp || !BB || !Zombie || !FPM)
 	{
 		return;
 	}
@@ -80,6 +94,12 @@ void AZombieAIController::Tick(float DeltaTime)
 
 		//애니메이션을 점프로 바꾼다.
 		Zombie->ChangeAnim(EZombieAnimType::Jump);
+
+		//좀비의 이전 속도를 백업한다.
+		PrevSpeed = FPM->MaxSpeed;
+
+		FPM->MaxSpeed += 300.f;
+
 		return;
 	}
 
@@ -110,6 +130,9 @@ void AZombieAIController::Tick(float DeltaTime)
 
 				//착지 섹션으로 몽타주를 변경한다.
 				Zombie->SetIsJumpEnd(true);
+
+				//백업해둔 속도를 적용한다.
+				FPM->MaxSpeed = PrevSpeed;
 			}
 		}
 		//거리가 충분히 가까운 경우 : 도착한것이다.
@@ -121,10 +144,21 @@ void AZombieAIController::Tick(float DeltaTime)
 			//착지 섹션으로 몽타주를 변경한다.
 			Zombie->SetIsJumpEnd(true);
 
+			//백업해둔 속도를 적용한다.
+			FPM->MaxSpeed = PrevSpeed;
+
 			//사용한 변수들을 초기화한다.
 			StuckTime = 0.f;
 			EndLoc = FVector::ZeroVector;
 			BB->SetValueAsBool(TEXT("IsUsingNavLink"), false);
+		}
+	}
+
+	if (PFComp->IsCurrentSegmentNavigationLink())
+	{
+		if (FPM->Velocity.Z < 0.f)
+		{
+			FPM->MaxSpeed += DeltaTime * 600.f;
 		}
 	}
 }
@@ -138,6 +172,12 @@ void AZombieAIController::SetDetectRange_Sight(float Range)
 	AIPerception->ConfigureSense(*SightConfig);
 }
 
+void AZombieAIController::SetDetectRange_Hearing(float Range)
+{
+	HearingConfig->HearingRange = Range;
+	AIPerception->ConfigureSense(*HearingConfig);
+}
+
 void AZombieAIController::OnTarget(AActor* Actor, FAIStimulus Stimulus)
 {
 	if (!IsValid(BT) || !Blackboard)
@@ -149,15 +189,58 @@ void AZombieAIController::OnTarget(AActor* Actor, FAIStimulus Stimulus)
 
 	AActor* Target = Cast<AActor>(GetBlackboardComponent()->GetValueAsObject(TEXT("Target")));
 
-	//현재 블랙보드에 타겟이 없을 경우에만 타겟으로 지정한다.
-	if (Stimulus.WasSuccessfullySensed() && !IsValid(Target))
+	//감지에 성공함
+	if (Stimulus.WasSuccessfullySensed())
 	{
-		Blackboard->SetValueAsObject(TEXT("Target"), Actor);
+		//현재 타겟을 감지한 감각이 무엇인지 확인
+		EDetectPerceptionType CurrentType = EDetectPerceptionType::None;
+		if (Stimulus.Type == UAISense::GetSenseID<UAISenseConfig_Sight>())
+		{
+			CurrentType = EDetectPerceptionType::Sight;
+		}
+		else if (Stimulus.Type == UAISense::GetSenseID<UAISenseConfig_Hearing>())
+		{
+			CurrentType = EDetectPerceptionType::Hearing;
+		}
+
+		//현재 타겟이 있는지 확인
+		if (!IsValid(Target))
+		{
+			//없으면 타겟으로 지정 + 어떤 감각으로 감지했는지 저장
+			Blackboard->SetValueAsObject(TEXT("Target"), Actor);
+			TargetPerceptionType = CurrentType;
+		}
+		else
+		{
+			//현재 타겟이 있다면 그 타겟이 어떤 감각으로 감지한 타겟인지 확인
+			if (TargetPerceptionType == EDetectPerceptionType::Sight)
+			{
+				//이전 타겟을 시각으로 감지한 경우에는 전부 무시한다. (타겟을 바꾸지 않는다.)
+				return;
+			}
+			else if (TargetPerceptionType == EDetectPerceptionType::Hearing)
+			{
+				//이전 타겟을 청각으로 감지했다면 현재 타겟이 어떤 감각으로 감지되었는지 확인
+				if (Stimulus.Type == UAISense::GetSenseID<UAISenseConfig_Sight>())
+				{
+					//현재 타겟이 시각으로 감지한 타겟이라면 타겟을 변경한다.
+					Blackboard->SetValueAsObject(TEXT("Target"), Actor);
+					TargetPerceptionType = CurrentType;
+				}
+				else if (Stimulus.Type == UAISense::GetSenseID<UAISenseConfig_Sight>())
+				{
+					//현재 타겟이 청각으로 감지한 타겟이라면 무시한다.
+					return;
+				}
+			}
+		}
 	}
+	//감지에 실패함
 	else
 	{
-		//이후 추적 해제 기능이 필요하다면 이곳에서 타겟을 해제해준다.
+		//좀비가 추적에 실패하면 타겟을 지워야 하는 경우 이곳에서 처리한다.
 	}
+
 }
 
 ETeamAttitude::Type AZombieAIController::GetTeamAttitudeTowards(const AActor& Other) const
@@ -172,6 +255,11 @@ ETeamAttitude::Type AZombieAIController::GetTeamAttitudeTowards(const AActor& Ot
 
 	return GetGenericTeamId() == OtherTeamAgent->GetGenericTeamId() ?
 		ETeamAttitude::Friendly : ETeamAttitude::Hostile;
+}
+
+void AZombieAIController::OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result)
+{
+	Super::OnMoveCompleted(RequestID, Result);
 }
 
 void AZombieAIController::ActivateBT()

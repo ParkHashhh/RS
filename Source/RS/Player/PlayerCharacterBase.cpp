@@ -23,6 +23,9 @@
 #include "RS/UI/Battle/Inventory/Popup/InventoryPopupWidget.h"
 #include "RS/UI/Subsystem/UISubsystem.h"
 #include "ColonyPlayerController.h"
+#include "Perception/AISense_Hearing.h"
+#include "RS/UI/Battle/CrosshairWidget.h"
+#include "RS/UI/Common/Interaction/InteractionWidget.h"
 
 // Sets default values
 APlayerCharacterBase::APlayerCharacterBase()
@@ -54,7 +57,18 @@ APlayerCharacterBase::APlayerCharacterBase()
 	{
 		PlayerMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
+	AIPerceptionComponent = CreateDefaultSubobject<UAIPerceptionStimuliSourceComponent>(TEXT("AIPerception"));
+	if (AIPerceptionComponent)
+	{
+		RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("Create AIComp"));
 
+		AIPerceptionComponent->bAutoRegister = true;
+		AIPerceptionComponent->RegisterForSense(UAISense_Hearing::StaticClass());
+	}
+	else
+	{
+		RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("Cant Create AIComp"));
+	}
 	UCapsuleComponent* PlayerBody = GetCapsuleComponent();
 
 	if (IsValid(PlayerBody))
@@ -85,6 +99,11 @@ APlayerCharacterBase::APlayerCharacterBase()
 void APlayerCharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (HasAuthority() && AIPerceptionComponent)
+	{
+		AIPerceptionComponent->RegisterWithPerceptionSystem();
+	}
 
 	const UGameInstance* GameInstance = GetGameInstance();
 	check(GameInstance);
@@ -137,6 +156,8 @@ void APlayerCharacterBase::BeginPlay()
 	}
 
 	ExecuteOrBindOnASCReady(this, &ThisClass::BindGameplayTagDelegate);
+
+	OnFocusedInteractableChanged.AddUObject(this, &ThisClass::HandleFocusedInteractableChange);
 }
 
 void APlayerCharacterBase::OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode)
@@ -271,6 +292,11 @@ void APlayerCharacterBase::Tick(float DeltaTime)
 		AddControllerYawInput(YawDelta);
 		RecoilYawCurrent -= YawDelta;
 	}
+
+	if (!OverlappedInteractables.IsEmpty())
+	{
+		CheckInteractable();
+	}
 }
 
 // Called to bind functionality to input
@@ -392,7 +418,13 @@ void APlayerCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::CursorKey);
 		EnhancedInput->BindAction(Action, ETriggerEvent::Completed, this, &APlayerCharacterBase::CursorReleaseKey);
 		EnhancedInput->BindAction(Action, ETriggerEvent::Canceled, this, &APlayerCharacterBase::CursorReleaseKey);
+	}
 
+	Action = InputData->FindAction(FInputKeyNames::Interaction);
+	if (Action)
+	{
+		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::OnInteractPressed);
+		EnhancedInput->BindAction(Action, ETriggerEvent::Completed, this, &APlayerCharacterBase::OnInteractReleased);
 	}
 
 #if !UE_BUILD_SHIPPING
@@ -1317,8 +1349,6 @@ void APlayerCharacterBase::ExecuteMuzzleEffect(const FVector& MuzzleLocation, co
 	FGameplayCueParameters CueParams;
 	CueParams.Location = MuzzleLocation;
 	CueParams.Normal = MuzzleRotation.Vector();
-	// AI가 들을 수 있는 함수
-	MakeNoise(20.f, this, MuzzleLocation, 50.f);
 	if (ASC)
 	{
 		ASC->ExecuteGameplayCue(FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Weapon.MuzzleFlash")),
@@ -1505,9 +1535,12 @@ void APlayerCharacterBase::Multicast_ExecuteVisualEffect_Implementation(const FH
 
 void APlayerCharacterBase::Server_ShootAttackRay_Implementation(float RandomX, float RandomY)
 {
+	// AI가 들을 수 있는 함수
+	FVector MuzzleLocation = WeaponMeshComponent->GetSocketLocation(FName("Muzzle"));
+	UAISense_Hearing::ReportNoiseEvent(GetWorld(), MuzzleLocation, 1, this,3000);
+
 	// 충돌결과를 받을 구조체
 	FHitResult Hit;
-
 	if (CalculateHit(Hit, RandomX, RandomY))
 	{
 		AActor* TargetActor = Hit.GetActor();
@@ -1799,11 +1832,72 @@ void APlayerCharacterBase::ToggleCombatWidgets(bool bShow)
 	}
 }
 
+UInteractionWidget* APlayerCharacterBase::GetInteractionWidget()
+{
+	if (!InteractionWidget.IsValid())
+	{
+		if (PlayerController)
+		{
+			if (const auto* UISubsystem = ULocalPlayer::GetSubsystem<UUISubsystem>(PlayerController->GetLocalPlayer()))
+			{
+				if (auto* FoundWidget = Cast<UInteractionWidget>(UISubsystem->FindWidget(FName(TEXT("interaction")))))
+				{
+					InteractionWidget = FoundWidget;
+				}
+			}
+		}
+	}
+
+	return InteractionWidget.Get();
+}
+
+void APlayerCharacterBase::RegisterOverlappedInteractable(UInteractableComponent* InComponent)
+{
+	if (InComponent && !OverlappedInteractables.Contains(InComponent))
+	{
+		OverlappedInteractables.Add(InComponent);
+	}
+}
+
+void APlayerCharacterBase::UnregisterOverlappedInteractable(UInteractableComponent* InComponent)
+{
+	if (InComponent)
+	{
+		OverlappedInteractables.Remove(InComponent);
+
+		if (CurrentFocusedInteractable == InComponent)
+		{
+			CurrentFocusedInteractable.Get()->SetFocus(false);
+			// CurrentFocusedInteractable을 잃기 전에 AddDynamic을 제거해야한다
+			OnFocusedInteractableChanged.Broadcast(false);
+			CurrentFocusedInteractable.Reset();
+		}
+	}
+}
+
 void APlayerCharacterBase::OnInteractPressed()
 {
 	if (CurrentFocusedInteractable.IsValid())
 	{
+		RS_PRINT_SCREEN(1.f, FColor::Cyan, TEXT("Try start interact"));
+
 		Server_StartInteraction(CurrentFocusedInteractable.Get());
+
+		if (UInteractionWidget* Widget = GetInteractionWidget())
+		{
+			Widget->SetProgressEnable(true);
+		}
+	}
+}
+
+void APlayerCharacterBase::OnInteractReleased()
+{
+	RS_PRINT_SCREEN(1.f, FColor::Cyan, TEXT("Try end interact"));
+	Server_CancelInteraction();
+
+	if (UInteractionWidget* Widget = GetInteractionWidget())
+	{
+		Widget->SetProgressEnable(false);
 	}
 }
 
@@ -1835,7 +1929,13 @@ void APlayerCharacterBase::CheckInteractable()
 					}
 
 					CurrentFocusedInteractable = Interactable;
+					OnFocusedInteractableChanged.Broadcast(true);
 					Interactable->SetFocus(true);
+
+					if (UInteractionWidget* Widget = GetInteractionWidget())
+					{
+						Widget->Init(!Interactable->IsOccupied() || Interactable->IsOccupiedBy(this));
+					}
 				}
 
 				return;
@@ -1847,7 +1947,61 @@ void APlayerCharacterBase::CheckInteractable()
 	if (CurrentFocusedInteractable.IsValid())
 	{
 		CurrentFocusedInteractable.Get()->SetFocus(false);
+		// CurrentFocusedInteractable을 잃기 전에 AddDynamic을 제거해야한다
+		OnFocusedInteractableChanged.Broadcast(false);
 		CurrentFocusedInteractable.Reset();
+	}
+}
+
+void APlayerCharacterBase::HandleFocusedInteractableChange(bool bHasFocus)
+{
+	if (PlayerController)
+	{
+		if (const ULocalPlayer* LP = PlayerController->GetLocalPlayer())
+		{
+			if (const auto* UISubsystem = LP->GetSubsystem<UUISubsystem>())
+			{
+				RS_PRINT_SCREEN(1.f, FColor::Cyan, TEXT("Before get interaction widget"));
+				if (auto* Interaction = Cast<UInteractionWidget>(UISubsystem->FindWidget(FName(TEXT("interaction")))))
+				{
+					RS_LOG_DEBUG(LogRSInteraction, Log, TEXT("%s: Interaction visibility set to %s"), *LOG_LINE_INFO, bHasFocus ? TEXT("HitTestInvisible") : TEXT("Collapsed"));
+					Interaction->SetVisibility(bHasFocus ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+				}
+				else
+				{
+					RS_PRINT_SCREEN(1.f, FColor::Red, TEXT("Failed to get interaction widget"));
+				}
+
+				if (auto* Crosshair = Cast<UCrosshairWidget>(UISubsystem->FindWidget(FName(TEXT("crosshair")))))
+				{
+					Crosshair->SetVisibility(bHasFocus ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
+				}
+			}
+		}
+	}
+
+	if (bHasFocus)
+	{
+		if (CurrentFocusedInteractable.IsValid())
+		{
+			CurrentFocusedInteractable.Get()->OnInteractionProgressChanged.AddDynamic(this, &ThisClass::HandleInteractingTimeElapsed);
+		}
+	}
+	else
+	{
+		if (CurrentFocusedInteractable.IsValid())
+		{
+			CurrentFocusedInteractable.Get()->OnInteractionProgressChanged.RemoveDynamic(this, &ThisClass::HandleInteractingTimeElapsed);
+		}
+	}
+}
+
+void APlayerCharacterBase::HandleInteractingTimeElapsed(float Elapsed, float Max)
+{
+	if (UInteractionWidget* Widget = GetInteractionWidget())
+	{
+		float Ratio = Max > 0.0f ? Elapsed / Max : 0.0f;
+		Widget->SetProgress(Ratio);
 	}
 }
 
@@ -1856,6 +2010,17 @@ void APlayerCharacterBase::Server_StartInteraction_Implementation(UInteractableC
 	if (TargetComp)
 	{
 		TargetComp->StartInteraction(this);
+	}
+}
+
+void APlayerCharacterBase::Server_CancelInteraction_Implementation()
+{
+	if (CurrentFocusedInteractable.IsValid())
+	{
+		CurrentFocusedInteractable.Get()->CancelInteraction();
+
+		// TODO: 이게 필요한지는 확인
+		// CurrentFocusedInteractable.Reset();
 	}
 }
 

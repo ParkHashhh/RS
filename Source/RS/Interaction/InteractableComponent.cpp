@@ -24,6 +24,14 @@ void UInteractableComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty
 
 void UInteractableComponent::SetFocus(bool bInFocus)
 {
+	if (bIsFocused == bInFocus)
+	{
+		return;
+	}
+
+	bIsFocused = bInFocus;
+
+	// TODO: 처리 필요
 }
 
 bool UInteractableComponent::StartInteraction(APlayerCharacterBase* InInteractor)
@@ -33,7 +41,8 @@ bool UInteractableComponent::StartInteraction(APlayerCharacterBase* InInteractor
 		return false;
 	}
 
-	if (IsOccupied() || InInteractor == nullptr)
+	// 다른 사람이 선점
+	if (IsOccupied() || !InInteractor)
 	{
 		return false;
 	}
@@ -56,6 +65,7 @@ bool UInteractableComponent::StartInteraction(APlayerCharacterBase* InInteractor
 		}
 	}
 
+	// 즉시 완료
 	CompleteInteraction();
 
 	return true;
@@ -92,9 +102,17 @@ void UInteractableComponent::CompleteInteraction()
 	OnInteractionStateChanged.Broadcast(false);
 }
 
+bool UInteractableComponent::IsOccupiedBy(const APlayerCharacterBase* InInteractor) const
+{
+	return Interactor.IsValid() && Interactor.Get() == InInteractor;
+}
+
 void UInteractableComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnBeginOverlap);
+	OnComponentEndOverlap.AddDynamic(this, &ThisClass::OnEndOverlap);
 }
 
 void UInteractableComponent::OnRegister()
@@ -114,6 +132,31 @@ void UInteractableComponent::OnRegister()
 	}
 
 #endif
+}
+
+void UInteractableComponent::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (auto* Player = Cast<APlayerCharacterBase>(OtherActor))
+	{
+		Player->RegisterOverlappedInteractable(this);
+	}
+}
+
+void UInteractableComponent::OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	if (auto* Player = Cast<APlayerCharacterBase>(OtherActor))
+	{
+		Player->UnregisterOverlappedInteractable(this);
+	}
+
+	if (OtherActor == Interactor)
+	{
+		CancelInteraction();
+	}
+
+	SetFocus(false);
 }
 
 void UInteractableComponent::OnRep_Interactor()

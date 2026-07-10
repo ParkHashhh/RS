@@ -52,10 +52,18 @@ public:
 		return Interactor.IsValid();
 	}
 
+	bool IsOccupiedBy(const APlayerCharacterBase* InInteractor) const;
+
 protected:
 	virtual void BeginPlay() override;
 
 	virtual void OnRegister() override;
+
+	UFUNCTION()
+	void OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 private:
 	UFUNCTION()

@@ -86,6 +86,7 @@ void AZombieNormal::InitStatData(const FZombieDefaultInfo* Data)
 	NormalAttributeSet->SetCurrentHP(Data->MaxHP);
 	NormalAttributeSet->SetAttackPower(Data->AttackPower);
 	NormalAttributeSet->SetDetectRange_Sight(Data->DetectRange_Sight);
+	NormalAttributeSet->SetDetectRange_Hearing(Data->DetectRange_Hearing);
 	NormalAttributeSet->SetNormal_Rarity(Data->Normal_Rarity);
 
 	//초기 스탯 지정이 완료되면 이동속도, 감지거리를 넣어준다.
@@ -95,6 +96,7 @@ void AZombieNormal::InitStatData(const FZombieDefaultInfo* Data)
 	if (IsValid(Ctrl))
 	{
 		Ctrl->SetDetectRange_Sight(NormalAttributeSet->GetDetectRange_Sight());
+		Ctrl->SetDetectRange_Hearing(NormalAttributeSet->GetDetectRange_Hearing());
 	}
 }
 
