@@ -46,16 +46,4 @@ void UBattleHUDWidget::OnGameplayReadyChanged(bool bGameplayReady) const
 	{
 		RS_LOG_DEBUG(LogRSProperties, Error, TEXT("%s: CrosshairWidget is not valid"), *LOG_LINE_INFO);
 	}
-
-	if (bGameplayReady)
-	{
-		if (const auto* PS = GetOwningPlayerState<ARSPlayerState>())
-		{
-			GetInventoryPopupWidget()->Init(PS->GetInventoryComponent());
-		}
-		else
-		{
-			RS_LOG_DEBUG(LogRSInventory, Error, TEXT("%s: PS is nullptr"), *LOG_LINE_INFO);
-		}
-	}
 }

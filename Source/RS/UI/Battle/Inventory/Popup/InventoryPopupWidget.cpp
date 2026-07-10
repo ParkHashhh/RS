@@ -8,8 +8,10 @@
 #include "Components/TileView.h"
 #include "RS/LogCategory.h"
 #include "RS/Data/Subsystem/DataSubsystem.h"
+#include "RS/GameMode/GameplaySubsystem.h"
 #include "RS/Inventory/InventoryComponent.h"
 #include "RS/Player/PlayerCharacterBase.h"
+#include "RS/Player/RSPlayerState.h"
 #include "RS/Player/Attribute/PlayerAttributeSet.h"
 
 void UInventoryPopupWidget::Init(UInventoryComponent* InInventoryComponent)
@@ -55,6 +57,17 @@ void UInventoryPopupWidget::RefreshInventory()
 
 	// 스탯 및 특수 효과 추가
 	RefreshStatList();
+}
+
+void UInventoryPopupWidget::NativeOnInitialized()
+{
+	Super::NativeOnInitialized();
+
+	auto* GameplaySubsystem = GetOwningLocalPlayer()->GetSubsystem<UGameplaySubsystem>();
+	check(GameplaySubsystem);
+
+	GameplaySubsystem->OnGameplayReady.AddUObject(this, &ThisClass::OnGameplayReadyChanged);
+	OnGameplayReadyChanged(GameplaySubsystem->IsGameplayReady());
 }
 
 void UInventoryPopupWidget::NativeConstruct()
@@ -126,4 +139,12 @@ void UInventoryPopupWidget::AddItemEffects()
 
 void UInventoryPopupWidget::AddStat(const FGameplayTag& StatTag, const FText& StatName, const FText& StatDescription)
 {
+}
+
+void UInventoryPopupWidget::OnGameplayReadyChanged(bool bGameplayReady)
+{
+	if (auto* PS = GetOwningPlayerState<ARSPlayerState>())
+	{
+		Init(PS->GetInventoryComponent());
+	}
 }

@@ -955,6 +955,8 @@ void APlayerCharacterBase::DebugKey7(const FInputActionValue& Value)
 {
 	RS_LOG_DEBUG(LogRSCommon, Log, TEXT("DebugKey7"));
 	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("DebugKey7"));
+
+	AnimInst->SwitchSubSkillMontage();
 }
 
 void APlayerCharacterBase::DebugKey8(const FInputActionValue& Value)
@@ -1071,7 +1073,6 @@ void APlayerCharacterBase::ShowEndPopUp()
 
 	if (IsValid(PlayerController))
 	{
-
 		PlayerController->ShowEndPopUp();
 	}
 }
@@ -1405,6 +1406,10 @@ void APlayerCharacterBase::ExecuteDecalEffect(const FHitResult& Hit)
 	CueParams.Location = Hit.ImpactPoint;
 	CueParams.Normal = Hit.ImpactNormal;
 
+	const float MaxAngleDegrees = 10.f;
+	FVector RandomizedNormal = FMath::VRandCone(Hit.ImpactNormal, FMath::DegreesToRadians(MaxAngleDegrees));
+	CueParams.Normal = RandomizedNormal;
+
 	FGameplayTag CueTag = FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Weapon.Impact"));
 	ASC->ExecuteGameplayCue(CueTag, CueParams);
 }
@@ -1728,14 +1733,7 @@ void APlayerCharacterBase::ToggleInventory(bool bShow)
 		return;
 	}
 
-	auto* HUD = Cast<UBattleHUDWidget>(UISubsystem->FindWidget(FName(TEXT("battle_hud"))));
-	if (!HUD)
-	{
-		RS_LOG_DEBUG(LogRSInventory, Error, TEXT("%s: Failed to get battle HUD widget"), *LOG_LINE_INFO);
-		return;
-	}
-
-	UInventoryPopupWidget* InventoryPopupWidget = HUD->GetInventoryPopupWidget();
+	UInventoryPopupWidget* InventoryPopupWidget = Cast<UInventoryPopupWidget>(UISubsystem->FindWidget(FName(TEXT("inventory_popup"))));
 	if (!InventoryPopupWidget)
 	{
 		RS_LOG_DEBUG(LogRSInventory, Error, TEXT("%s: Failed to get inventory popup widget"), *LOG_LINE_INFO);

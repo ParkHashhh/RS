@@ -75,6 +75,15 @@ void UPlayerAnimInstance::PlayBaseAttackMontage()
 }
 
 
+void UPlayerAnimInstance::SwitchSubSkillMontage()
+{
+	TObjectPtr<UAnimMontage> TempAnim = SubSkillMontage;
+
+	SubSkillMontage = SubSkillMontage2;
+
+	SubSkillMontage2 = TempAnim;
+}
+
 void UPlayerAnimInstance::MontageEnd(UAnimMontage* Montage, bool bInterrupted)
 {
 

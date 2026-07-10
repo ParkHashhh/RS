@@ -83,15 +83,6 @@ void AGrenade::Explode()
 		{ UEngineTypes::ConvertToObjectType(ECC_GameTraceChannel2) },AZombieBase::StaticClass(),
 		IgnoreActors,OverlappingActors);
 
-
-	if (OverlappingActors.Num() >= 1)
-	{
-		DrawDebugSphere(GetWorld(), GetActorLocation(), 300.f, 24, FColor::Red, false, 2.0f, 0, 2.0f);
-	}
-	else
-	{
-		DrawDebugSphere(GetWorld(), GetActorLocation(), 300.f, 24, FColor::Green, false, 2.0f, 0, 2.0f);
-	}
 	for (AActor* Actor : OverlappingActors)
 	{
 		APlayerCharacterBase* Player = Cast<APlayerCharacterBase>(GetOwner());

@@ -60,6 +60,7 @@ public:
 	void RefreshInventory();
 
 protected:
+	virtual void NativeOnInitialized() override;
 	virtual void NativeConstruct() override;
 
 private:
@@ -69,4 +70,6 @@ private:
 	void AddItemEffects();
 
 	void AddStat(const FGameplayTag& StatTag, const FText& StatName, const FText& StatDescription);
+
+	void OnGameplayReadyChanged(bool bGameplayReady);
 };

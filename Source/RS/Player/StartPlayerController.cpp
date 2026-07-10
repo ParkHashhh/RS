@@ -21,6 +21,7 @@ void AStartPlayerController::BeginPlay()
 		StartWidget = CreateWidget<UUserWidget>(GetWorld(), StartWidgetClass);
 		if (IsValid(StartWidget))
 		{
+			CurrentMouseCursor = EMouseCursor::Custom;
 			StartWidget->AddToViewport();
 		}
 	}

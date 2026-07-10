@@ -17,10 +17,13 @@ void APlayerControllerBase::BeginPlay()
 
 	if (IsLocalPlayerController())
 	{
+		CurrentMouseCursor = EMouseCursor::Default;
 		// 입력모드를 세팅한다
 		// FInputModeGameOnly
 		// FInputModeGameAndUI
 		// FInputModeUIOnly
+
+		CurrentMouseCursor = EMouseCursor::Custom;
 
 		FInputModeGameAndUI InputMode;
 		SetInputMode(InputMode);
@@ -81,6 +84,10 @@ void APlayerControllerBase::CreateEndPopUp()
 
 void APlayerControllerBase::ShowEndPopUp()
 {
+	if (!IsLocalController())
+	{
+		return;
+	}
 	if (!IsValid(EndPopUpWidget))
 	{
 		return;
