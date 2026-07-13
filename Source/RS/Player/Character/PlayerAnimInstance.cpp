@@ -75,13 +75,14 @@ void UPlayerAnimInstance::PlayBaseAttackMontage()
 }
 
 
-void UPlayerAnimInstance::SwitchSubSkillMontage()
+void UPlayerAnimInstance::SetSubSkillMontage(FName MontageName)
 {
-	TObjectPtr<UAnimMontage> TempAnim = SubSkillMontage;
+	UAnimMontage* Montage = SubSkillMontageArray.FindRef(MontageName);
 
-	SubSkillMontage = SubSkillMontage2;
-
-	SubSkillMontage2 = TempAnim;
+	if (IsValid(Montage))
+	{
+		SubSkillMontage = Montage;
+	}
 }
 
 void UPlayerAnimInstance::MontageEnd(UAnimMontage* Montage, bool bInterrupted)

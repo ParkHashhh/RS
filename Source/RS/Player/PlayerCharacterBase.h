@@ -389,6 +389,8 @@ public:
 		return DeadAbilityClass;
 	}
 	void HitShakeCamera();
+	void SetSkeletalMesh(FName TextureName);
+	void SetSubSkillMontage(FName MontageName);
 
 private:
 	// Input Function

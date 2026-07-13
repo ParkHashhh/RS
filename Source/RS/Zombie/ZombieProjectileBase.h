@@ -11,6 +11,8 @@ class UBoxComponent;
 class UProjectileMovementComponent;
 class UStaticMeshComponent;
 class UNiagaraComponent;
+class UParticleSystem;
+class UNiagaraSystem;
 
 UCLASS()
 class RS_API AZombieProjectileBase : public AActor
@@ -40,6 +42,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "NeedProperty", meta = (AllowPrivateAccess = "true"))
 	FGameplayTag AbilityTag;
 
+	UPROPERTY(EditDefaultsOnly, Category = "NeedProperty", BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UParticleSystem> Particle;
+
+	UPROPERTY(EditDefaultsOnly, Category = "NeedProperty", BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UNiagaraSystem> NiagaraParticle;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -55,4 +63,6 @@ public:
 protected:
 	UFUNCTION()
 	void ProjectileStop(const FHitResult& ImpactResult);
+
+	void SpawnGroundHitParticle(const FHitResult& ImpactResult);
 };

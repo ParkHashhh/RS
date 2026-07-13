@@ -13,4 +13,11 @@ UCLASS()
 class RS_API URSGameInstance : public UGameInstance
 {
 	GENERATED_BODY()
+
+
+public:
+	UPROPERTY()
+	FName SelectedTextureName;
+	UPROPERTY()
+	FName SelectedSkillName;
 };

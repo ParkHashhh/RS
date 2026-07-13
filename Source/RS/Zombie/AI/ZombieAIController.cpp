@@ -52,6 +52,7 @@ AZombieAIController::AZombieAIController()
 
 	AIPerception->OnTargetPerceptionUpdated.AddDynamic(this, &AZombieAIController::OnTarget);
 }
+
 void AZombieAIController::BeginPlay()
 {
 	Super::BeginPlay();
@@ -163,6 +164,16 @@ void AZombieAIController::Tick(float DeltaTime)
 	}
 }
 
+void AZombieAIController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+
+	if (AIPerception)
+	{
+		AIPerception->RequestStimuliListenerUpdate();
+	}
+}
+
 void AZombieAIController::SetDetectRange_Sight(float Range)
 {
 	//어차피 탐지에 실패했을 때, 타겟을 제거하는 기능을 없애버릴 예정이므로 상실 거리는 설정할 필요가 없다.
@@ -227,7 +238,7 @@ void AZombieAIController::OnTarget(AActor* Actor, FAIStimulus Stimulus)
 					Blackboard->SetValueAsObject(TEXT("Target"), Actor);
 					TargetPerceptionType = CurrentType;
 				}
-				else if (Stimulus.Type == UAISense::GetSenseID<UAISenseConfig_Sight>())
+				else if (Stimulus.Type == UAISense::GetSenseID<UAISenseConfig_Hearing>())
 				{
 					//현재 타겟이 청각으로 감지한 타겟이라면 무시한다.
 					return;

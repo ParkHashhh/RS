@@ -35,7 +35,7 @@ protected:
 	TObjectPtr<UAnimMontage> SubSkillMontage;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UAnimMontage> SubSkillMontage2;
+	TMap<FName,TObjectPtr<UAnimMontage>> SubSkillMontageArray;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UAnimMontage> DeadMontage;
@@ -90,13 +90,13 @@ public:
 	{
 		return DeadMontage;
 	}
+	void SetSubSkillMontage(FName MontageName);
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	float ViewPitch;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	float ViewYaw;
-
-	void SwitchSubSkillMontage();
 
 protected:
 	UFUNCTION()

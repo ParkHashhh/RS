@@ -24,7 +24,7 @@ protected:
 	TSubclassOf<AZombieProjectileBase> SkillProjectile;
 
 	FTimerHandle SpitTimer;
-	float SpitInterval = 0.2f;
+	float SpitInterval = 0.1f;
 
 protected:
 	void SpawnSpitProjectile();

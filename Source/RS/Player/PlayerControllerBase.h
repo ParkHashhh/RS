@@ -36,8 +36,31 @@ protected:
 
 	int32 CurrentSpectateIndex = 0;
 
+	FName SelectedTextureName;
+
+	FName SelectedSkillName;
+
 
 public:
+	void SetTextureName(const FName& TextureName)
+	{
+		SelectedTextureName = TextureName;
+	}
+
+	void SetSkillName(const FName& SkillName)
+	{
+		SelectedSkillName = SkillName;
+	}
+
+	FName GetTextureName()
+	{
+		return SelectedTextureName;
+	}
+
+	FName GetSkillName()
+	{
+		return SelectedSkillName;
+	}
 	// 서버: 관전 목록 계산 요청
 	UFUNCTION(Server, Reliable)
 	void Server_RequestSpectateTargets();

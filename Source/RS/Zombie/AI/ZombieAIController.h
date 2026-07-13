@@ -55,6 +55,7 @@ protected:
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
+	virtual void OnPossess(APawn* InPawn) override;
 
 public:
 	//각각의 감각에 대한 설정이 필요한 경우 함수를 이곳에 추가한다.

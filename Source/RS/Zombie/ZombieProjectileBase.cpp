@@ -9,6 +9,7 @@
 #include "RS/Player/PlayerCharacterBase.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 AZombieProjectileBase::AZombieProjectileBase()
@@ -62,6 +63,7 @@ void AZombieProjectileBase::ProjectileStop(const FHitResult& ImpactResult)
 {
 	if (!HasAuthority())
 	{
+		SpawnGroundHitParticle(ImpactResult);
 		Destroy();
 		return;
 	}
@@ -90,7 +92,28 @@ void AZombieProjectileBase::ProjectileStop(const FHitResult& ImpactResult)
 
 		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(OwnerController->GetPawn(), EventData.EventTag, EventData);
 	}
+	else
+	{
+		SpawnGroundHitParticle(ImpactResult);
+	}
 
 	Destroy();
+}
+
+void AZombieProjectileBase::SpawnGroundHitParticle(const FHitResult& ImpactResult)
+{
+	//스피터는 입에서 머즐 파티클이 스폰되어야 한다.
+	if (Particle)
+	{
+		FVector SpawnLoc = ImpactResult.ImpactPoint;
+		FRotator SpawnRot = GetActorRotation();
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Particle, SpawnLoc, SpawnRot);
+	}
+	else if (NiagaraParticle)
+	{
+		FVector SpawnLoc = ImpactResult.ImpactPoint;
+		FRotator SpawnRot = GetActorRotation();
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), NiagaraParticle, SpawnLoc, SpawnRot);
+	}
 }
 

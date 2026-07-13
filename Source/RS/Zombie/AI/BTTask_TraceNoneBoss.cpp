@@ -145,6 +145,7 @@ void UBTTask_TraceNoneBoss::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* N
 
 		if (Distance <= AttackRange)
 		{
+			BlackboardComp->SetValueAsBool(TEXT("AttackPossible"), true);
 			FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 			return;
 		}
@@ -169,6 +170,7 @@ void UBTTask_TraceNoneBoss::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* N
 			//일단 비전투 상태로 만든다 - 추후 수정해야 함
 			Ctrl->StopMovement();
 			BlackboardComp->SetValueAsObject(TEXT("Target"), nullptr);
+			BlackboardComp->SetValueAsBool(TEXT("AttackPossible"), false);
 			FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 			return;
 		}

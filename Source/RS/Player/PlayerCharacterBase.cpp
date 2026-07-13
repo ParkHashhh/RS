@@ -144,6 +144,8 @@ void APlayerCharacterBase::BeginPlay()
 
 	SetMouseSensitivity(0.7f, 0.7f);
 	AnimInst = Cast<UPlayerAnimInstance>(GetMesh()->GetAnimInstance());
+	SetSubSkillMontage(PlayerController->GetSkillName());
+
 	UpdatePlayerSpeedState();
 	UpdatePlayerCameraState();
 	AttachWeapon();
@@ -175,6 +177,11 @@ void APlayerCharacterBase::PossessedBy(AController* NewController)
 	Super::PossessedBy(NewController);
 
 	PlayerController = Cast<APlayerControllerBase>(NewController);
+	if (IsValid(PlayerController))
+	{
+		SetSkeletalMesh(PlayerController->GetTextureName());
+	
+	}
 
 	if (IsValid(ASC))
 	{
@@ -546,6 +553,35 @@ void APlayerCharacterBase::HitShakeCamera()
 	}
 }
 
+void APlayerCharacterBase::SetSkeletalMesh(FName TextureName)
+{
+	if (TextureName.IsNone())
+	{
+		return;
+	}
+
+	FString TextureNameStr = TextureName.ToString();
+	FString MeshPath = FString::Printf(TEXT("/Game/Player/Meshes/%s"),
+		*TextureNameStr);
+	RS_PRINT_SCREEN(10.f, FColor::Red, TEXT("Skeletal Mesh Name : %s"),*TextureNameStr);
+
+	USkeletalMesh* LoadMesh = LoadObject<USkeletalMesh>(nullptr, *MeshPath);
+	if (IsValid(LoadMesh))
+	{
+		GetMesh()->SetSkeletalMeshAsset(LoadMesh);
+	}
+	else
+	{
+		RS_PRINT_SCREEN(10.f, FColor::Red, TEXT("Have Not Skeletal Mesh"));
+	}
+}
+void APlayerCharacterBase::SetSubSkillMontage(FName MontageName)
+{
+	FString MontageNameStr = MontageName.ToString();
+	RS_PRINT_SCREEN(10.f, FColor::Red, TEXT("SetSubSkillMontage  Name : %s"), *MontageNameStr);
+
+	AnimInst->SetSubSkillMontage(MontageName);
+}
 void APlayerCharacterBase::MoveKey(const FInputActionValue& Value)
 {
 	FVector2D MovementVector = Value.Get<FVector2D>();
@@ -751,7 +787,7 @@ void APlayerCharacterBase::MakeGrenade()
 {
 	if (!IsLocallyControlled())
 	{
-		return; // 서버에서 노티파이로 호출된 경우 무시 (RPC로 처리되니까)
+		return;
 	}
 
 	if (!IsValid(PlayerController))
@@ -987,8 +1023,6 @@ void APlayerCharacterBase::DebugKey7(const FInputActionValue& Value)
 {
 	RS_LOG_DEBUG(LogRSCommon, Log, TEXT("DebugKey7"));
 	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("DebugKey7"));
-
-	AnimInst->SwitchSubSkillMontage();
 }
 
 void APlayerCharacterBase::DebugKey8(const FInputActionValue& Value)

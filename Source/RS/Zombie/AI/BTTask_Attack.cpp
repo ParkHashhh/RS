@@ -135,6 +135,7 @@ void UBTTask_Attack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemo
 		else
 		{
 			//사거리 밖이라면 머리를 돌릴 필요 없이 바로 종료시키면 된다.
+			BlackboardComp->SetValueAsBool(TEXT("AttackPossible"), false);
 			FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
 			return;
 		}
