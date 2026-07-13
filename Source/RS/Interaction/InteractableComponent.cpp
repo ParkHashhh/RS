@@ -7,6 +7,7 @@
 #include "Net/UnrealNetwork.h"
 #include "RS/LogCategory.h"
 #include "RS/Player/PlayerCharacterBase.h"
+#include "RS/Player/PlayerControllerBase.h"
 
 UInteractableComponent::UInteractableComponent()
 {
@@ -20,6 +21,7 @@ void UInteractableComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(UInteractableComponent, Interactor);
+	DOREPLIFETIME(UInteractableComponent, Holder);
 }
 
 void UInteractableComponent::SetFocus(bool bInFocus)
@@ -78,6 +80,8 @@ void UInteractableComponent::CancelInteraction()
 		return;
 	}
 
+	RS_LOG_DEBUG(LogRSInteraction, Log, TEXT("%s: CancelInteraction"), *LOG_LINE_INFO);
+
 	GetWorld()->GetTimerManager().ClearTimer(InteractionTimerHandle);
 	Interactor.Reset();
 	OnInteractionStateChanged.Broadcast(false);
@@ -102,9 +106,14 @@ void UInteractableComponent::CompleteInteraction()
 	OnInteractionStateChanged.Broadcast(false);
 }
 
+void UInteractableComponent::RemoveHolder()
+{
+	Holder.Reset();
+}
+
 bool UInteractableComponent::IsOccupiedBy(const APlayerCharacterBase* InInteractor) const
 {
-	return Interactor.IsValid() && Interactor.Get() == InInteractor;
+	return (Interactor.IsValid() && Interactor.Get() == InInteractor) || (Holder.IsValid() && Holder.Get() == InInteractor);
 }
 
 void UInteractableComponent::BeginPlay()
@@ -113,6 +122,17 @@ void UInteractableComponent::BeginPlay()
 
 	OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnBeginOverlap);
 	OnComponentEndOverlap.AddDynamic(this, &ThisClass::OnEndOverlap);
+}
+
+void UInteractableComponent::EndPlay(EEndPlayReason::Type Reason)
+{
+	RS_LOG_DEBUG(LogRSInteraction, Log, TEXT("%s: End play"), *LOG_LINE_INFO);
+	if (const APlayerCharacterBase* Player = Interactor.Get())
+	{
+		Player->OnHeldInteractableChanged.Broadcast(false);
+	}
+
+	Super::EndPlay(Reason);
 }
 
 void UInteractableComponent::OnRegister()
@@ -135,7 +155,8 @@ void UInteractableComponent::OnRegister()
 }
 
 void UInteractableComponent::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+                                            UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
+                                            const FHitResult& SweepResult)
 {
 	if (auto* Player = Cast<APlayerCharacterBase>(OtherActor))
 	{
@@ -144,7 +165,7 @@ void UInteractableComponent::OnBeginOverlap(UPrimitiveComponent* OverlappedCompo
 }
 
 void UInteractableComponent::OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+                                          UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 	if (auto* Player = Cast<APlayerCharacterBase>(OtherActor))
 	{
@@ -162,6 +183,10 @@ void UInteractableComponent::OnEndOverlap(UPrimitiveComponent* OverlappedCompone
 void UInteractableComponent::OnRep_Interactor()
 {
 	OnInteractionStateChanged.Broadcast(Interactor.IsValid());
+}
+
+void UInteractableComponent::OnRep_Holder()
+{
 }
 
 void UInteractableComponent::TickInteractionProgress()

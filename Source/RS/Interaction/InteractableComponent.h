@@ -32,6 +32,9 @@ private:
 	UPROPERTY(ReplicatedUsing=OnRep_Interactor, Transient)
 	TWeakObjectPtr<APlayerCharacterBase> Interactor = nullptr;
 
+	UPROPERTY(ReplicatedUsing=OnRep_Holder, Transient)
+	TWeakObjectPtr<APlayerCharacterBase> Holder = nullptr;
+
 	FTimerHandle InteractionTimerHandle;
 	float Duration = 0.0f;
 	float ElapsedTime = 0.0f;
@@ -47,16 +50,20 @@ public:
 	void CancelInteraction();
 	void CompleteInteraction();
 
+	void RemoveHolder();
+
 	bool IsOccupied() const
 	{
-		return Interactor.IsValid();
+		return Interactor.IsValid() || Holder.IsValid();
 	}
 
 	bool IsOccupiedBy(const APlayerCharacterBase* InInteractor) const;
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(EEndPlayReason::Type Reason) override;
 
+protected:
 	virtual void OnRegister() override;
 
 	UFUNCTION()
@@ -68,6 +75,9 @@ protected:
 private:
 	UFUNCTION()
 	void OnRep_Interactor();
+
+	UFUNCTION()
+	void OnRep_Holder();
 
 	void TickInteractionProgress();
 };

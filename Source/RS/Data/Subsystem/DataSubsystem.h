@@ -119,10 +119,10 @@ public:
 		return IsPlayerDefaultTableLoaded();
 	}
 
-	const FStatDisplayTableInfo* GetStatDisplayInfoTableInfo(FName Name) const;
+	const FStatDisplayTableInfo* GetStatDisplayTableInfo(FName Name) const;
 
-	UFUNCTION(BlueprintCallable, Category = "Data", meta=(DisplayName = "Get Stat Display Info Table Info"))
-	bool K2_GetStatDisplayInfoTableInfo(FName Name, FStatDisplayTableInfo& OutStatDisplayInfo) const;
+	UFUNCTION(BlueprintCallable, Category = "Data", meta=(DisplayName = "Get Stat Display Table Info"))
+	bool K2_GetStatDisplayTableInfo(FName Name, FStatDisplayTableInfo& OutStatDisplayInfo) const;
 
 	FORCEINLINE bool IsStatDisplayInfoTableLoaded() const
 	{

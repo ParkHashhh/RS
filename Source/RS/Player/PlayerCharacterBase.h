@@ -36,6 +36,7 @@ DECLARE_MULTICAST_DELEGATE_OneParam(FOnAimAlphaChangedDelegate, float);
 DECLARE_MULTICAST_DELEGATE(FOnASCReadyDelegate);
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnFocusedInteractableChanged, bool);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnHeldInteractableChanged, bool);
 
 UCLASS()
 class RS_API APlayerCharacterBase : public ARSCharacter,
@@ -562,6 +563,9 @@ private:
 
 #pragma region Interaction
 
+public:
+	FOnHeldInteractableChanged OnHeldInteractableChanged;
+
 private:
 	UPROPERTY(Transient)
 	TWeakObjectPtr<UInteractionWidget> InteractionWidget;
@@ -571,6 +575,9 @@ private:
 	UPROPERTY(Transient)
 	TWeakObjectPtr<UInteractableComponent> CurrentFocusedInteractable;
 
+	UPROPERTY(Transient)
+	TWeakObjectPtr<UInteractableComponent> CurrentHoldingInteractable;
+
 	UPROPERTY()
 	TArray<TWeakObjectPtr<UInteractableComponent>> OverlappedInteractables;
 
@@ -579,6 +586,21 @@ private:
 public:
 	void RegisterOverlappedInteractable(UInteractableComponent* InComponent);
 	void UnregisterOverlappedInteractable(UInteractableComponent* InComponent);
+
+	UInteractableComponent* GetCurrentFocusedInteractable() const
+	{
+		if (UInteractableComponent* FocusingInteractable = CurrentFocusedInteractable.Get())
+		{
+			return FocusingInteractable;
+		}
+
+		if (UInteractableComponent* HoldingInteractable = CurrentHoldingInteractable.Get())
+		{
+			return HoldingInteractable;
+		}
+
+		return nullptr;
+	}
 
 private:
 	void OnInteractPressed();
@@ -593,6 +615,8 @@ private:
 	void CheckInteractable();
 
 	void HandleFocusedInteractableChange(bool bHasFocus);
+
+	void HandleHeldInteractableChange(bool bHasHolding);
 
 	UFUNCTION()
 	void HandleInteractingTimeElapsed(float Elapsed, float Max);

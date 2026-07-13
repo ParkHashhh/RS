@@ -20,7 +20,7 @@ void UStartWidget::NativeOnInitialized()
 
 void UStartWidget::StartClick()
 {
-	UGameplayStatics::OpenLevel(GetWorld(), TEXT("Colony"));
+	UGameplayStatics::OpenLevel(GetWorld(), TEXT("Select"));
 }
 
 void UStartWidget::ExitClick()

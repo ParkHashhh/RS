@@ -62,13 +62,13 @@ void UBaseAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribute,
 		{
 			// 최대 체력 변화에 따른 현재 체력 변화
 			float Diff = NewValue - OldValue;
-			RS_LOG_DEBUG(LogRSGAS, Log, TEXT("%s: MaxHP Changed. Diff: %.2f"), *LOG_LINE_INFO, Diff);
+			// RS_LOG_DEBUG(LogRSGAS, Log, TEXT("%s: MaxHP Changed. Diff: %.2f"), *LOG_LINE_INFO, Diff);
 			if (Diff > 0)
 			{
 				if (UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent())
 				{
 					float TargetCurrentHP = FMath::Clamp(GetCurrentHP() + Diff, 0.0f, NewValue);
-					RS_LOG_DEBUG(LogRSGAS, Log, TEXT("%s: MaxHP increased. Target Current HP: %.2f"), *LOG_LINE_INFO, TargetCurrentHP);
+					// RS_LOG_DEBUG(LogRSGAS, Log, TEXT("%s: MaxHP increased. Target Current HP: %.2f"), *LOG_LINE_INFO, TargetCurrentHP);
 					ASC->SetNumericAttributeBase(GetCurrentHPAttribute(), TargetCurrentHP);
 				}
 			}
@@ -76,7 +76,7 @@ void UBaseAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribute,
 			{
 				if (UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent())
 				{
-					RS_LOG_DEBUG(LogRSGAS, Log, TEXT("%s: MaxHP decreased under current HP. Target Current HP: %.2f"), *LOG_LINE_INFO, NewValue);
+					// RS_LOG_DEBUG(LogRSGAS, Log, TEXT("%s: MaxHP decreased under current HP. Target Current HP: %.2f"), *LOG_LINE_INFO, NewValue);
 					ASC->SetNumericAttributeBase(GetCurrentHPAttribute(), NewValue);
 				}
 			}

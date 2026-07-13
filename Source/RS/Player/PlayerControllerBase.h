@@ -8,6 +8,7 @@
 
 #include "PlayerControllerBase.generated.h"
 
+	class URewardPopupWidget;
 class UBattleHUDWidget;
 /**
  *
@@ -100,10 +101,24 @@ private:
 
 #pragma region Interaction
 
-public:
+private:
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<URewardPopupWidget> RewardPopupWidgetClass;
 
+	UPROPERTY(Transient)
+	TWeakObjectPtr<URewardPopupWidget> RewardPopupWidget;
+
+public:
 	UFUNCTION(Client, Reliable)
 	void Client_ShowRewardUI(const TArray<FName>& RewardItemRowNames);
+
+	UFUNCTION(Server, Reliable)
+	void Server_RequestReward(FName RewardItemRowName);
+
+	void CloseRewardPopup();
+
+private:
+	void CreateRewardPopupWidget(const TArray<FName>& RewardItemRowNames);
 
 #pragma endregion Interaction
 };

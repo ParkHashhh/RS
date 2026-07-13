@@ -134,7 +134,7 @@ bool UDataSubsystem::K2_GetPlayerDefaultTableInfo(FPlayerDefaultInfo& OutPlayerD
 	return false;
 }
 
-const FStatDisplayTableInfo* UDataSubsystem::GetStatDisplayInfoTableInfo(FName Name) const
+const FStatDisplayTableInfo* UDataSubsystem::GetStatDisplayTableInfo(FName Name) const
 {
 	if (!StatDisplayInfoTable)
 	{
@@ -151,10 +151,10 @@ const FStatDisplayTableInfo* UDataSubsystem::GetStatDisplayInfoTableInfo(FName N
 	return Row;
 }
 
-bool UDataSubsystem::K2_GetStatDisplayInfoTableInfo(FName Name, FStatDisplayTableInfo& OutStatDisplayInfo) const
+bool UDataSubsystem::K2_GetStatDisplayTableInfo(FName Name, FStatDisplayTableInfo& OutStatDisplayInfo) const
 {
 
-	if (const FStatDisplayTableInfo* StatDisplayInfo = GetStatDisplayInfoTableInfo(Name))
+	if (const FStatDisplayTableInfo* StatDisplayInfo = GetStatDisplayTableInfo(Name))
 	{
 		OutStatDisplayInfo = *StatDisplayInfo;
 		return true;

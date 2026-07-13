@@ -3,8 +3,12 @@
 
 #include "PlayerControllerBase.h"
 #include "PlayerCharacterBase.h"
+#include "RSPlayerState.h"
 #include "RS/LogCategory.h"
+#include "RS/Interaction/InteractableComponent.h"
+#include "RS/Inventory/InventoryComponent.h"
 #include "RS/UI/Battle/BattleHUDWidget.h"
+#include "RS/UI/Battle/Reward/RewardPopupWidget.h"
 
 APlayerControllerBase::APlayerControllerBase()
 {
@@ -82,6 +86,68 @@ void APlayerControllerBase::CreateEndPopUp()
 	}
 }
 
+void APlayerControllerBase::Server_RequestReward_Implementation(FName RewardItemRowName)
+{
+	if (const auto* PS = GetPlayerState<ARSPlayerState>())
+	{
+		if (UInventoryComponent* Inventory = PS->GetInventoryComponent())
+		{
+			Inventory->AddItem(RewardItemRowName, 1);
+		}
+	}
+
+	if (const auto* PlayerCharacterBase = GetPawn<APlayerCharacterBase>())
+	{
+		RS_LOG_DEBUG(LogRSInteraction, Log, TEXT("%s: Get character"), *LOG_LINE_INFO);
+		if (UInteractableComponent* Interactable = PlayerCharacterBase->GetCurrentFocusedInteractable())
+		{
+			RS_LOG_DEBUG(LogRSInteraction, Log, TEXT("%s: Try destroy interactable %s"), *LOG_LINE_INFO, *Interactable->GetOwner()->GetName());
+			Interactable->GetOwner()->Destroy();
+		}
+	}
+}
+
+void APlayerControllerBase::CloseRewardPopup()
+{
+	if (IsLocalController())
+	{
+		URewardPopupWidget* Widget = RewardPopupWidget.Get();
+		if (IsValid(Widget))
+		{
+			Widget->RemoveFromParent();
+			RewardPopupWidget.Reset();
+		}
+	}
+}
+
+void APlayerControllerBase::CreateRewardPopupWidget(const TArray<FName>& RewardItemRowNames)
+{
+	if (RewardItemRowNames.IsEmpty())
+	{
+		RS_LOG_DEBUG(LogRSProperties, Error, TEXT("%s: RewardItemRowNames is empty"), *LOG_LINE_INFO);
+	}
+
+	if (!IsValid(RewardPopupWidgetClass))
+	{
+		RS_LOG_DEBUG(LogRSProperties, Error, TEXT("%s: RewardPopupWidgetClass is not valid"), *LOG_LINE_INFO);
+		return;
+	}
+
+	RewardPopupWidget = CreateWidget<URewardPopupWidget>(this, RewardPopupWidgetClass);
+	if (!RewardPopupWidget.IsValid())
+	{
+		RS_LOG_DEBUG(LogRSInit, Error, TEXT("%s: RewardPopupWidget is not valid"), *LOG_LINE_INFO);
+		return;
+	}
+
+	RS_LOG_DEBUG(LogRSInit, Log, TEXT("%s: RewardPopupWidget is created"), *LOG_LINE_INFO);
+
+	URewardPopupWidget* PopupWidget = RewardPopupWidget.Get();
+	PopupWidget->AddToViewport();
+
+	PopupWidget->Init(RewardItemRowNames);
+}
+
 void APlayerControllerBase::ShowEndPopUp()
 {
 	if (!IsLocalController())
@@ -103,6 +169,9 @@ void APlayerControllerBase::ShowEndPopUp()
 
 void APlayerControllerBase::Client_ShowRewardUI_Implementation(const TArray<FName>& RewardItemRowNames)
 {
+	RS_PRINT_SCREEN(1.f, FColor::Cyan, TEXT("RewardItemRowNames Num : %d"), RewardItemRowNames.Num());
+
+	CreateRewardPopupWidget(RewardItemRowNames);
 }
 
 

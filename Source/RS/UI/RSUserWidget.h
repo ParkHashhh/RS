@@ -7,6 +7,8 @@
 #include "Components/Button.h"
 #include "RSUserWidget.generated.h"
 
+class UUISubsystem;
+class UDataSubsystem;
 /**
  *
  */
@@ -51,4 +53,32 @@ public:
 protected:
 	virtual void NativeOnInitialized() override;
 	virtual void NativeDestruct() override;
+
+	template <typename T>
+	const T* GetSubsystem() const
+	{
+		if constexpr (std::is_base_of_v<ULocalPlayerSubsystem, T>)
+		{
+			if (const ULocalPlayer* LP = GetOwningLocalPlayer())
+			{
+				return LP->GetSubsystem<T>();
+			}
+
+			return nullptr;
+		}
+		else if constexpr (std::is_base_of_v<UGameInstanceSubsystem, T>)
+		{
+			if (const UGameInstance* GI = GetGameInstance())
+			{
+				return GI->GetSubsystem<T>();
+			}
+
+			return nullptr;
+		}
+		else
+		{
+			static_assert(sizeof(T) == 0, "T must be derived from ULocalPlayerSubsystem or UGameInstanceSubsystem");
+			return nullptr;
+		}
+	}
 };

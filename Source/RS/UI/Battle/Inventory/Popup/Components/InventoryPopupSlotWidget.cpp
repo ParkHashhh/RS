@@ -13,8 +13,6 @@ void UInventoryPopupSlotWidget::NativeOnListItemObjectSet(UObject* ListItemObjec
 {
 	IUserObjectListEntry::NativeOnListItemObjectSet(ListItemObject);
 
-	RS_LOG_DEBUG(LogRSInventory, Log, TEXT("%s: NativeOnListItemObjectSet"), *LOG_LINE_INFO);
-
 	const auto* SlotObj = Cast<UInventoryPopupSlotObject>(ListItemObject);
 	if (!SlotObj)
 	{

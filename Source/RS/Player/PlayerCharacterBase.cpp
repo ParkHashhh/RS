@@ -25,6 +25,7 @@
 #include "ColonyPlayerController.h"
 #include "Perception/AISense_Hearing.h"
 #include "RS/UI/Battle/CrosshairWidget.h"
+#include "RS/UI/Battle/Reward/RewardPopupWidget.h"
 #include "RS/UI/Common/Interaction/InteractionWidget.h"
 
 // Sets default values
@@ -160,6 +161,7 @@ void APlayerCharacterBase::BeginPlay()
 	ExecuteOrBindOnASCReady(this, &ThisClass::BindGameplayTagDelegate);
 
 	OnFocusedInteractableChanged.AddUObject(this, &ThisClass::HandleFocusedInteractableChange);
+	OnHeldInteractableChanged.AddUObject(this, &ThisClass::HandleHeldInteractableChange);
 }
 
 void APlayerCharacterBase::OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode)
@@ -300,7 +302,7 @@ void APlayerCharacterBase::Tick(float DeltaTime)
 		RecoilYawCurrent -= YawDelta;
 	}
 
-	if (!OverlappedInteractables.IsEmpty())
+	if (!OverlappedInteractables.IsEmpty() && !CurrentFocusedInteractable.IsValid())
 	{
 		CheckInteractable();
 	}
@@ -563,7 +565,6 @@ void APlayerCharacterBase::SetSkeletalMesh(FName TextureName)
 	FString TextureNameStr = TextureName.ToString();
 	FString MeshPath = FString::Printf(TEXT("/Game/Player/Meshes/%s"),
 		*TextureNameStr);
-	RS_PRINT_SCREEN(10.f, FColor::Red, TEXT("Skeletal Mesh Name : %s"),*TextureNameStr);
 
 	USkeletalMesh* LoadMesh = LoadObject<USkeletalMesh>(nullptr, *MeshPath);
 	if (IsValid(LoadMesh))
@@ -572,13 +573,11 @@ void APlayerCharacterBase::SetSkeletalMesh(FName TextureName)
 	}
 	else
 	{
-		RS_PRINT_SCREEN(10.f, FColor::Red, TEXT("Have Not Skeletal Mesh"));
 	}
 }
 void APlayerCharacterBase::SetSubSkillMontage(FName MontageName)
 {
 	FString MontageNameStr = MontageName.ToString();
-	RS_PRINT_SCREEN(10.f, FColor::Red, TEXT("SetSubSkillMontage  Name : %s"), *MontageNameStr);
 
 	AnimInst->SetSubSkillMontage(MontageName);
 }
@@ -1905,6 +1904,9 @@ void APlayerCharacterBase::UnregisterOverlappedInteractable(UInteractableCompone
 			// CurrentFocusedInteractable을 잃기 전에 AddDynamic을 제거해야한다
 			OnFocusedInteractableChanged.Broadcast(false);
 			CurrentFocusedInteractable.Reset();
+
+			OnHeldInteractableChanged.Broadcast(false);
+			CurrentHoldingInteractable.Reset();
 		}
 	}
 }
@@ -2026,6 +2028,17 @@ void APlayerCharacterBase::HandleFocusedInteractableChange(bool bHasFocus)
 		if (CurrentFocusedInteractable.IsValid())
 		{
 			CurrentFocusedInteractable.Get()->OnInteractionProgressChanged.RemoveDynamic(this, &ThisClass::HandleInteractingTimeElapsed);
+		}
+	}
+}
+
+void APlayerCharacterBase::HandleHeldInteractableChange(bool bHasHolding)
+{
+	if (!bHasHolding)
+	{
+		if (PlayerController)
+		{
+			PlayerController->CloseRewardPopup();
 		}
 	}
 }
