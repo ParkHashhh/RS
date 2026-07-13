@@ -1764,6 +1764,9 @@ void APlayerCharacterBase::OnPlayerDefaultInfoLoaded()
 			}
 		}
 	}
+
+	// 여기가 로딩 완료된 시점
+
 }
 
 void APlayerCharacterBase::ShowInventory()

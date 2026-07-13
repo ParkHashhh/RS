@@ -20,4 +20,12 @@ public:
 	FName SelectedTextureName;
 	UPROPERTY()
 	FName SelectedSkillName;
+private:
+	FName NextLevelName;
+
+public:
+	void SetNextLevelName(FName LevelName)
+	{
+		NextLevelName = LevelName;
+	}
 };

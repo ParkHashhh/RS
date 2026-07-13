@@ -70,8 +70,8 @@ void USelectSlotWidget::StartButtonClick()
 	{
 		return;
 	}
-
-	if (URSGameInstance* GI = GetGameInstance<URSGameInstance>())
+	URSGameInstance* GI = GetGameInstance<URSGameInstance>();
+	if (IsValid(GI))
 	{
 		GI->SelectedTextureName = CurrentSelectPawn->GetCurrentTextureName();
 		GI->SelectedSkillName = CurrentSelectPawn->GetCurrentSkillName();

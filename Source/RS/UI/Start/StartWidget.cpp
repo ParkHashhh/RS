@@ -4,6 +4,7 @@
 #include "StartWidget.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"       
+#include "RS/GameMode/RSGameInstance.h"
 
 
 UStartWidget::UStartWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
@@ -20,7 +21,14 @@ void UStartWidget::NativeOnInitialized()
 
 void UStartWidget::StartClick()
 {
-	UGameplayStatics::OpenLevel(GetWorld(), TEXT("Select"));
+
+	URSGameInstance* GI = GetGameInstance<URSGameInstance>();
+	if (IsValid(GI))
+	{
+		GI->SetNextLevelName("Select");
+	}
+
+	UGameplayStatics::OpenLevel(GetWorld(), TEXT("Loading"));
 }
 
 void UStartWidget::ExitClick()
