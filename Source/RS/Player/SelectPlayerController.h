@@ -46,4 +46,8 @@ protected:
 	virtual void BeginPlay() override;
 
 	void OnPawnSelected(class ASelectPawn* Pawn);
+
+public:
+	UFUNCTION(Server, Reliable)
+	void Server_SetSelectedCharacterInfo(FName TextureName, FName SkillName);
 };

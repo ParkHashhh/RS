@@ -2,14 +2,13 @@
 
 
 #include "EndPopUpWidget.h"
-#include "Kismet/GameplayStatics.h"       
+#include "RS/RSUtils.h"
 
 UEndPopUpWidget::UEndPopUpWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
-
 }
 
-void UEndPopUpWidget::NativeOnInitialized() 
+void UEndPopUpWidget::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
 	HomeButton->OnClicked.AddDynamic(this, &UEndPopUpWidget::HomeClick);
@@ -22,5 +21,5 @@ void UEndPopUpWidget::NativeDestruct()
 
 void UEndPopUpWidget::HomeClick()
 {
-	UGameplayStatics::OpenLevel(GetWorld(), TEXT("Colony"));
+	RSUtils::OpenLevelWithInventory(GetWorld(), TEXT("Colony"));
 }

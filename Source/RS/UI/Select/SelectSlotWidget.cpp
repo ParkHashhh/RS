@@ -3,9 +3,12 @@
 
 #include "SelectSlotWidget.h"
 #include "RS/Player/Actor/SelectPawn.h"
-#include "Kismet/GameplayStatics.h"       
-#include "RS/LogCategory.h"
+#include "RS/RSUtils.h"
 #include "RS/GameMode/RSGameInstance.h"
+#include "RS/Player/SelectPlayerController.h"
+#include "RS/Player/RSPlayerState.h"
+#include "RS/LogCategory.h"
+#include "Kismet/GameplayStatics.h"
 
 USelectSlotWidget::USelectSlotWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -24,6 +27,7 @@ void USelectSlotWidget::NativeOnInitialized()
 	SkillRightButton->OnClicked.AddDynamic(this, &USelectSlotWidget::SkillRightButtonClick);
 
 	StartButton->OnClicked.AddDynamic(this, &USelectSlotWidget::StartButtonClick);
+	JoinButton->OnClicked.AddDynamic(this, &USelectSlotWidget::TestJoinLocalHost);
 
 }
 
@@ -70,16 +74,21 @@ void USelectSlotWidget::StartButtonClick()
 	{
 		return;
 	}
-	URSGameInstance* GI = GetGameInstance<URSGameInstance>();
-	if (IsValid(GI))
+
+	if (ASelectPlayerController* PlayerController = Cast<ASelectPlayerController>(GetOwningPlayer()))
 	{
-		GI->SelectedTextureName = CurrentSelectPawn->GetCurrentTextureName();
-		GI->SelectedSkillName = CurrentSelectPawn->GetCurrentSkillName();
+		FName TextureName = CurrentSelectPawn->GetCurrentTextureName();
+		FName SkillName = CurrentSelectPawn->GetCurrentSkillName();
 
+		FString Option = FString::Printf(TEXT("Texture=%s Skill=%s "),
+			*TextureName.ToString(), *SkillName.ToString());
+
+		URSGameInstance* GI = Cast<URSGameInstance>(GetGameInstance());
+		if (GI)
+		{
+			GI->LevelLoading(TEXT("Colony"), TEXT("/Game/Levels/Colony"),Option,true,false);
+		}
 	}
-	// ? 가 언리얼 표준 규칙 
-	UGameplayStatics::OpenLevel(GetWorld(), TEXT("Colony"));
-
 }
 void USelectSlotWidget::PickSelectPawn(ASelectPawn* SelectPawn)
 {
@@ -89,11 +98,33 @@ void USelectSlotWidget::PickSelectPawn(ASelectPawn* SelectPawn)
 	{
 		if (SkillText)
 		{
-			SkillText->SetText(FText::FromName((CurrentSelectPawn->GetCurrentSkillName())));
+			SkillText->SetText(FText::FromName(CurrentSelectPawn->GetCurrentSkillName()));
 		}
 		if (TextureText)
 		{
 			TextureText->SetText(FText::FromName(CurrentSelectPawn->GetCurrentTextureName()));
 		}
+	}
+}
+
+void USelectSlotWidget::TestJoinLocalHost()
+{
+	APlayerController* PC = GetOwningPlayer();
+	if (PC)
+	{
+		FName TextureName = CurrentSelectPawn->GetCurrentTextureName();
+		FName SkillName = CurrentSelectPawn->GetCurrentSkillName();
+
+		FString URL = FString::Printf(TEXT("listen?Port=7777?Texture=%s Skill=%s "),
+			*TextureName.ToString(), *SkillName.ToString());
+
+		URSGameInstance* GI = Cast<URSGameInstance>(GetGameInstance());
+		if (GI)
+		{
+			UGameplayStatics::OpenLevel(GetWorld(), TEXT("Colony"), true, URL);
+		}
+
+		RS_PRINT_SCREEN(1000.f, FColor::Red, TEXT("URL : %s"),*URL);
+
 	}
 }

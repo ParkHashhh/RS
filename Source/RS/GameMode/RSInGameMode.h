@@ -4,10 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
+#include "RS/Player/PlayerCharacterBase.h"
 #include "RSInGameMode.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class RS_API ARSInGameMode : public AGameModeBase
@@ -17,14 +18,17 @@ class RS_API ARSInGameMode : public AGameModeBase
 public:
 	ARSInGameMode();
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TSubclassOf<class APlayerCharacterBase> MaleCharacterClass;
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta=(AllowPrivateAccess=true))
+	TSubclassOf<APlayerCharacterBase> MaleCharacterClass;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TSubclassOf<class APlayerCharacterBase> FeMaleCharacterClass;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta=(AllowPrivateAccess=true))
+	TSubclassOf<APlayerCharacterBase> FeMaleCharacterClass;
+
 public:
-	virtual APlayerController* Login(UPlayer* NewPlayer, ENetRole InRemoteRole,
-		const FString& Portal, const FString& Options, const FUniqueNetIdRepl& UniqueId,
-		FString& ErrorMessage) override;
-	
+
+	virtual void HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer) override;
+
+protected:
+	virtual UClass* GetDefaultPawnClassForController_Implementation(AController* InController) override;
 };

@@ -148,6 +148,7 @@ void UInventoryComponent::BeginPlay()
 	InventoryList.Owner = this;
 
 	OnInventoryChangedDelegate.AddUObject(this, &ThisClass::CalculateItemModifiedStats);
+	CalculateItemModifiedStats();
 }
 
 void UInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -250,7 +251,7 @@ UItemInstance* UInventoryComponent::AddItem(const FDataTableRowHandle& RowHandle
 	}
 
 	InventoryList.AddEntry(NewItem);
-	
+
 	OnItemAdded(NewItem);
 
 	// 이후 게임플레이 이펙트 + 브로드캐스트

@@ -10,6 +10,7 @@
 AMainGameMode::AMainGameMode()
 {
 	PrimaryActorTick.bCanEverTick = true;
+	bUseSeamlessTravel = true;
 }
 
 void AMainGameMode::StartPlay()
@@ -25,13 +26,4 @@ void AMainGameMode::StartStage()
 	{
 		GS->Initialize();
 	}
-}
-
-APlayerController* AMainGameMode::Login(UPlayer* NewPlayer, ENetRole InRemoteRole,
-	const FString& Portal, const FString& Options, const FUniqueNetIdRepl& UniqueId,
-	FString& ErrorMessage)
-{
-	APlayerController* Result = Super::Login(NewPlayer, InRemoteRole, Portal,
-		Options, UniqueId, ErrorMessage);
-	return Result;
 }

@@ -6,6 +6,7 @@
 #include "RS/Player/Actor/SelectPawn.h"
 #include "Blueprint/UserWidget.h"
 #include "RS/UI/Select/SelectUserWidget.h"
+#include "RS/Player/RSPlayerState.h"
 #include "RS/LogCategory.h"
 
 ASelectPlayerController::ASelectPlayerController()
@@ -105,4 +106,17 @@ void ASelectPlayerController::OnPawnSelected(ASelectPawn* SelectPawn)
 		SelectWidget->PickSelectPawn(CurrentSelectedPawn);
 		SelectWidget->SetVisibility(ESlateVisibility::Visible);
 	}
+}
+
+void ASelectPlayerController::Server_SetSelectedCharacterInfo_Implementation(FName TextureName, FName SkillName)
+{
+	ARSPlayerState* PS = GetPlayerState<ARSPlayerState>();
+	if (PS)
+	{
+		PS->SetTextureName(TextureName);
+		PS->SetSkillName(SkillName);
+		UE_LOG(LogTemp, Warning, TEXT("Saved to PlayerState. Now GetTextureName: [%s]"), *PS->GetTextureName().ToString());
+	}
+	GetWorld()->ServerTravel(TEXT("Colony"));
+
 }

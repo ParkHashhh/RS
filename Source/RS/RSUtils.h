@@ -58,4 +58,6 @@ namespace RSUtils
 	                                              const TSubclassOf<UGameplayEffect>& MasterEffectClass);
 
 	int32 GetStatPriority(const FGameplayTag& StatTag);
+
+	void OpenLevelWithInventory(const UObject* WorldContextObject, FName LevelName, bool bStoreInventory = true, bool bAbsolute = true, FString Options = FString(TEXT("")));
 }

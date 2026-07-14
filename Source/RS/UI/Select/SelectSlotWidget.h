@@ -40,6 +40,9 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> SkillText;
 
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UButton> JoinButton;
+
 	TObjectPtr<class ASelectPawn> CurrentSelectPawn;
 
 protected:
@@ -62,6 +65,8 @@ public:
 	UFUNCTION()
 	void StartButtonClick();
 
+	UFUNCTION()
+	void TestJoinLocalHost();
 public:
 	void PickSelectPawn(class ASelectPawn* SelectPawn);
 };

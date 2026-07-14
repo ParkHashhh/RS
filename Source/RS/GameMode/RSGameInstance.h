@@ -15,17 +15,51 @@ class RS_API URSGameInstance : public UGameInstance
 	GENERATED_BODY()
 
 
-public:
-	UPROPERTY()
-	FName SelectedTextureName;
-	UPROPERTY()
-	FName SelectedSkillName;
+
 private:
 	FName NextLevelName;
 
 public:
-	void SetNextLevelName(FName LevelName)
+	UPROPERTY()
+	FName SelectedTextureName;
+
+	UPROPERTY()
+	FName SelectedSkillName;
+
+	UPROPERTY()
+	FString NextLevelPackagePath;
+
+	UPROPERTY()
+	bool bNextLevelIsListen;
+
+	UPROPERTY()
+	bool bIsServerTravel;
+
+	UPROPERTY()
+	FString NextLevelOptions;
+
+public:
+	void LevelLoading(const FName& LevelName,const FString& PackagePath, const FString& Options, bool bListen = false,bool IsServerTravel = false);
+
+public:
+	bool GetIsListen() const
 	{
-		NextLevelName = LevelName;
+		return bNextLevelIsListen;
+	}
+	bool GetIsServerTravel() const
+	{
+		return bIsServerTravel;
+	}
+	const FName& GetNextLevelName() const
+	{
+		return NextLevelName;
+	}
+	const FString& GetNextLevelOptions() const
+	{
+		return NextLevelOptions;
+	}
+	const FString& GetNextLevelPackagePath() const
+	{
+		return NextLevelPackagePath;
 	}
 };

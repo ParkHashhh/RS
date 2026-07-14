@@ -32,4 +32,8 @@ public:
 	}
 protected:
 	virtual void BeginPlay() override;
+
+public:
+	UFUNCTION(Server, Reliable)
+	void Server_EnterStage();
 };

@@ -2,49 +2,51 @@
 
 
 #include "RSInGameMode.h"
-#include "RS/Player/PlayerCharacterBase.h"
 #include "RS/Player/PlayerControllerBase.h"
 #include "RS/LogCategory.h"
+#include "RS/Player/RSPlayerState.h"
+#include "RS/Data/Subsystem/DataStorageSubsystem.h"
 #include "RS/GameMode/RSGameInstance.h"
 
 ARSInGameMode::ARSInGameMode()
 {
+	bUseSeamlessTravel = true;
 }
 
-APlayerController* ARSInGameMode::Login(UPlayer* NewPlayer, ENetRole InRemoteRole,
-	const FString& Portal, const FString& Options, const FUniqueNetIdRepl& UniqueId,
-	FString& ErrorMessage)
+UClass* ARSInGameMode::GetDefaultPawnClassForController_Implementation(AController* InController)
 {
-	URSGameInstance* GI = GetGameInstance<URSGameInstance>();
+	UE_LOG(LogTemp, Warning, TEXT("=== GetDefaultPawnClassForController CALLED ==="));
+	if (ARSPlayerState* PS = InController->GetPlayerState<ARSPlayerState>())
+	{
+		FString TextureNameStr = PS->GetTextureName().ToString();
 
-	FString TextureNameStr;
-	FString SkillNameStr;
-	if (GI)
-	{
-		TextureNameStr = GI->SelectedTextureName.ToString();
-		SkillNameStr = GI->SelectedSkillName.ToString();
+		if (TextureNameStr.Contains(TEXT("SurvivalMan")))
+		{
+			return MaleCharacterClass;
+		}
+		else if (TextureNameStr.Contains(TEXT("SurvivalGirl")))
+		{
+			return FeMaleCharacterClass;
+		}
 	}
-	else
-	{
-		RS_PRINT_SCREEN(10.f, FColor::Red, TEXT("Have Not GI"));
-	}
-	if (TextureNameStr.Contains(TEXT("SurvivalMan")))
-	{
-		DefaultPawnClass = MaleCharacterClass;
-	}
-	else if (TextureNameStr.Contains(TEXT("SurvivalGirl")))
-	{
-		DefaultPawnClass = FeMaleCharacterClass;
-	}
-	APlayerController* Result = Super::Login(NewPlayer, InRemoteRole, Portal,
-		Options, UniqueId, ErrorMessage);
+	return Super::GetDefaultPawnClassForController_Implementation(InController);
+}
 
-	APlayerControllerBase* PlayerController = Cast<APlayerControllerBase>(Result);
-	if (PlayerController && GI)
-	{
-		PlayerController->SetTextureName(GI->SelectedTextureName);
-		PlayerController->SetSkillName(GI->SelectedSkillName);
-	}
 
-	return Result;
+void ARSInGameMode::HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer)
+{
+	Super::HandleStartingNewPlayer_Implementation(NewPlayer);
+
+	RS_LOG_DEBUG(LogRSInventory, Log, TEXT("%s: Handling starting new player"), *LOG_LINE_INFO);
+
+	if (const auto* PC = Cast<ARSPlayerController>(NewPlayer))
+	{
+		if (const UGameInstance* GI = GetGameInstance())
+		{
+			if (auto* StorageSubsystem = GI->GetSubsystem<UDataStorageSubsystem>())
+			{
+				StorageSubsystem->RestorePlayerInventory(PC);
+			}
+		}
+	}
 }

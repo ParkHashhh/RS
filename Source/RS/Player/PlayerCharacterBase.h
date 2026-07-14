@@ -217,6 +217,13 @@ protected:
 
 	FOnASCReadyDelegate OnASCReady;
 
+
+	UPROPERTY(ReplicatedUsing = OnRep_TextureName)
+	FName ReplicatedTextureName;
+
+	UPROPERTY(ReplicatedUsing = OnRep_SkillName)
+	FName ReplicatedSkillName;
+
 public:
 	bool bCanRotate = true;
 	bool bCanMove = true;
@@ -494,6 +501,12 @@ protected:
 
 	UFUNCTION(Server, Reliable)
 	void Server_ShootAttackRay(float RandomX,float RandomY);
+
+	UFUNCTION()
+	void OnRep_TextureName();
+	UFUNCTION()
+	void OnRep_SkillName();
+
 
 	bool CalculateHit(FHitResult& Hit, float RandomX, float RandomY);
 

@@ -4,6 +4,8 @@
 #include "AbilitySystemInterface.h"
 #include "RSTags.h"
 #include "RSTypes.h"
+#include "Data/Subsystem/DataStorageSubsystem.h"
+#include "Kismet/GameplayStatics.h"
 
 UAbilitySystemComponent* RSUtils::FindASC(const AActor* Actor)
 {
@@ -76,4 +78,24 @@ int32 RSUtils::GetStatPriority(const FGameplayTag& StatTag)
 	if (StatTag == RSTags::Common::DashSpeed) return 10;
 
 	return INT_MAX;
+}
+
+void RSUtils::OpenLevelWithInventory(const UObject* WorldContextObject, FName LevelName, bool bStoreInventory,
+	bool bAbsolute, FString Options)
+{
+	if (bStoreInventory)
+	{
+		if (const UWorld* World = GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::LogAndReturnNull))
+		{
+			if (const UGameInstance* GI = World->GetGameInstance())
+			{
+				if (auto* StoreSystem = GI->GetSubsystem<UDataStorageSubsystem>())
+				{
+					StoreSystem->StoreAllPlayerInventory();
+				}
+			}
+		}
+	}
+
+	
 }

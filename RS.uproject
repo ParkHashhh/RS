@@ -37,6 +37,10 @@
 		{
 			"Name": "ModelViewViewModelPreview",
 			"Enabled": true
+		},
+		{
+			"Name": "AnimationSharing",
+			"Enabled": false
 		}
 	]
 }

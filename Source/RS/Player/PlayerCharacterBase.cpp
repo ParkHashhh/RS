@@ -145,7 +145,7 @@ void APlayerCharacterBase::BeginPlay()
 
 	SetMouseSensitivity(0.7f, 0.7f);
 	AnimInst = Cast<UPlayerAnimInstance>(GetMesh()->GetAnimInstance());
-	SetSubSkillMontage(PlayerController->GetSkillName());
+
 
 	UpdatePlayerSpeedState();
 	UpdatePlayerCameraState();
@@ -177,14 +177,25 @@ void APlayerCharacterBase::OnMovementModeChanged(EMovementMode PrevMovementMode,
 void APlayerCharacterBase::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
-
 	PlayerController = Cast<APlayerControllerBase>(NewController);
 	if (IsValid(PlayerController))
 	{
-		SetSkeletalMesh(PlayerController->GetTextureName());
-	
-	}
+		ARSPlayerState* PS = NewController->GetPlayerState<ARSPlayerState>();
 
+		if (IsValid(PS))
+		{
+			ReplicatedTextureName = PS->GetTextureName();
+			SetSkeletalMesh(ReplicatedTextureName);
+
+			ReplicatedSkillName = PS->GetSkillName();
+			SetSubSkillMontage(ReplicatedSkillName);
+		}
+		else
+		{
+			RS_PRINT_SCREEN(3, FColor::Red, TEXT("Have Not PS"));
+		}
+	}
+	
 	if (IsValid(ASC))
 	{
 		ASC->InitAbilityActorInfo(this, this);
@@ -232,7 +243,9 @@ void APlayerCharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 
 	DOREPLIFETIME(APlayerCharacterBase, bIsDead);
 	DOREPLIFETIME(APlayerCharacterBase, ReplicatedViewPitch);
-}
+	DOREPLIFETIME(APlayerCharacterBase, ReplicatedTextureName);
+	DOREPLIFETIME(APlayerCharacterBase, ReplicatedSkillName);
+}	
 
 UAbilitySystemComponent* APlayerCharacterBase::GetASC() const
 {
@@ -570,16 +583,16 @@ void APlayerCharacterBase::SetSkeletalMesh(FName TextureName)
 	if (IsValid(LoadMesh))
 	{
 		GetMesh()->SetSkeletalMeshAsset(LoadMesh);
-	}
-	else
-	{
+		AnimInst = Cast<UPlayerAnimInstance>(GetMesh()->GetAnimInstance());
 	}
 }
 void APlayerCharacterBase::SetSubSkillMontage(FName MontageName)
 {
 	FString MontageNameStr = MontageName.ToString();
-
-	AnimInst->SetSubSkillMontage(MontageName);
+	if (IsValid(AnimInst))
+	{
+		AnimInst->SetSubSkillMontage(MontageName);
+	}
 }
 void APlayerCharacterBase::MoveKey(const FInputActionValue& Value)
 {
@@ -1490,6 +1503,16 @@ void APlayerCharacterBase::ExecuteHitEffect(const FHitResult& Hit)
 	FGameplayTag CueTag = FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Damage"));
 
 	ASC->ExecuteGameplayCue(CueTag, CueParams);
+}
+
+void APlayerCharacterBase::OnRep_TextureName()
+{
+	SetSkeletalMesh(ReplicatedTextureName);
+}
+
+void APlayerCharacterBase::OnRep_SkillName()
+{
+	SetSubSkillMontage(ReplicatedSkillName);
 }
 
 bool APlayerCharacterBase::CalculateHit(FHitResult& Hit, float RandomX, float RandomY)

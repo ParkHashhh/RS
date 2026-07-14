@@ -2,10 +2,11 @@
 
 
 #include "ColonyWidget.h"
-#include "Kismet/KismetSystemLibrary.h"
-#include "Kismet/GameplayStatics.h"       
 #include "RS/LogCategory.h"
-
+#include "RS/RSUtils.h"
+#include "RS/Player/RSPlayerState.h"
+#include "RS/GameMode/RSGameInstance.h"
+#include "RS/Player/ColonyPlayerController.h"
 
 UColonyWidget::UColonyWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -20,6 +21,14 @@ void UColonyWidget::NativeOnInitialized()
 
 void UColonyWidget::StageClick()
 {
-	RS_PRINT_SCREEN(5.f, FColor::Red, TEXT("StageClick"));
-	UGameplayStatics::OpenLevel(GetWorld(), TEXT("Stage_Warehouse"));
+	AColonyPlayerController* PC = Cast<AColonyPlayerController>(GetOwningPlayer());
+	if (!PC)
+	{
+		return;
+	}
+	URSGameInstance* GI = Cast<URSGameInstance>(GetGameInstance());
+	if (GI)
+	{
+		GI->LevelLoading(TEXT("Stage_Warehouse"), TEXT("/Game/Levels/Stage_Warehouse"), TEXT(""),false,true);
+	}
 }

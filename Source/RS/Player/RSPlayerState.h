@@ -23,6 +23,7 @@ class RS_API ARSPlayerState : public APlayerState, public IASCProvider
 
 	inline static const FName InventoryComponentName = FName(TEXT("Inventory"));
 
+
 public:
 	ARSPlayerState();
 
@@ -35,7 +36,35 @@ private:
 
 	FOnPlayerStateReadyDelegate OnPlayerStateReady;
 
+private:
+	UPROPERTY(Replicated)
+	FName SelectedTextureName;
+	UPROPERTY(Replicated)
+	FName SelectedSkillName;
 public:
+	virtual void CopyProperties(APlayerState* PlayerState) override;
+public:
+	void SetTextureName(const FName& Name)
+	{
+		SelectedTextureName = Name;
+	}
+
+	void SetSkillName(const FName& Name)
+	{
+		SelectedSkillName = Name;
+	}
+	FName GetTextureName() const
+	{
+		return SelectedTextureName;
+	}
+
+	FName GetSkillName() const
+	{
+		return SelectedSkillName;
+	}
+public:
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 	template <typename T>
 	void ExecuteOrBindOnPlayerStateReady(T* Object, void(T::*Callback)())
 	{

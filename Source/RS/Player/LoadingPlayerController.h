@@ -24,8 +24,25 @@ protected:
 
 	TObjectPtr<UUserWidget> LoadingWidget;
 
-	FName LoadingLevelName;
+	FName NextLevelName;
+	FString LoadingPackagePath;
+	FName LoadingPackageCompleteName;
+	bool bNextLevelIsListen;
+	FString NextLevelOptions;
+	bool bIsServerTravel;
 
+
+	UPackage* LoadingPackage;
+		
+
+	float LoadingStartTime = 0.f;
+
+	bool bLoadingStart = false;
+	bool bLoadingPackage = false;
 protected:
 	virtual void BeginPlay() override;
+
+private:
+	void StartAsyncLoading();
+	void OnPackageLoading(const FName& PackageName, UPackage* LoadPackage, EAsyncLoadingResult::Type Result);
 };

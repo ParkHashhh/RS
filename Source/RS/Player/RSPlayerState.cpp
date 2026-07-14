@@ -6,11 +6,32 @@
 #include "AbilitySystemComponent.h"
 #include "RS/LogCategory.h"
 #include "RS/RSUtils.h"
+#include "Net/UnrealNetwork.h"
 #include "RS/Inventory/InventoryComponent.h"
 
 ARSPlayerState::ARSPlayerState()
 {
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(InventoryComponentName);
+}
+
+void ARSPlayerState::CopyProperties(APlayerState* PlayerState)
+{
+	Super::CopyProperties(PlayerState);
+	UE_LOG(LogTemp, Warning, TEXT("=== CopyProperties CALLED === My Texture: [%s]"), *SelectedTextureName.ToString());
+
+	if (ARSPlayerState* NewPS = Cast<ARSPlayerState>(PlayerState))
+	{
+		NewPS->SelectedTextureName = SelectedTextureName;
+		NewPS->SelectedSkillName = SelectedSkillName;
+	}
+}
+
+void ARSPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ARSPlayerState, SelectedTextureName);
+	DOREPLIFETIME(ARSPlayerState, SelectedSkillName);
 }
 
 void ARSPlayerState::NotifyPlayerStateReady()

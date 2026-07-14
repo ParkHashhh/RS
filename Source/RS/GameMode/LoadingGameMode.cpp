@@ -5,4 +5,5 @@
 
 ALoadingGameMode::ALoadingGameMode()
 {
+	bUseSeamlessTravel = true;
 }

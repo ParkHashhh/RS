@@ -29,3 +29,9 @@ void AColonyPlayerController::BeginPlay()
 		}
 	}
 }
+
+
+void AColonyPlayerController::Server_EnterStage_Implementation()
+{
+	GetWorld()->ServerTravel(TEXT("Stage_Warehouse"));
+}
