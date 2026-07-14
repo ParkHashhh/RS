@@ -4,6 +4,7 @@
 #include "ColonyPlayerController.h"
 #include "Blueprint/UserWidget.h"
 #include "RS/LogCategory.h"
+#include "RS/RSUtils.h"
 
 AColonyPlayerController::AColonyPlayerController()
 {
@@ -33,5 +34,5 @@ void AColonyPlayerController::BeginPlay()
 
 void AColonyPlayerController::Server_EnterStage_Implementation()
 {
-	GetWorld()->ServerTravel(TEXT("Stage_Warehouse"));
+	RSUtils::ServerTravelWithInventory(GetWorld(), TEXT("Stage_Warehouse"), true);
 }

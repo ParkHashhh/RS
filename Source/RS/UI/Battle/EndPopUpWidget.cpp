@@ -21,5 +21,5 @@ void UEndPopUpWidget::NativeDestruct()
 
 void UEndPopUpWidget::HomeClick()
 {
-	RSUtils::OpenLevelWithInventory(GetWorld(), TEXT("Colony"));
+	RSUtils::ServerTravelWithInventory(GetWorld(), TEXT("Colony"), true);
 }

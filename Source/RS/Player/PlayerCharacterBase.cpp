@@ -195,7 +195,7 @@ void APlayerCharacterBase::PossessedBy(AController* NewController)
 			RS_PRINT_SCREEN(3, FColor::Red, TEXT("Have Not PS"));
 		}
 	}
-	
+
 	if (IsValid(ASC))
 	{
 		ASC->InitAbilityActorInfo(this, this);
@@ -245,7 +245,7 @@ void APlayerCharacterBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 	DOREPLIFETIME(APlayerCharacterBase, ReplicatedViewPitch);
 	DOREPLIFETIME(APlayerCharacterBase, ReplicatedTextureName);
 	DOREPLIFETIME(APlayerCharacterBase, ReplicatedSkillName);
-}	
+}
 
 UAbilitySystemComponent* APlayerCharacterBase::GetASC() const
 {
@@ -1981,7 +1981,7 @@ void APlayerCharacterBase::CheckInteractable()
 			auto* Interactable = HitActor->FindComponentByClass<UInteractableComponent>();
 			// TODO: 필요하다면 캐릭터에 상호작용 범위 검증 필요
 			// 조준 성공
-			if (Interactable)
+			if (Interactable && Interactable->CanInteract(this))
 			{
 				if (CurrentFocusedInteractable != Interactable)
 				{

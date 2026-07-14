@@ -31,8 +31,8 @@ protected:
 	FString NextLevelOptions;
 	bool bIsServerTravel;
 
-
-	UPackage* LoadingPackage;
+	UPROPERTY()
+	TObjectPtr<UPackage> LoadingPackage;
 		
 
 	float LoadingStartTime = 0.f;

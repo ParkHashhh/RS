@@ -42,7 +42,7 @@ void ASelectPlayerController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	
+
 }
 
 void ASelectPlayerController::BeginPlay()
@@ -100,7 +100,7 @@ void ASelectPlayerController::OnPawnSelected(ASelectPawn* SelectPawn)
 	{
 		SelectWidget = CreateWidget<USelectUserWidget>(this, SelectWidgetClass);
 	}
-	// 위젯 동기화 해야함 
+	// 위젯 동기화 해야함
 	if (SelectWidget)
 	{
 		SelectWidget->PickSelectPawn(CurrentSelectedPawn);
@@ -117,6 +117,7 @@ void ASelectPlayerController::Server_SetSelectedCharacterInfo_Implementation(FNa
 		PS->SetSkillName(SkillName);
 		UE_LOG(LogTemp, Warning, TEXT("Saved to PlayerState. Now GetTextureName: [%s]"), *PS->GetTextureName().ToString());
 	}
-	GetWorld()->ServerTravel(TEXT("Colony"));
+
+	RSUtils::ServerTravelWithInventory(GetWorld(), TEXT("Colony"), true);
 
 }

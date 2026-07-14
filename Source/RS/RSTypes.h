@@ -74,10 +74,10 @@ struct FItemTableInfo : public FTableRowBase
 	FText Name{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	UTexture2D* IconTexture;
+	TObjectPtr<UTexture2D> IconTexture;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	UPaperSprite* IconSprite;
+	TObjectPtr<UPaperSprite> IconSprite;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bIsStackable{true};

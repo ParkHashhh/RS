@@ -116,6 +116,16 @@ bool UInteractableComponent::IsOccupiedBy(const APlayerCharacterBase* InInteract
 	return (Interactor.IsValid() && Interactor.Get() == InInteractor) || (Holder.IsValid() && Holder.Get() == InInteractor);
 }
 
+bool UInteractableComponent::CanInteract(APlayerCharacterBase* InInteractor) const
+{
+	if (auto* InteractableInterface = Cast<IInteractableInterface>(GetOwner()))
+	{
+		return InteractableInterface->CanInteract(InInteractor);
+	}
+
+	return false;
+}
+
 void UInteractableComponent::BeginPlay()
 {
 	Super::BeginPlay();

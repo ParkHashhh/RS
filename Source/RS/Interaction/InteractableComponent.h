@@ -59,6 +59,8 @@ public:
 
 	bool IsOccupiedBy(const APlayerCharacterBase* InInteractor) const;
 
+	bool CanInteract(APlayerCharacterBase* InInteractor) const;
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(EEndPlayReason::Type Reason) override;

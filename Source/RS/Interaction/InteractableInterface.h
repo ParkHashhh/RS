@@ -6,6 +6,7 @@
 #include "UObject/Interface.h"
 #include "InteractableInterface.generated.h"
 
+class APlayerCharacterBase;
 // This class does not need to be modified.
 UINTERFACE()
 class UInteractableInterface : public UInterface
@@ -27,5 +28,10 @@ public:
 	virtual float GetInteractionDuration() const
 	{
 		return 0.0f;
+	}
+
+	virtual bool CanInteract(APlayerCharacterBase* Interactor)
+	{
+		return true;
 	}
 };
