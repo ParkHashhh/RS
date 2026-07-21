@@ -1035,6 +1035,13 @@ void APlayerCharacterBase::DebugKey7(const FInputActionValue& Value)
 {
 	RS_LOG_DEBUG(LogRSCommon, Log, TEXT("DebugKey7"));
 	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("DebugKey7"));
+
+	AColonyPlayerController* CPC = Cast<AColonyPlayerController>(PlayerController);
+
+	if (CPC)
+	{
+		CPC->ShowMapSelcetWidget();
+	}
 }
 
 void APlayerCharacterBase::DebugKey8(const FInputActionValue& Value)

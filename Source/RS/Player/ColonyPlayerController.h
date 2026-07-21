@@ -25,15 +25,23 @@ protected:
 
 	TObjectPtr<UUserWidget> ColonyWidget;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "UI")
+	TSubclassOf<UUserWidget> MapSelectWidgetClass;
+
+	TObjectPtr<UUserWidget> MapSelectWidget;
+
 public:
 	TObjectPtr<UUserWidget> GetColonyWidget()
 	{
 		return ColonyWidget;
 	}
+	void ShowMapSelcetWidget();
+	void RemoveMapSelectWidget();
+
 protected:
 	virtual void BeginPlay() override;
 
 public:
 	UFUNCTION(Server, Reliable)
-	void Server_EnterStage();
+	void Server_EnterStage(FName LevelName, const FString& PackagePath);
 };
