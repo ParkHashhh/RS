@@ -3,13 +3,15 @@
 
 #include "LoadingPlayerController.h"
 #include "RS/GameMode/RSGameInstance.h"
-#include "Blueprint/UserWidget.h"
+#include "RS/UI/LoadingUserWidget.h"
 #include "Kismet/GameplayStatics.h"
 #include "RS/LogCategory.h"
+#include "ShaderCompiler.h"
 
 ALoadingPlayerController::ALoadingPlayerController()
 {
 	bShowMouseCursor = false;
+	PrimaryActorTick.bCanEverTick = true;
 }
 
 void ALoadingPlayerController::BeginPlay()
@@ -19,7 +21,7 @@ void ALoadingPlayerController::BeginPlay()
 	if (IsValid(LoadingWidgetClass))
 	{
 
-		LoadingWidget = CreateWidget<UUserWidget>(GetWorld(), LoadingWidgetClass);
+		LoadingWidget = CreateWidget<ULoadingUserWidget>(GetWorld(), LoadingWidgetClass);
 		if (IsValid(LoadingWidget))
 		{
 			LoadingWidget->AddToViewport();
@@ -44,7 +46,43 @@ void ALoadingPlayerController::BeginPlay()
 	}
 
 }
+void ALoadingPlayerController::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
 
+	if (bHasTraveled)
+	{
+		return;
+	}
+
+	// 1단계: 패키지 비동기 로딩 진행률 (0 ~ 80%)
+	if (!bLoadingPackage)
+	{
+		float PackagePercent = GetAsyncLoadPercentage(FName(*LoadingPackagePath));
+		if (PackagePercent >= 0.f && IsValid(LoadingWidget))
+		{
+			LoadingWidget->SetLoadingProgress((PackagePercent / 100.f) * 0.8f);
+		}
+		return;
+	}
+
+	// 2단계: 쉐이더 컴파일 대기 (80% 고정, 다 끝나야 다음으로)
+	if (GShaderCompilingManager && GShaderCompilingManager->IsCompiling())
+	{
+		if (IsValid(LoadingWidget))
+		{
+			LoadingWidget->SetLoadingProgress(0.8f);
+		}
+		return;
+	}
+
+	// 3단계: 완료, 실제 이동
+	if (IsValid(LoadingWidget))
+	{
+		LoadingWidget->SetLoadingProgress(1.f);
+	}
+	CompleteLoadingAndTravel();
+}
 void ALoadingPlayerController::StartAsyncLoading()
 {
 	if (bLoadingStart)
@@ -69,37 +107,6 @@ void ALoadingPlayerController::OnPackageLoading(const FName& PackageName,
 		{
 			LoadingPackage->AddToRoot();
 		}
-		FString FinalOptions = NextLevelOptions;
-		int32 RandomPort = FMath::RandRange(7000, 7999);
-		if (bNextLevelIsListen)
-		{
-			FinalOptions = FString::Printf(TEXT("listen Port=%d "), RandomPort) + NextLevelOptions;
-			RS_PRINT_SCREEN(100.f, FColor::Green, TEXT("PortNumber :  %d"), RandomPort);
-			RS_PRINT_SCREEN(100.f, FColor::Red, TEXT("Final Options : %s"), *FinalOptions);
-
-		}
-		if (bIsServerTravel)
-		{
-			if (HasAuthority())
-			{
-				UE_LOG(LogTemp, Warning, TEXT("Calling ServerTravel!"));
-				GetWorld()->ServerTravel(NextLevelName.ToString() + FinalOptions);
-			}
-			else
-			{
-				UE_LOG(LogTemp, Warning, TEXT("HasAuthority FALSE - ServerTravel skipped!"));
-			}
-		}
-		else
-		{
-			UGameplayStatics::OpenLevel(GetWorld(), NextLevelName, true, FinalOptions);
-		}
-		RS_PRINT_SCREEN(10.f, FColor::Red, TEXT("MapLoading Succeeded : %s"), *LoadingPackagePath);
-		if (LoadingPackage)
-		{
-			LoadingPackage->RemoveFromRoot();
-			LoadingPackage = nullptr;
-		}
 	}
 	else
 	{
@@ -107,3 +114,38 @@ void ALoadingPlayerController::OnPackageLoading(const FName& PackageName,
 	}
 }
 
+void ALoadingPlayerController::CompleteLoadingAndTravel()
+{
+	if (bHasTraveled)
+	{
+		return;
+	}
+	bHasTraveled = true;
+
+	FString FinalOptions = NextLevelOptions;
+	int32 RandomPort = FMath::RandRange(7000, 7999);
+	if (bNextLevelIsListen)
+	{
+		FinalOptions = FString::Printf(TEXT("listen Port=%d "), RandomPort) + NextLevelOptions;
+	}
+
+	if (bIsServerTravel)
+	{
+		if (HasAuthority())
+		{
+			GetWorld()->ServerTravel(NextLevelName.ToString() + FinalOptions);
+		}
+	}
+
+	else
+	{
+		UGameplayStatics::OpenLevel(GetWorld(), NextLevelName, true, FinalOptions);
+	}
+
+	RS_PRINT_SCREEN(10.f, FColor::Red, TEXT("MapLoading Succeeded : %s"), *LoadingPackagePath);
+	if (LoadingPackage)
+	{
+		LoadingPackage->RemoveFromRoot();
+		LoadingPackage = nullptr;
+	}
+}

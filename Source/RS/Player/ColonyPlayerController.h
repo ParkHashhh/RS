@@ -43,5 +43,5 @@ protected:
 
 public:
 	UFUNCTION(Server, Reliable)
-	void Server_EnterStage(FName LevelName, const FString& PackagePath);
+	void Server_RequestPortal(FName LevelName, const FString& PackagePath);
 };

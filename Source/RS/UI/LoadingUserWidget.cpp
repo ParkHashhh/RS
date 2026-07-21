@@ -2,4 +2,12 @@
 
 
 #include "LoadingUserWidget.h"
+#include "Components/ProgressBar.h"
 
+void ULoadingUserWidget::SetLoadingProgress(float Percent)
+{
+	if (LoadingProgressBar)
+	{
+		LoadingProgressBar->SetPercent(FMath::Clamp(Percent, 0.f, 1.f));
+	}
+}

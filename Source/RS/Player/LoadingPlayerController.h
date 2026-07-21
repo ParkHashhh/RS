@@ -9,6 +9,8 @@
 /**
  * 
  */
+class ULoadingUserWidget;
+
 UCLASS()
 class RS_API ALoadingPlayerController : public APlayerController
 {
@@ -20,9 +22,9 @@ public:
 protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "UI")
-	TSubclassOf<UUserWidget> LoadingWidgetClass;
+	TSubclassOf<ULoadingUserWidget> LoadingWidgetClass;
 
-	TObjectPtr<UUserWidget> LoadingWidget;
+	TObjectPtr<ULoadingUserWidget> LoadingWidget;
 
 	FName NextLevelName;
 	FString LoadingPackagePath;
@@ -39,10 +41,14 @@ protected:
 
 	bool bLoadingStart = false;
 	bool bLoadingPackage = false;
+	bool bHasTraveled = false;
+
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
 
 private:
 	void StartAsyncLoading();
 	void OnPackageLoading(const FName& PackageName, UPackage* LoadPackage, EAsyncLoadingResult::Type Result);
+	void CompleteLoadingAndTravel();
 };

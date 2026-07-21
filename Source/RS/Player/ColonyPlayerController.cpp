@@ -5,6 +5,7 @@
 #include "Blueprint/UserWidget.h"
 #include "RS/LogCategory.h"
 #include "RS/GameMode/RSGameInstance.h"
+#include "RS/GameMode/RSInGameMode.h"
 #include "RS/RSUtils.h"
 
 AColonyPlayerController::AColonyPlayerController()
@@ -63,10 +64,11 @@ void AColonyPlayerController::RemoveMapSelectWidget()
 	}
 }
 
-void AColonyPlayerController::Server_EnterStage_Implementation(FName LevelName, const FString& PackagePath)
+void AColonyPlayerController::Server_RequestPortal_Implementation(FName LevelName, const FString& PackagePath)
 {
-	if (URSGameInstance* GI = Cast<URSGameInstance>(GetGameInstance()))
+	ARSInGameMode* GM = GetWorld()->GetAuthGameMode<ARSInGameMode>();
+	if (IsValid(GM))
 	{
-		GI->LevelLoading(LevelName, PackagePath, TEXT(""), false, true);
+		GM->CreateOrUpdatePortal(LevelName, PackagePath);
 	}
 }

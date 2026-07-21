@@ -10,6 +10,8 @@
 /**
  *
  */
+class ATravelPortal;
+
 UCLASS()
 class RS_API ARSInGameMode : public AGameModeBase
 {
@@ -25,10 +27,22 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta=(AllowPrivateAccess=true))
 	TSubclassOf<APlayerCharacterBase> FeMaleCharacterClass;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Portal")
+	TSubclassOf<ATravelPortal> TravelPortalClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Portal")
+	FTransform PortalSpawnTransform;
+
+	UPROPERTY()
+	TObjectPtr<ATravelPortal> ActivePortal;
+
 public:
 
+public:
 	virtual void HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer) override;
-
+	void CreateOrUpdatePortal(FName LevelName, const FString& PackagePath);
 protected:
 	virtual UClass* GetDefaultPawnClassForController_Implementation(AController* InController) override;
+
+
 };

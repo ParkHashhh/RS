@@ -7,6 +7,7 @@
 #include "RS/Player/RSPlayerState.h"
 #include "RS/Data/Subsystem/DataStorageSubsystem.h"
 #include "RS/GameMode/RSGameInstance.h"
+#include "RS/Player/Actor/TravelPortal.h"
 
 ARSInGameMode::ARSInGameMode()
 {
@@ -47,6 +48,25 @@ void ARSInGameMode::HandleStartingNewPlayer_Implementation(APlayerController* Ne
 			{
 				StorageSubsystem->RestorePlayerInventory(PC);
 			}
+		}
+	}
+}
+
+
+void ARSInGameMode::CreateOrUpdatePortal(FName LevelName, const FString& PackagePath)
+{
+	if (IsValid(ActivePortal))
+	{
+		ActivePortal->Destroy();
+		ActivePortal = nullptr;
+	}
+
+	if (IsValid(TravelPortalClass))
+	{
+		ActivePortal = GetWorld()->SpawnActor<ATravelPortal>(TravelPortalClass, PortalSpawnTransform);
+		if (IsValid(ActivePortal))
+		{
+			ActivePortal->SetTarget(LevelName, PackagePath);
 		}
 	}
 }
