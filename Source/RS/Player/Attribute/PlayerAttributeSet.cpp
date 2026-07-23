@@ -42,7 +42,8 @@ void UPlayerAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCall
 
 	if (Data.EvaluatedData.Attribute == GetCurrentHPAttribute())
 	{
-		OnHPChanged(Instigator);
+		// Super에서 호출되고 있음.
+		// OnHPChanged(Instigator);
 
 		if (GetCurrentHP() <= 0.0f)
 		{

@@ -7,7 +7,7 @@
 #include "LoadingPlayerController.generated.h"
 
 /**
- * 
+ *
  */
 class ULoadingUserWidget;
 
@@ -20,7 +20,6 @@ public:
 	ALoadingPlayerController();
 
 protected:
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "UI")
 	TSubclassOf<ULoadingUserWidget> LoadingWidgetClass;
 
@@ -35,7 +34,6 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<UPackage> LoadingPackage;
-		
 
 	float LoadingStartTime = 0.f;
 

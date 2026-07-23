@@ -75,7 +75,7 @@ void USelectSlotWidget::StartButtonClick()
 		return;
 	}
 
-	if (ASelectPlayerController* PlayerController = Cast<ASelectPlayerController>(GetOwningPlayer()))
+	// if (auto* PlayerController = GetOwningPlayer<ASelectPlayerController>())
 	{
 		FName TextureName = CurrentSelectPawn->GetCurrentTextureName();
 		FName SkillName = CurrentSelectPawn->GetCurrentSkillName();
@@ -83,10 +83,9 @@ void USelectSlotWidget::StartButtonClick()
 		FString Option = FString::Printf(TEXT("Texture=%s Skill=%s "),
 			*TextureName.ToString(), *SkillName.ToString());
 
-		URSGameInstance* GI = Cast<URSGameInstance>(GetGameInstance());
-		if (GI)
+		if (URSGameInstance* GI = GetGameInstance<URSGameInstance>())
 		{
-			GI->LevelLoading(TEXT("Colony"), TEXT("/Game/Levels/Colony"),Option,true,false);
+			GI->LevelLoading(TEXT("Colony"), TEXT("/Game/Levels/Colony"),Option,true,false, true);
 		}
 	}
 }
@@ -118,13 +117,11 @@ void USelectSlotWidget::TestJoinLocalHost()
 		FString URL = FString::Printf(TEXT("listen?Port=7777?Texture=%s Skill=%s "),
 			*TextureName.ToString(), *SkillName.ToString());
 
-		URSGameInstance* GI = Cast<URSGameInstance>(GetGameInstance());
-		if (GI)
+		if (URSGameInstance* GI = GetGameInstance<URSGameInstance>())
 		{
-			UGameplayStatics::OpenLevel(GetWorld(), TEXT("Colony"), true, URL);
+			RSUtils::OpenLevelWithInventory(GetWorld(), TEXT("Colony"), true, true, URL);
 		}
 
 		RS_PRINT_SCREEN(1000.f, FColor::Red, TEXT("URL : %s"),*URL);
-
 	}
 }

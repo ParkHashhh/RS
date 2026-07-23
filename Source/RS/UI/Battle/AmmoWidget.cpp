@@ -6,6 +6,7 @@
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
 #include "RS/LogCategory.h"
+#include "RS/RSConstants.h"
 #include "RS/Player/PlayerCharacterBase.h"
 #include "RS/Player/Attribute/PlayerAttributeSet.h"
 
@@ -110,7 +111,7 @@ void UAmmoWidget::RefreshWidget()
 
 		if (AmmoBarMaterialInstance)
 		{
-			AmmoBarMaterialInstance->SetScalarParameterValue(FName(TEXT("Progress")), 1.0f);
+			AmmoBarMaterialInstance->SetScalarParameterValue(ProgressParamName, 1.0f);
 		}
 
 		if (AmmoText)
@@ -125,7 +126,7 @@ void UAmmoWidget::RefreshWidget()
 
 	if (AmmoBarMaterialInstance)
 	{
-		AmmoBarMaterialInstance->SetScalarParameterValue(FName(TEXT("Progress")), CurrAmmo / MaxAmmo);
+		AmmoBarMaterialInstance->SetScalarParameterValue(ProgressParamName, CurrAmmo / MaxAmmo);
 	}
 
 	if (AmmoText)

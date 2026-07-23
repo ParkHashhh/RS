@@ -8,6 +8,7 @@
 #include "RS/RSTypes.h"
 #include "GenericTeamAgentInterface.h"
 #include "AbilitySystemInterface.h"
+#include "RS/Utils/KillableInterface.h"
 #include "ZombieBase.generated.h"
 
 class UCapsuleComponent;
@@ -34,8 +35,9 @@ struct FZombieSkeletalMeshSet
 
 UCLASS()
 class RS_API AZombieBase : public ARSPawn,
-	public IGenericTeamAgentInterface,
-	public IAbilitySystemInterface
+                           public IGenericTeamAgentInterface,
+                           public IAbilitySystemInterface,
+                           public IKillableInterface
 
 {
 	GENERATED_BODY()
@@ -63,7 +65,7 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UAbilitySystemComponent> ASC;
-		
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UBaseAttributeSet> AttributeSet;
 
@@ -127,7 +129,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "NeedProperty", BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TMap<FName, TObjectPtr<UNiagaraSystem>> NiagaraParticleMap;
 
-	//행 이름으로써 검색을 위해 좀비이름을 들고 있게 한다.
+	//행 이름으로써 검색을 위해 좀비이름을 들고 있게 한다. = TableRowName
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "NeedProperty", meta = (AllowPrivateAccess = "true"))
 	FName ZombieName;
 
@@ -158,6 +160,7 @@ public:
 	{
 		SpawnPointLocation = Loc;
 	}
+
 	void SetIsJumpEnd(bool IsEnd);
 
 public:
@@ -165,18 +168,22 @@ public:
 	{
 		return ASC;
 	}
+
 	UBaseAttributeSet* GetAttributeSet() const
 	{
 		return AttributeSet;
 	}
+
 	FVector GetNextPointLocation() const
 	{
 		return NextPointLocation;
 	}
+
 	float GetTurnSpeed() const
 	{
 		return TurnSpeed;
 	}
+
 	UZombieAnimInstance* GetAnimInst() const
 	{
 		return AnimInstance;
@@ -186,9 +193,15 @@ public:
 	{
 		return AICtrl;
 	}
+
 	UFloatingPawnMovement* GetMovement() const
 	{
 		return Movement;
+	}
+
+	FName GetTableRowName() const
+	{
+		return ZombieName;
 	}
 
 public:
@@ -217,7 +230,7 @@ public:
 	virtual void PlayZombieSkillSound();
 	virtual void SpawnZombieAttackParticle();
 	virtual void PlayZombieRoarSound();
-	
+
 public:
 	UFUNCTION()
 	void OnRep_ChangeAnimType();

@@ -37,4 +37,10 @@ public:
 	// 좀비의 기본 정보가 담긴 테이블 애셋
 	UPROPERTY(Config, EditAnywhere, Category = "Data")
 	FPrimaryAssetId ZombieDefaultInfoTableAsset;
+
+	UPROPERTY(Config, EditAnywhere, Category = "Data")
+	FPrimaryAssetId StageObjectiveInfoTableAsset;
+
+	UPROPERTY(Config, EditAnywhere, Category = "Data")
+	FPrimaryAssetId StageInfoTableAsset;
 };

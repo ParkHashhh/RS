@@ -2,7 +2,11 @@
 #include "AttributeSet.h"
 #include "GameplayTagContainer.h"
 #include "PaperSprite.h"
+#include "Net/Serialization/FastArraySerializer.h"
 
+class ARSGameState;
+struct FStageObjectiveList;
+class UDataSubsystem;
 class UGameplayEffect;
 
 #include "RSTypes.generated.h"
@@ -42,7 +46,7 @@ struct FItemOption
 };
 
 USTRUCT(BlueprintType)
-struct FStatBase : public FTableRowBase
+struct RS_API FStatBase : public FTableRowBase
 {
 	GENERATED_BODY()
 
@@ -66,7 +70,7 @@ struct FStatBase : public FTableRowBase
 };
 
 USTRUCT(BlueprintType)
-struct FItemTableInfo : public FTableRowBase
+struct RS_API FItemTableInfo : public FTableRowBase
 {
 	GENERATED_BODY()
 
@@ -95,7 +99,7 @@ struct FItemTableInfo : public FTableRowBase
 };
 
 USTRUCT(BlueprintType)
-struct FMiscTableInfo : public FTableRowBase
+struct RS_API FMiscTableInfo : public FTableRowBase
 {
 	GENERATED_BODY()
 
@@ -125,7 +129,7 @@ struct FMiscTableInfo : public FTableRowBase
 };
 
 USTRUCT(BlueprintType)
-struct FPlayerDefaultInfo : public FTableRowBase
+struct RS_API FPlayerDefaultInfo : public FTableRowBase
 {
 	GENERATED_BODY()
 
@@ -168,7 +172,7 @@ enum class ENormalZombieRarity : uint8
 };
 
 USTRUCT(BlueprintType)
-struct FZombieDefaultInfo : public FTableRowBase
+struct RS_API FZombieDefaultInfo : public FTableRowBase
 {
 	GENERATED_BODY()
 
@@ -245,22 +249,22 @@ enum class ERSInputID : uint8
 };
 
 USTRUCT(BlueprintType)
-struct FStatDisplayTableInfo : public FTableRowBase
+struct RS_API FStatDisplayTableInfo : public FTableRowBase
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
-    UPROPERTY(EditAnywhere)
-    FText DisplayName;
+	UPROPERTY(EditAnywhere)
+	FText DisplayName;
 
-    UPROPERTY(EditAnywhere)
-    FText DescriptionFormat;
+	UPROPERTY(EditAnywhere)
+	FText DescriptionFormat;
 
-    UPROPERTY(EditAnywhere)
-    TObjectPtr<UPaperSprite> Icon;
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<UPaperSprite> Icon;
 
 	// 값이 0이면 UI에서 숨길지 여부
-    UPROPERTY(EditAnywhere)
-    bool bHiddenIfZero = true;
+	UPROPERTY(EditAnywhere)
+	bool bHiddenIfZero = true;
 };
 
 UENUM(BlueprintType)
@@ -275,30 +279,58 @@ enum class EClearCondition : uint8
 };
 
 USTRUCT(BlueprintType)
+struct RS_API FStageObjectiveTableInfo : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	EClearCondition ClearCondition;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float Goal;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FText ObjectiveName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FText ObjectiveDescription;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FName TargetTableRowName;
+};
+
+USTRUCT(BlueprintType)
 struct FStageObjective
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stage|Objective")
-	EClearCondition ClearCondition;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stage|Objective")
+	FName TableRowName;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stage|Objective")
-	int32 Current;
+	float Current;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stage|Objective")
-	int32 Goal;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stage|Objective")
+	float Goal;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stage|Objective")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stage|Objective")
 	TArray<FDataTableRowHandle> Targets;
+
+	bool IsValid() const
+	{
+		return !TableRowName.IsNone();
+	}
 
 	bool IsCleared() const
 	{
 		return Current >= Goal;
 	}
 
+	static int32 GetGoal(FName RowName, const UDataSubsystem* DataSubsystem);
+
 	float GetProgressRatio() const
 	{
-		return Goal > 0 ? FMath::Clamp(static_cast<float>(Current) / Goal, 0.0f, 1.0f) : 1.0f;
+		return Goal > 0 ? FMath::Clamp(Current / Goal, 0.0f, 1.0f) : 1.0f;
 	}
 
 	void Reset()
@@ -314,7 +346,7 @@ struct FStageObjective
 
 	friend bool operator==(const FStageObjective& Lhs, const FStageObjective& RHS)
 	{
-		return Lhs.ClearCondition == RHS.ClearCondition
+		return Lhs.TableRowName == RHS.TableRowName
 			&& Lhs.Current == RHS.Current
 			&& Lhs.Goal == RHS.Goal
 			&& Lhs.Targets == RHS.Targets;
@@ -327,8 +359,8 @@ struct FStageObjective
 
 	FStageObjective() = default;
 
-	FStageObjective(EClearCondition ClearCondition, int32 Current, int32 Goal)
-		: ClearCondition(ClearCondition),
+	FStageObjective(FName TableRowName, float Current, float Goal)
+		: TableRowName(TableRowName),
 		  Current(Current),
 		  Goal(Goal)
 	{
@@ -342,4 +374,110 @@ enum class EInteractableState : uint8
 	Idle,
 	Occupied,
 	Disabled,
+};
+
+USTRUCT(BlueprintType)
+struct RS_API FStageTableInfo : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FText DisplayName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TArray<FName> ObjectiveRowNames;
+};
+
+USTRUCT(BlueprintType)
+struct RS_API FKillInfo
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FUniqueNetIdRepl UniqueNetId;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	FName MonsterRowName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	int32 KillCount;
+};
+
+USTRUCT(BlueprintType)
+struct RS_API FStageObjectiveEntry : public FFastArraySerializerItem
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	FName TableRowName;
+
+	UPROPERTY()
+	float CurreentProgress;
+
+	UPROPERTY()
+	int32 DisplayOrder;
+
+	FStageObjectiveEntry() = default;
+	FStageObjectiveEntry(FName TableRowName, float CurrentProgress, int32 DisplayOrder)
+		: TableRowName(TableRowName)
+		, CurreentProgress(CurrentProgress)
+		, DisplayOrder(DisplayOrder)
+	{
+	}
+
+	void PreReplicatedRemove(const FStageObjectiveList& InArraySerializer);
+	void PostReplicatedAdd(const FStageObjectiveList& InArraySerializer);
+	void PostReplicatedChange(const FStageObjectiveList& InArraySerializer);
+
+	bool IsValid() const
+	{
+		return !TableRowName.IsNone();
+	}
+
+	friend bool operator==(const FStageObjectiveEntry& Lhs, const FStageObjectiveEntry& RHS)
+	{
+		return Lhs.TableRowName == RHS.TableRowName;
+	}
+
+	friend bool operator!=(const FStageObjectiveEntry& Lhs, const FStageObjectiveEntry& RHS)
+	{
+		return !(Lhs == RHS);
+	}
+};
+
+USTRUCT()
+struct FStageObjectiveList : public FFastArraySerializer
+{
+	GENERATED_BODY()
+
+	friend class ARSGameState;
+
+	UPROPERTY()
+	TArray<FStageObjectiveEntry> Entries;
+
+	UPROPERTY(NotReplicated)
+	TObjectPtr<ARSGameState> Owner = nullptr;
+
+private:
+	UPROPERTY(NotReplicated)
+
+	TMap<FName, int32> TableRowNameIndexMap;
+
+public:
+	bool NetdeltNetDeltaSerialize(FNetDeltaSerializeInfo& DeltaParams)
+	{
+		return FastArrayDeltaSerialize<FStageObjectiveEntry, FStageObjectiveList>(Entries, DeltaParams, *this);
+	}
+
+	void MarkDirty(FName TableRowName);
+
+	FStageObjectiveEntry* FindEntry(FName TableRowName);
+	const FStageObjectiveEntry* FindEntry(FName TableRowName) const;
+
+	FStageObjectiveEntry& AddEntry(FName TableRowName, float CurrentProgress = 0.0f, int32 DisplayOrder = 0);
+
+	bool RemoveEntry(FName TableRowName);
+
+private:
+	void RebuildIndexMap();
 };

@@ -5,6 +5,7 @@
 
 #include "Components/Image.h"
 #include "PaperSprite.h"
+#include "RS/RSConstants.h"
 
 UInteractionWidget::UInteractionWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -28,7 +29,7 @@ void UInteractionWidget::SetProgress(float Progress) const
 {
 	if (bIsProgressEnable && ProgressMaterial)
 	{
-		ProgressMaterial->SetScalarParameterValue(FName(TEXT("Progress")), FMath::Clamp(Progress, 0.0f, 1.0f));
+		ProgressMaterial->SetScalarParameterValue(ProgressParamName, FMath::Clamp(Progress, 0.0f, 1.0f));
 	}
 }
 

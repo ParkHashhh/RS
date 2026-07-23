@@ -13,27 +13,28 @@ void UStageObjectiveWidget::Init()
 	{
 		if (auto* GS = World->GetGameState<ARSGameState>())
 		{
+			const auto* DataSubsystem = GetSubsystem<UDataSubsystem>();
 			const FStageObjective& Objective1 = GS->GetObjective1();
-			if (Objective1.ClearCondition != EClearCondition::None)
+			if (Objective1.IsValid())
 			{
 				auto* NewObj = NewObject<UStageObjectiveEntryObject>(this);
-				NewObj->Initialize(Objective1);
+				NewObj->Initialize(Objective1, DataSubsystem, 0);
 				StageObjectiveEntryObjects.Add(NewObj);
 			}
 
 			const FStageObjective& Objective2 = GS->GetObjective2();
-			if (Objective2.ClearCondition != EClearCondition::None)
+			if (Objective2.IsValid())
 			{
 				auto* NewObj = NewObject<UStageObjectiveEntryObject>(this);
-				NewObj->Initialize(Objective2);
+				NewObj->Initialize(Objective2, DataSubsystem, 1);
 				StageObjectiveEntryObjects.Add(NewObj);
 			}
 
 			const FStageObjective& Objective3 = GS->GetObjective3();
-			if (Objective3.ClearCondition != EClearCondition::None)
+			if (Objective3.IsValid())
 			{
 				auto* NewObj = NewObject<UStageObjectiveEntryObject>(this);
-				NewObj->Initialize(Objective3);
+				NewObj->Initialize(Objective3, DataSubsystem, 2);
 				StageObjectiveEntryObjects.Add(NewObj);
 			}
 

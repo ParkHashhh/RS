@@ -7,6 +7,7 @@
 #include "Blueprint/UserWidget.h"
 #include "StageObjectiveEntryWidget.generated.h"
 
+class UStageObjectiveEntryObject;
 class UImage;
 class UTextBlock;
 /**
@@ -32,6 +33,14 @@ class RS_API UStageObjectiveEntryWidget : public UUserWidget, public IUserObject
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInstanceDynamic> ProgressMaterial;
 
+	UPROPERTY(Transient)
+	TObjectPtr<UStageObjectiveEntryObject> EntryObject;
+
+public:
+	void SetProgressText(const FText& InProgressText) const;
+
+	void SetProgressRatio(float ProgressRatio) const;
+
 protected:
 	virtual void NativeOnInitialized() override;
 
@@ -39,4 +48,6 @@ protected:
 
 private:
 	void Init(const FText& Title, const FText& Description, const FText& InProgressText, float ProgressRatio) const;
+
+	void OnObjectiveProgressChanged() const;
 };

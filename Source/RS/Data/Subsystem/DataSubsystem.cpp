@@ -12,6 +12,8 @@
 #include "RS/Data/DataAsset/ItemInfoTableAsset.h"
 #include "RS/Data/DataAsset/MiscInfoTableAsset.h"
 #include "RS/Data/DataAsset/PlayerDefaultInfoTableAsset.h"
+#include "RS/Data/DataAsset/StageInfoTableAsset.h"
+#include "RS/Data/DataAsset/StageObjectiveInfoTableAsset.h"
 #include "RS/Data/DataAsset/StatDisplayInfoTableAsset.h"
 #include "RS/Data/DataAsset/ZombieDefaultInfoTableAsset.h"
 
@@ -28,6 +30,8 @@ void UDataSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	LoadMiscInfoTable();
 	LoadStatDisplayInfoTable();
 	LoadZombieDefaultInfoTable();
+	LoadStageObjectiveInfoTable();
+	LoadStageInfoTable();
 }
 
 const FItemTableInfo* UDataSubsystem::GetItemTableInfo(FName Name) const
@@ -153,7 +157,6 @@ const FStatDisplayTableInfo* UDataSubsystem::GetStatDisplayTableInfo(FName Name)
 
 bool UDataSubsystem::K2_GetStatDisplayTableInfo(FName Name, FStatDisplayTableInfo& OutStatDisplayInfo) const
 {
-
 	if (const FStatDisplayTableInfo* StatDisplayInfo = GetStatDisplayTableInfo(Name))
 	{
 		OutStatDisplayInfo = *StatDisplayInfo;
@@ -161,6 +164,64 @@ bool UDataSubsystem::K2_GetStatDisplayTableInfo(FName Name, FStatDisplayTableInf
 	}
 
 	OutStatDisplayInfo = FStatDisplayTableInfo();
+	return false;
+}
+
+const FStageObjectiveTableInfo* UDataSubsystem::GetStageObjectiveTableInfo(FName Name) const
+{
+	if (!StageObjectiveInfoTable)
+	{
+		RS_LOG_DEBUG(LogRSData, Warning, TEXT("%s: StageObjectiveInfoTable is NOT valid when getting row %s. It might still be loading."), *LOG_LINE_INFO, *Name.ToString());
+		return nullptr;
+	}
+
+	const auto* Row = StageObjectiveInfoTable->FindRow<FStageObjectiveTableInfo>(Name, TEXT("StageObjectiveInfo"));
+	if (!Row)
+	{
+		RS_LOG_DEBUG(LogRSData, Warning, TEXT("%s: Failed to find row %s in StageObjectiveInfoTable"), *LOG_LINE_INFO, *Name.ToString());
+	}
+
+	return Row;
+}
+
+bool UDataSubsystem::K2_GetStageObjectiveTableInfo(FName Name, FStageObjectiveTableInfo& OutStageObjectiveInfo) const
+{
+	if (const FStageObjectiveTableInfo* Info = GetStageObjectiveTableInfo(Name))
+	{
+		OutStageObjectiveInfo = *Info;
+		return true;
+	}
+
+	OutStageObjectiveInfo = FStageObjectiveTableInfo();
+	return false;
+}
+
+const FStageTableInfo* UDataSubsystem::GetStageTableInfo(FName Name) const
+{
+	if (!StageInfoTable)
+	{
+		RS_LOG_DEBUG(LogRSData, Warning, TEXT("%s: StageInfoTable is NOT valid when getting row %s. It might still be loading."), *LOG_LINE_INFO, *Name.ToString());
+		return nullptr;
+	}
+
+	const auto* Row = StageInfoTable->FindRow<FStageTableInfo>(Name, TEXT("StageInfo"));
+	if (!Row)
+	{
+		RS_LOG_DEBUG(LogRSData, Warning, TEXT("%s: Failed to find row %s in StageInfoTable"), *LOG_LINE_INFO, *Name.ToString());
+	}
+
+	return Row;
+}
+
+bool UDataSubsystem::K2_GetStageTableInfo(FName Name, FStageTableInfo& OutStageInfo) const
+{
+	if (const FStageTableInfo* Info = GetStageTableInfo(Name))
+	{
+		OutStageInfo = *Info;
+		return true;
+	}
+
+	OutStageInfo = FStageTableInfo();
 	return false;
 }
 
@@ -403,4 +464,86 @@ void UDataSubsystem::OnZombieDefaultInfoTableLoaded(FPrimaryAssetId LoadedAssetI
 	RS_LOG_DEBUG(LogRSData, Log, TEXT("%s: ZombieDefaultInfoTable loaded successfully: %s"), *LOG_LINE_INFO, *ZombieDefaultInfoTable->GetName());
 
 	OnZombieDefaultInfoLoadedDelegate.Broadcast();
+}
+
+void UDataSubsystem::LoadStageObjectiveInfoTable()
+{
+	const URSDataSettings* Settings = GetDefault<URSDataSettings>();
+	if (!Settings || !Settings->StageObjectiveInfoTableAsset.IsValid())
+	{
+		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: StageObjectiveInfoTableAsset is invalid. Check Project Settings -> RS Data Settings."), *LOG_LINE_INFO);
+		return;
+	}
+
+	const FPrimaryAssetId& TargetAssetId = Settings->StageObjectiveInfoTableAsset;
+
+	RS_LOG_DEBUG(LogRSData, Log, TEXT("%s: Starting to load StageObjectiveInfoTableAsset (%s)"), *LOG_LINE_INFO, *TargetAssetId.ToString());
+
+	auto& AssetManager = UAssetManager::Get();
+	AssetManager.LoadPrimaryAsset(TargetAssetId, TArray<FName>{},
+		FStreamableDelegate::CreateUObject(
+			this, &UDataSubsystem::OnStageObjectiveInfoTableLoaded, TargetAssetId));
+}
+
+void UDataSubsystem::OnStageObjectiveInfoTableLoaded(FPrimaryAssetId LoadedAssetID)
+{
+	const auto& AssetManager = UAssetManager::Get();
+	const auto* DataAsset = AssetManager.GetPrimaryAssetObject<UStageObjectiveInfoTableAsset>(LoadedAssetID);
+	if (!IsValid(DataAsset))
+	{
+		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to get Primary Asset Object for %s"), *LOG_LINE_INFO, *LoadedAssetID.ToString());
+		return;
+	}
+
+	StageObjectiveInfoTable = DataAsset->DataTable.LoadSynchronous();
+	if (!StageObjectiveInfoTable)
+	{
+		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to load DataTable from DataAsset %s"), *LOG_LINE_INFO, *LoadedAssetID.ToString());
+		return;
+	}
+
+	RS_LOG_DEBUG(LogRSData, Log, TEXT("%s: StageObjectiveInfoTable loaded successfully: %s"), *LOG_LINE_INFO, *StageObjectiveInfoTable->GetName());
+
+	OnStageObjectiveInfoLoadedDelegate.Broadcast();
+}
+
+void UDataSubsystem::LoadStageInfoTable()
+{
+	const URSDataSettings* Settings = GetDefault<URSDataSettings>();
+	if (!Settings || !Settings->StageInfoTableAsset.IsValid())
+	{
+		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: StageInfoTableAsset is invalid. Check Project Settings -> RS Data Settings."), *LOG_LINE_INFO);
+		return;
+	}
+
+	const FPrimaryAssetId& TargetAssetId = Settings->StageInfoTableAsset;
+
+	RS_LOG_DEBUG(LogRSData, Log, TEXT("%s: Starting to load StageInfoTableAsset (%s)"), *LOG_LINE_INFO, *TargetAssetId.ToString());
+
+	auto& AssetManager = UAssetManager::Get();
+	AssetManager.LoadPrimaryAsset(TargetAssetId, TArray<FName>{},
+		FStreamableDelegate::CreateUObject(
+			this, &UDataSubsystem::OnStageTableInfoLoaded, TargetAssetId));
+}
+
+void UDataSubsystem::OnStageTableInfoLoaded(FPrimaryAssetId LoadedAssetID)
+{
+	const auto& AssetManager = UAssetManager::Get();
+	const auto* DataAsset = AssetManager.GetPrimaryAssetObject<UStageInfoTableAsset>(LoadedAssetID);
+	if (!IsValid(DataAsset))
+	{
+		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to get Primary Asset Object for %s"), *LOG_LINE_INFO, *LoadedAssetID.ToString());
+		return;
+	}
+
+	StageInfoTable = DataAsset->DataTable.LoadSynchronous();
+	if (!StageInfoTable)
+	{
+		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to load DataTable from DataAsset %s"), *LOG_LINE_INFO, *LoadedAssetID.ToString());
+		return;
+	}
+
+	RS_LOG_DEBUG(LogRSData, Log, TEXT("%s: StageInfoTable loaded successfully: %s"), *LOG_LINE_INFO, *StageInfoTable->GetName());
+
+	OnStageInfoLoadedDelegate.Broadcast();
 }

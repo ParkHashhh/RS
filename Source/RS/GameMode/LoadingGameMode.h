@@ -7,7 +7,7 @@
 #include "LoadingGameMode.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class RS_API ALoadingGameMode : public AGameModeBase
@@ -16,5 +16,4 @@ class RS_API ALoadingGameMode : public AGameModeBase
 
 public:
 	ALoadingGameMode();
-
 };

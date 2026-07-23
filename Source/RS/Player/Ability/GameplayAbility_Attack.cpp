@@ -22,6 +22,7 @@ void UGameplayAbility_Attack::ActivateAbility(const FGameplayAbilitySpecHandle H
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
+	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("UGameplayAbility_Attack"));
 
 	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
 
@@ -99,10 +100,9 @@ void UGameplayAbility_Attack::LoopAttackSequence()
 		DefaultAttackSpeed = FMath::Max(DefaultAttackSpeed, 0.01f);
 
 		UAbilityTask_PlayMontageAndWait* Task =
-			UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, NAME_None, AttackMontage, 0.7f);
+			UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, NAME_None, AttackMontage, 1.f);
 
 		Task->OnCompleted.AddDynamic(this, &UGameplayAbility_Attack::OnAttackSequenceStep);
-		Task->OnBlendOut.AddDynamic(this, &UGameplayAbility_Attack::OnAttackSequenceStep);
 
 		Task->ReadyForActivation();
 	}
@@ -126,6 +126,7 @@ void UGameplayAbility_Attack::EndAbility(const FGameplayAbilitySpecHandle Handle
 
 void UGameplayAbility_Attack::OnAttackSequenceStep()
 {
+	RS_PRINT_SCREEN(2.f, FColor::Yellow, TEXT("Step at %f"), GetWorld()->GetTimeSeconds());
 	if (bStop || !IsActive())
 	{
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);

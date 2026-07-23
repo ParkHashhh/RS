@@ -22,8 +22,7 @@ void UStartWidget::NativeOnInitialized()
 
 void UStartWidget::StartClick()
 {
-	URSGameInstance* GI = Cast<URSGameInstance>(GetGameInstance());
-	if (GI)
+	if (auto* GI = GetGameInstance<URSGameInstance>())
 	{
 		FString Option = "";
 		GI->LevelLoading(TEXT("Select"),TEXT("/Game/Levels/Select"), Option);

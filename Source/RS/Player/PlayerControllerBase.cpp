@@ -101,7 +101,8 @@ void APlayerControllerBase::Server_RequestReward_Implementation(FName RewardItem
 		RS_LOG_DEBUG(LogRSInteraction, Log, TEXT("%s: Get character"), *LOG_LINE_INFO);
 		if (UInteractableComponent* Interactable = PlayerCharacterBase->GetCurrentFocusedInteractable())
 		{
-			RS_LOG_DEBUG(LogRSInteraction, Log, TEXT("%s: Try destroy interactable %s"), *LOG_LINE_INFO, *Interactable->GetOwner()->GetName());
+			RS_LOG_DEBUG(LogRSInteraction, Log, TEXT("%s: Try destroy interactable %s"), *LOG_LINE_INFO,
+			             *Interactable->GetOwner()->GetName());
 			Interactable->GetOwner()->Destroy();
 		}
 	}
@@ -154,6 +155,7 @@ void APlayerControllerBase::ShowEndPopUp()
 	{
 		return;
 	}
+
 	if (!IsValid(EndPopUpWidget))
 	{
 		return;
@@ -205,7 +207,8 @@ void APlayerControllerBase::Server_RequestSpectateTargets_Implementation()
 	}
 }
 
-void APlayerControllerBase::Client_ReceiveSpectateTargets_Implementation(const TArray<class APlayerCharacterBase*>& Targets)
+void APlayerControllerBase::Client_ReceiveSpectateTargets_Implementation(
+	const TArray<APlayerCharacterBase*>& Targets)
 {
 	SpectateTargets = Targets;
 	if (SpectateTargets.Num() > 0)

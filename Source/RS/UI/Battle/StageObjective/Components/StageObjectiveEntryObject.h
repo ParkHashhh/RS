@@ -3,7 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "RS/Data/Subsystem/DataSubsystem.h"
 #include "UObject/Object.h"
+#include "RS/GameMode/RSGameState.h"
 #include "StageObjectiveEntryObject.generated.h"
 
 struct FStageObjective;
@@ -15,12 +17,17 @@ class RS_API UStageObjectiveEntryObject : public UObject
 {
 	GENERATED_BODY()
 
+public:
 	FText Title;
 	FText Description;
 
-	int Current;
-	int Goal;
+	float Current;
+	float Goal;
 
-public:
-	void Initialize(const FStageObjective& Objective);
+	int32 Idx;
+
+	void Initialize(const FStageObjective& Objective, const UDataSubsystem* DataSubsystem, int32 InIdx);
+
+private:
+	void OnObjectiveStateChanged();
 };

@@ -5,10 +5,14 @@
 #include "GameplayEffectExtension.h"
 #include "GameplayEffect.h"
 #include "RS/LogCategory.h"
+#include "RS/Zombie/ZombieBase.h"
 
 void UBaseAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
 {
 	Super::PostGameplayEffectExecute(Data);
+
+	UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent();
+	AActor* AvatarActor = ASC->GetAvatarActor();
 
 	AActor* Instigator = nullptr;
 
@@ -26,6 +30,17 @@ void UBaseAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 	if (Data.EvaluatedData.Attribute == GetCurrentHPAttribute())
 	{
 		OnHPChanged(Instigator);
+
+		if (GetCurrentHP() <= 0.0f)
+		{
+			if (const auto* Killable = Cast<IKillableInterface>(AvatarActor))
+			{
+				AActor* OrigInstigator = Context.GetOriginalInstigator();
+				const APawn* Killer = OrigInstigator? Cast<APawn>(OrigInstigator) : nullptr;
+
+				Killable->OnDead(GetWorld(), Killer);
+			}
+		}
 	}
 }
 

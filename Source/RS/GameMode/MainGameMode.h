@@ -4,7 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "RSInGameMode.h"
+#include "RS/RSTypes.h"
+#include "RS/Utils/KillableInterface.h"
 #include "MainGameMode.generated.h"
+
+class AZombieBase;
+
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnKillInfoChanged, const FKillInfo*)
 
 /**
  *
@@ -14,13 +20,65 @@ class RS_API AMainGameMode : public ARSInGameMode
 {
 	GENERATED_BODY()
 
+#pragma region Common
+private:
+	UPROPERTY()
+	TArray<FKillInfo> KillInfos;
+
+	UPROPERTY()
+	float StageElapsedTime = 0.0f;
+
+	UPROPERTY()
+	bool bStartStage = false;
+
+	FOnKillInfoChanged OnKillInfoChanged;
+
 public:
 	AMainGameMode();
 
+	virtual void Tick(float DeltaSeconds) override;
+
 	virtual void StartPlay() override;
 
-protected:
-	// TODO: 데이터로 스테이지 초기화 변경 필요
-	virtual void StartStage();
+	int32 GetKillCountAll(const FUniqueNetIdRepl& PlayerUID) const;
+	int32 GetKillCountAll(const APlayerState* PlayerState) const;
+	int32 GetKillCountAll(FName MonsterRowName) const;
 
+	int32 GetKillCount(const FUniqueNetIdRepl& PlayerUID, FName MonsterRowName) const;
+	int32 GetKillCount(const APlayerState* PlayerState, FName MonsterRowName) const;
+
+	float GetStageElapsedTime() const;
+
+	void OnDead(const APawn* InInstigator, const IKillableInterface* Killed);
+	void OnMonsterDead(const APlayerState* PlayerState, const IKillableInterface* Killable);
+
+protected:
+	virtual void BeginPlay() override;
+
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+	virtual void Clear();
+
+	virtual void Initialize();
+
+private:
+	void StartStage();
+	void EndStage();
+
+	void InitializeStageObjective();
+
+#pragma endregion
+
+#pragma region StageObjective
+private:
+	UPROPERTY()
+	TArray<FStageObjectiveEntry> StageObjectiveEntries;
+
+public:
+	const TArray<FStageObjectiveEntry>& GetStageObjectiveEntries() const;
+	const FStageObjectiveEntry* GetStageObjectiveEntry(int32 Index) const;
+
+private:
+	void HandleKillInfoChanged(const FKillInfo* KillInfo);
+#pragma endregion
 };

@@ -4,24 +4,26 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameStateBase.h"
+#include "Net/Serialization/FastArraySerializer.h"
 #include "RS/RSTypes.h"
 #include "RS/RSUtils.h"
 #include "RSGameState.generated.h"
 
 DECLARE_MULTICAST_DELEGATE(FOnGameStateReady)
 
-DECLARE_MULTICAST_DELEGATE(FOnObjective1StateChanged)
-DECLARE_MULTICAST_DELEGATE(FOnObjective2StateChanged)
-DECLARE_MULTICAST_DELEGATE(FOnObjective3StateChanged)
+DECLARE_MULTICAST_DELEGATE(FOnObjectiveStateChanged);
+DECLARE_MULTICAST_DELEGATE(FOnObjectiveChanged);
 
-UENUM(BlueprintType)
-enum class EStageState : uint8
+USTRUCT(BlueprintType)
+struct RS_API FStageObjectiveDisplayEntry : public FFastArraySerializerItem
 {
-	Preparing,
-	Playing,
-	Cleared,
-	Failed,
-	Traveling,
+	GENERATED_BODY()
+
+	UPROPERTY()
+	FName TableRowName;
+
+	UPROPERTY()
+	float CurrentProgress;
 };
 
 /**
@@ -35,9 +37,10 @@ class RS_API ARSGameState : public AGameStateBase
 public:
 	ARSGameState();
 
-protected:
-	UPROPERTY(ReplicatedUsing=OnRep_StageState, BlueprintReadOnly)
-	EStageState StageState;
+	// private:
+	UPROPERTY(ReplicatedUsing=OnRep_ObjectiveDisplayEntries, VisibleAnywhere, BlueprintReadOnly,
+		meta=(AllowPrivateAccess=true))
+	TArray<FStageObjectiveDisplayEntry> ObjectiveDisplayEntries;
 
 	UPROPERTY(ReplicatedUsing=OnRep_Objective1, EditDefaultsOnly, BlueprintReadOnly, meta=(AllowPrivateAccess))
 	FStageObjective Objective1;
@@ -65,9 +68,11 @@ protected:
 
 	FOnGameStateReady OnGameStateReadyDelegate;
 
-	FOnObjective1StateChanged OnObjective1StateChangedDelegate;
-	FOnObjective2StateChanged OnObjective2StateChangedDelegate;
-	FOnObjective3StateChanged OnObjective3StateChangedDelegate;
+public:
+	TArray<FOnObjectiveStateChanged> OnObjectiveStateChangedDelegates
+	{
+		FOnObjectiveStateChanged(), FOnObjectiveStateChanged(), FOnObjectiveStateChanged(),
+	};
 
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -83,11 +88,6 @@ public:
 	{
 		static_assert(TIsDerivedFrom<T, UObject>::IsDerived, "T must be derived from UObject");
 		OnGameStateReadyDelegate.RemoveAll(Object);
-	}
-
-	EStageState GetStageState() const
-	{
-		return StageState;
 	}
 
 	const FStageObjective& GetObjective1() const
@@ -122,12 +122,9 @@ public:
 	}
 
 	// TODO: 데이터로 스테이지 초기화 변경 필요
-	void Initialize();
+	void Initialize(const TArray<FStageObjectiveEntry>& Objectives);
 
 protected:
-	UFUNCTION()
-	void OnRep_StageState();
-
 	UFUNCTION()
 	void OnRep_Objective1();
 	void InnerOnRepObjective1();
@@ -143,4 +140,56 @@ protected:
 	UFUNCTION()
 	void OnRep_Initialized();
 	void InnerOnRepInitialized();
+
+private:
+	UFUNCTION()
+	void OnRep_ObjectiveDisplayEntries();
+
+private:
+	UPROPERTY(Replicated)
+	FStageObjectiveList ObjectiveList;
+
+public:
+	FOnObjectiveChanged OnObjectiveChangedDelegate;
+
+public:
+	FStageObjectiveEntry* AddObjective(FName TableRowName, float CurrentProgress, int32 DisplayOrder);
+
+	void SetProgress(FName TableRowName, float NewProgress);
+
+	FStageObjectiveEntry* FindObjective(FName TableRowName);
+	const FStageObjectiveEntry* FindObjective(FName TableRowName) const;
+
+	float GetObjectiveProgress(FName TableRowName) const;
+	float GetObjectiveProgressRatio(FName TableRowName) const;
+
+	void HandleEntryAdded(const FStageObjectiveEntry& Entry);
+	void HandleEntryChanged(const FStageObjectiveEntry& Entry);
+	void HandleEntryRemoved(const FStageObjectiveEntry& Entry);
+
+	const TArray<FStageObjectiveEntry>& GetObjectiveEntries() const
+	{
+		return ObjectiveList.Entries;
+	}
+
+	const FStageObjectiveEntry* GetObjectiveEntry(int32 Index) const
+	{
+		return ObjectiveList.Entries.IsValidIndex(Index) ? &ObjectiveList.Entries[Index] : nullptr;
+	}
+
+	const FStageObjectiveEntry* GetObjectiveEntry(FName TableRowName) const
+	{
+		if (TableRowName.IsNone())
+		{
+			return nullptr;
+		}
+
+		const int32* Found = ObjectiveList.TableRowNameIndexMap.Find(TableRowName);
+		return Found ? &ObjectiveList.Entries[*Found] : nullptr;
+	}
+
+private:
+	void OnObjectiveAdded(const FStageObjectiveEntry& Entry);
+	void OnObjectiveChanged(const FStageObjectiveEntry& Entry);
+	void OnObjectiveRemoved(const FStageObjectiveEntry& Entry);
 };

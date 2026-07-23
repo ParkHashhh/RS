@@ -29,22 +29,22 @@ void ALoadingPlayerController::BeginPlay()
 			FInputModeGameAndUI InputMode;
 			InputMode.SetWidgetToFocus(LoadingWidget->TakeWidget());
 			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+
 			SetInputMode(InputMode);
 		}
 	}
 
-	URSGameInstance* GI = Cast<URSGameInstance>(GetGameInstance());
-	if (GI)
+	if (const auto* GI = GetGameInstance<URSGameInstance>())
 	{
 		NextLevelName = GI->GetNextLevelName();
 		LoadingPackagePath = GI->GetNextLevelPackagePath();
 		LoadingStartTime = GetWorld()->GetTimeSeconds();
-		bNextLevelIsListen = GI->GetIsListen();
+		bNextLevelIsListen = GI->IsListen();
 		NextLevelOptions = GI->GetNextLevelOptions();
-		bIsServerTravel = GI->GetIsServerTravel();
+		bIsServerTravel = GI->IsServerTravel();
+
 		StartAsyncLoading();
 	}
-
 }
 void ALoadingPlayerController::Tick(float DeltaTime)
 {
@@ -86,23 +86,25 @@ void ALoadingPlayerController::Tick(float DeltaTime)
 void ALoadingPlayerController::StartAsyncLoading()
 {
 	if (bLoadingStart)
+	{
 		return;
+	}
 
 	bLoadingStart = true;
-	 
 
 	LoadPackageAsync(LoadingPackagePath, FLoadPackageAsyncDelegate::CreateUObject(this,
-		&ALoadingPlayerController::OnPackageLoading), 0, EPackageFlags::PKG_ContainsMapData);
+		                 &ALoadingPlayerController::OnPackageLoading), 0, EPackageFlags::PKG_ContainsMapData);
 }
 
-void ALoadingPlayerController::OnPackageLoading(const FName& PackageName,
-	UPackage* LoadPackage, EAsyncLoadingResult::Type Result)
+void ALoadingPlayerController::OnPackageLoading(const FName& PackageName, UPackage* LoadPackage,
+                                                EAsyncLoadingResult::Type Result)
 {
 	if (Result == EAsyncLoadingResult::Succeeded)
 	{
 		LoadingPackageCompleteName = PackageName;
 		bLoadingPackage = true;
 		LoadingPackage = LoadPackage;
+
 		if (LoadingPackage)
 		{
 			LoadingPackage->AddToRoot();

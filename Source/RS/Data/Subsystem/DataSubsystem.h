@@ -7,6 +7,8 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "DataSubsystem.generated.h"
 
+struct FStageTableInfo;
+struct FStageObjectiveTableInfo;
 struct FMiscTableInfo;
 struct FItemTableInfo;
 struct FPlayerDefaultInfo;
@@ -44,11 +46,19 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UDataTable> ZombieDefaultInfoTable;
 
+	UPROPERTY(Transient)
+	TObjectPtr<UDataTable> StageObjectiveInfoTable;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UDataTable> StageInfoTable;
+
 	FOnTableInfoLoaded OnItemInfoLoadedDelegate;
 	FOnTableInfoLoaded OnMiscInfoLoadedDelegate;
 	FOnTableInfoLoaded OnPlayerDefaultInfoLoadedDelegate;
 	FOnTableInfoLoaded OnStatDisplayInfoLoadedDelegate;
 	FOnTableInfoLoaded OnZombieDefaultInfoLoadedDelegate;
+	FOnTableInfoLoaded OnStageObjectiveInfoLoadedDelegate;
+	FOnTableInfoLoaded OnStageInfoLoadedDelegate;
 
 public:
 	template <typename T>
@@ -73,6 +83,18 @@ public:
 	void ExecuteOrBindOnZombieDefaultInfoLoaded(T* Object, void (T::* Callback)())
 	{
 		RSUtils::ExecuteOrBind(IsZombieDefaultTableLoaded(), OnZombieDefaultInfoLoadedDelegate, Object, Callback);
+	}
+
+	template <typename T>
+	void ExecuteOrBindOnStageObjectiveInfoLoaded(T* Object, void (T::* Callback)())
+	{
+		RSUtils::ExecuteOrBind(IsStageObjectiveInfoTableLoaded(), OnStageObjectiveInfoLoadedDelegate, Object, Callback);
+	}
+
+	template <typename T>
+	void ExecuteOrBindOnStageInfoLoaded(T* Object, void (T::* Callback)())
+	{
+		RSUtils::ExecuteOrBind(IsStageInfoTableLoaded(), OnStageInfoLoadedDelegate, Object, Callback);
 	}
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
@@ -135,6 +157,38 @@ public:
 		return IsStatDisplayInfoTableLoaded();
 	}
 
+	const FStageObjectiveTableInfo* GetStageObjectiveTableInfo(FName Name) const;
+
+	UFUNCTION(BlueprintCallable, Category = "Data", meta=(DisplayName = "Get Stage Objective Table Info"))
+	bool K2_GetStageObjectiveTableInfo(FName Name, FStageObjectiveTableInfo& OutStageObjectiveInfo) const;
+
+	bool IsStageObjectiveInfoTableLoaded() const
+	{
+		return IsValid(StageObjectiveInfoTable);
+	}
+
+	UFUNCTION(BlueprintPure, Category = "Data", meta=(DisplayName = "Is Stage Objective Info Table Loaded"))
+	bool K2_IsStageObjectiveInfoTableLoaded() const
+	{
+		return IsStageObjectiveInfoTableLoaded();
+	}
+
+	const FStageTableInfo* GetStageTableInfo(FName Name) const;
+
+	UFUNCTION(BlueprintCallable, Category = "Data", meta=(DisplayName = "Get Stage Table Info"))
+	bool K2_GetStageTableInfo(FName Name, FStageTableInfo& OutStageInfo) const;
+
+	bool IsStageInfoTableLoaded() const
+	{
+		return IsValid(StageInfoTable);
+	}
+
+	UFUNCTION(BlueprintPure, Category = "Data", meta=(DisplayName = "Is Stage Table Info Loaded"))
+	bool K2_IsStageTableInfoLoaded() const
+	{
+		return IsStageInfoTableLoaded();
+	}
+
 	const UDataTable* GetItemInfoTable() const
 	{
 		return ItemInfoTable;
@@ -160,6 +214,16 @@ public:
 	FORCEINLINE bool IsZombieDefaultTableLoaded() const
 	{
 		return IsValid(ZombieDefaultInfoTable);
+	}
+
+	const UDataTable* GetStageObjectiveInfoTable() const
+	{
+		return StageObjectiveInfoTable;
+	}
+
+	const UDataTable* GetStageTableInfo() const
+	{
+		return StageInfoTable;
 	}
 
 private:
@@ -189,4 +253,14 @@ private:
 
 	UFUNCTION()
 	void OnZombieDefaultInfoTableLoaded(FPrimaryAssetId LoadedAssetID);
+
+	void LoadStageObjectiveInfoTable();
+
+	UFUNCTION()
+	void OnStageObjectiveInfoTableLoaded(FPrimaryAssetId LoadedAssetID);
+
+	void LoadStageInfoTable();
+
+	UFUNCTION()
+	void OnStageTableInfoLoaded(FPrimaryAssetId LoadedAssetID);
 };

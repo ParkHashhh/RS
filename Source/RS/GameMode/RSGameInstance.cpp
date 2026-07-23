@@ -3,9 +3,11 @@
 
 #include "RSGameInstance.h"
 #include "Kismet/GameplayStatics.h"
+#include "RS/RSUtils.h"
 
 
-void URSGameInstance::LevelLoading(const FName& LevelName, const FString& PackagePath, const FString& Options, bool bListen, bool IsServerTravel)
+void URSGameInstance::LevelLoading(const FName& LevelName, const FString& PackagePath, const FString& Options, bool bListen, bool IsServerTravel, bool
+                                   bStoreInventory)
 {
 	NextLevelName = LevelName;
 	NextLevelPackagePath = PackagePath;
@@ -15,11 +17,11 @@ void URSGameInstance::LevelLoading(const FName& LevelName, const FString& Packag
 
 	if (IsServerTravel)
 	{
-		GetWorld()->ServerTravel(TEXT("Loading"), true);
+		RSUtils::ServerTravelWithInventory(GetWorld(), TEXT("Loading"), bStoreInventory, true, false);
 	}
 	else
 	{
-		UGameplayStatics::OpenLevel(GetWorld(), TEXT("Loading"));
+		RSUtils::OpenLevelWithInventory(GetWorld(), TEXT("Loading"), bStoreInventory, true, FString(TEXT("")));
 	}
 
 }

@@ -2,9 +2,8 @@
 
 
 #include "ColonyWidget.h"
+
 #include "RS/LogCategory.h"
-#include "RS/RSUtils.h"
-#include "RS/Player/RSPlayerState.h"
 #include "RS/GameMode/RSGameInstance.h"
 #include "RS/Player/ColonyPlayerController.h"
 
@@ -21,14 +20,14 @@ void UColonyWidget::NativeOnInitialized()
 
 void UColonyWidget::StageClick()
 {
-	AColonyPlayerController* PC = Cast<AColonyPlayerController>(GetOwningPlayer());
+	const auto* PC = GetOwningPlayer<AColonyPlayerController>();
 	if (!PC)
 	{
 		return;
 	}
-	URSGameInstance* GI = Cast<URSGameInstance>(GetGameInstance());
-	if (GI)
+
+	if (URSGameInstance* GI = GetGameInstance<URSGameInstance>())
 	{
-		GI->LevelLoading(TEXT("Stage_Warehouse"), TEXT("/Game/Levels/Stage_Warehouse"), TEXT(""),false,true);
+		GI->LevelLoading(TEXT("Stage_Warehouse"), TEXT("/Game/Levels/Stage_Warehouse"), TEXT(""), false, true, true);
 	}
 }

@@ -8,7 +8,8 @@
 
 #include "PlayerControllerBase.generated.h"
 
-	class URewardPopupWidget;
+class APlayerCharacterBase;
+class URewardPopupWidget;
 class UBattleHUDWidget;
 /**
  *
@@ -28,11 +29,12 @@ protected:
 	TSubclassOf<UBattleHUDWidget> BattleHUDWidgetClass;
 
 	UPROPERTY()
-	TArray<class APlayerCharacterBase*> SpectateTargets;
+	TArray<APlayerCharacterBase*> SpectateTargets;
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> EndPopUpWidgetClass;
 
+	UPROPERTY()
 	TObjectPtr<UUserWidget> EndPopUpWidget;
 
 	int32 CurrentSpectateIndex = 0;
@@ -44,14 +46,14 @@ public:
 
 	// 클라이언트: 계산된 목록 받기
 	UFUNCTION(Client, Reliable)
-	void Client_ReceiveSpectateTargets(const TArray<class APlayerCharacterBase*>& Targets);
+	void Client_ReceiveSpectateTargets(const TArray<APlayerCharacterBase*>& Targets);
 
 	// 입력 바인딩용
 	void SpectateNext();
 	void SpectatePrev();
 
 public:
-	FORCEINLINE FString GetPlayerName() const
+	const FString& GetPlayerName() const
 	{
 		return PlayerName;
 	}

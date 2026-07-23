@@ -7,14 +7,12 @@
 #include "RSGameInstance.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class RS_API URSGameInstance : public UGameInstance
 {
 	GENERATED_BODY()
-
-
 
 private:
 	FName NextLevelName;
@@ -39,25 +37,31 @@ public:
 	FString NextLevelOptions;
 
 public:
-	void LevelLoading(const FName& LevelName,const FString& PackagePath, const FString& Options, bool bListen = false,bool IsServerTravel = false);
+	void LevelLoading(const FName& LevelName, const FString& PackagePath, const FString& Options, bool bListen = false,
+	                  bool IsServerTravel = false, bool
+	                  bStoreInventory = false);
 
 public:
-	bool GetIsListen() const
+	bool IsListen() const
 	{
 		return bNextLevelIsListen;
 	}
-	bool GetIsServerTravel() const
+
+	bool IsServerTravel() const
 	{
 		return bIsServerTravel;
 	}
-	const FName& GetNextLevelName() const
+
+	FName GetNextLevelName() const
 	{
 		return NextLevelName;
 	}
+
 	const FString& GetNextLevelOptions() const
 	{
 		return NextLevelOptions;
 	}
+
 	const FString& GetNextLevelPackagePath() const
 	{
 		return NextLevelPackagePath;
