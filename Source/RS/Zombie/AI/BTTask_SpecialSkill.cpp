@@ -10,6 +10,7 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "RS/LogCategory.h"
 #include "RS/Zombie/Animation/ZombieAnimInstance.h"
+#include "RS/Player/PlayerCharacterBase.h"
 
 
 UBTTask_SpecialSkill::UBTTask_SpecialSkill()
@@ -43,6 +44,14 @@ EBTNodeResult::Type UBTTask_SpecialSkill::ExecuteTask(UBehaviorTreeComponent& Ow
 	AZombieBase* Zombie = Ctrl->GetPawn<AZombieBase>();
 	if (!IsValid(Zombie))
 	{
+		return EBTNodeResult::Failed;
+	}
+
+	//만약 타겟이 있는데 타겟이 죽은 상태라면 마찬가지로 동작하지 못하게 해야 한다.
+	APlayerCharacterBase* CastedTarget = Cast<APlayerCharacterBase>(Target);
+	if (!IsValid(CastedTarget) || CastedTarget->IsDead())
+	{
+		BlackboardComp->SetValueAsObject(TEXT("Target"), nullptr);
 		return EBTNodeResult::Failed;
 	}
 
@@ -94,6 +103,15 @@ void UBTTask_SpecialSkill::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* No
 	AZombieBase* Zombie = Ctrl->GetPawn<AZombieBase>();
 	if (!IsValid(Zombie))
 	{
+		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+		return;
+	}
+
+	//만약 타겟이 있는데 타겟이 죽은 상태라면 마찬가지로 동작하지 못하게 해야 한다.
+	APlayerCharacterBase* CastedTarget = Cast<APlayerCharacterBase>(Target);
+	if (!IsValid(CastedTarget) || CastedTarget->IsDead())
+	{
+		BlackboardComp->SetValueAsObject(TEXT("Target"), nullptr);
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 		return;
 	}

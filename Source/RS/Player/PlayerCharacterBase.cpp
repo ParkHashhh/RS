@@ -27,6 +27,8 @@
 #include "RS/UI/Battle/CrosshairWidget.h"
 #include "RS/UI/Battle/Reward/RewardPopupWidget.h"
 #include "RS/UI/Common/Interaction/InteractionWidget.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "NiagaraFunctionLibrary.h"
 
 // Sets default values
 APlayerCharacterBase::APlayerCharacterBase()
@@ -1512,6 +1514,89 @@ void APlayerCharacterBase::ExecuteHitEffect(const FHitResult& Hit)
 	ASC->ExecuteGameplayCue(CueTag, CueParams);
 }
 
+void APlayerCharacterBase::TryApplyBulletElements(AActor* TargetActor, const FHitResult& Hit)
+{
+	ApplyFireExplosion(Hit.ImpactPoint);
+	ApplyElectricChain(TargetActor, Hit.ImpactPoint);
+}
+
+void APlayerCharacterBase::ApplyFireExplosion(const FVector& Location)
+{
+	TArray<AActor*> OverlappingActors;
+	TArray<AActor*> IgnoreActors;
+
+	UKismetSystemLibrary::SphereOverlapActors(GetWorld(), Location, FireRadius,
+		{ UEngineTypes::ConvertToObjectType(ECC_GameTraceChannel2) },
+		AZombieBase::StaticClass(), IgnoreActors, OverlappingActors);
+
+	const float FireDamage = GetAttributeSet()->GetAttackPower() * FireDamageRatio;
+	RS_PRINT_SCREEN(3.f, FColor::Orange, TEXT("[Fire] Damage : %.1f, Targets : %d"), FireDamage, OverlappingActors.Num());
+	for (AActor* Actor : OverlappingActors)
+	{
+		Server_ApplyDamage(Actor, FHitResult(), FireDamage);
+	}
+
+	if (IsValid(FireExplosionVFX))
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), FireExplosionVFX, Location);
+	}
+}
+void APlayerCharacterBase::ApplyElectricChain(AActor* FirstTarget, const FVector& HitLocation)
+{
+	if (!IsValid(FirstTarget))
+	{
+		return;
+	}
+
+	const float ElectricDamage = GetAttributeSet()->GetAttackPower() * ElectricDamageRatio;
+
+	TArray<AActor*> HitTargets;
+	HitTargets.Add(FirstTarget);
+	Server_ApplyDamage(FirstTarget, FHitResult(), ElectricDamage);
+	RS_PRINT_SCREEN(3.f, FColor::Cyan, TEXT("[Electric] Damage : %.1f, Chain #1 : %s"), ElectricDamage, *FirstTarget->GetName());
+
+	AActor* CurrentSource = FirstTarget;
+
+	for (int32 i = 1; i < ElectricChainCount; ++i)
+	{
+		TArray<AActor*> Candidates;
+		UKismetSystemLibrary::SphereOverlapActors(GetWorld(), CurrentSource->GetActorLocation(), ElectricChainRadius,
+			{ UEngineTypes::ConvertToObjectType(ECC_GameTraceChannel2) },
+			AZombieBase::StaticClass(), HitTargets, Candidates);
+
+		AActor* Nearest = nullptr;
+		float NearestDistSq = TNumericLimits<float>::Max();
+		for (AActor* Candidate : Candidates)
+		{
+			const float DistSq = FVector::DistSquared(CurrentSource->GetActorLocation(), Candidate->GetActorLocation());
+			if (DistSq < NearestDistSq)
+			{
+				NearestDistSq = DistSq;
+				Nearest = Candidate;
+			}
+		}
+		// 반경 안에 더 이상 연쇄할 대상 없음
+		if (!Nearest)
+		{
+			break;
+		} 
+
+		Server_ApplyDamage(Nearest, FHitResult(), ElectricDamage);
+		RS_PRINT_SCREEN(3.f, FColor::Cyan, TEXT("[Electric] Damage : %.1f, Chain #%d : %s"), ElectricDamage, i + 1, *Nearest->GetName());
+
+		if (IsValid(ElectricChainVFX))
+		{
+			if (UNiagaraComponent* BeamComp = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+				GetWorld(), ElectricChainVFX, CurrentSource->GetActorLocation()))
+			{
+				BeamComp->SetVectorParameter(FName("BeamEnd"), Nearest->GetActorLocation());
+			}
+		}
+
+		HitTargets.Add(Nearest);
+		CurrentSource = Nearest;
+	}
+}
 void APlayerCharacterBase::OnRep_TextureName()
 {
 	SetSkeletalMesh(ReplicatedTextureName);
@@ -1618,6 +1703,7 @@ void APlayerCharacterBase::Server_ShootAttackRay_Implementation(float RandomX, f
 		{
 			Server_ApplyDamage(TargetActor, Hit, GetAttributeSet()->GetAttackPower());
 			Multicast_ExecuteVisualEffect(Hit, true);
+			TryApplyBulletElements(TargetActor, Hit);
 		}
 		// 아닐경우 벽으로 판정
 		else

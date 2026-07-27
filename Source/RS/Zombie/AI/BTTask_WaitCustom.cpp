@@ -47,9 +47,6 @@ EBTNodeResult::Type UBTTask_WaitCustom::ExecuteTask(UBehaviorTreeComponent& Owne
 		return EBTNodeResult::Failed;
 	}
 
-	//다시 대기 상태로 돌아왔다는 것은 플레이어가 죽어서 타겟이 사라졌다는 의미이다.
-	Zombie->ChangeSpeed_Walk();
-
 	//대기와 포효 중 하나를 선택한다.
 	double RandPercent = FMath::RandRange(0.0, 100.0);
 	//포효 애니메이션을 가지고 있는지를 체크한다.

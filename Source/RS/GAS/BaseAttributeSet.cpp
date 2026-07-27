@@ -97,6 +97,16 @@ void UBaseAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribute,
 			}
 		}
 	}
+	else if (Attribute == GetWalkSpeedAttribute() || Attribute == GetRunSpeedAttribute())
+	{
+		if (AZombieBase* Zombie = Cast<AZombieBase>(GetOwningActor()))
+		{
+			if (Zombie->GetAnimType() == EZombieAnimType::Run)
+				Zombie->ChangeSpeed_Run();
+			else
+				Zombie->ChangeSpeed_Walk();
+		}
+	}
 }
 
 void UBaseAttributeSet::OnRep_AttackPower(const FGameplayAttributeData& OldValue)

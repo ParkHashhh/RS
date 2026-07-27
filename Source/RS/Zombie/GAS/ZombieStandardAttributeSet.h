@@ -40,6 +40,7 @@ public:
 	ATTRIBUTE_ACCESSORS_BASIC(UZombieStandardAttributeSet, Special_SkillCooldown)
 	ATTRIBUTE_ACCESSORS_BASIC(UZombieStandardAttributeSet, Special_SkillDamage)
 	ATTRIBUTE_ACCESSORS_BASIC(UZombieStandardAttributeSet, Special_SkillDotDamage)
+
 public:
 	virtual void OnHPChanged(AActor* Instigator) override;
 

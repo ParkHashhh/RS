@@ -66,6 +66,21 @@ void AZombieSpecial_Spiter::SpawnSpitProjectile()
 	SpawnZombieAttackParticle();
 }
 
+void AZombieSpecial_Spiter::InitAbility()
+{
+	Super::InitAbility();
+
+	if (SkillLaunchAbility)
+	{
+		ASC->GiveAbility(FGameplayAbilitySpec(SkillLaunchAbility, 1));
+	}
+
+	if (SkillHitAbility)
+	{
+		ASC->GiveAbility(FGameplayAbilitySpec(SkillHitAbility, 1));
+	}
+}
+
 void AZombieSpecial_Spiter::Attack()
 {
 	FVector LaunchLoc = Mesh->GetSocketLocation(TEXT("Mouth"));

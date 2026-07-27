@@ -78,26 +78,25 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "NeedProperty", meta = (AllowPrivateAccess = "true"));
 	TSubclassOf<UGameplayAbility> AttackAbility;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "NeedProperty", meta = (AllowPrivateAccess = "true"));
-	TSubclassOf<UGameplayAbility> SkillLaunchAbility;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "NeedProperty", meta = (AllowPrivateAccess = "true"));
-	TSubclassOf<UGameplayAbility> SkillHitAbility;
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "NeedProperty", meta = (AllowPrivateAccess = "true"))
 	TMap<FName, TSubclassOf<UGameplayEffect>> EffectMap;
 
 	UPROPERTY(VisibleAnywhere, ReplicatedUsing = OnRep_ChangeAnimType)
 	EZombieAnimType AnimType;
 
+	//점프 애니메이션에서 점프 후 걷기/뛰기 선택을 위한 백업 변수
 	UPROPERTY(Replicated)
 	EZombieAnimType PrevAnimType;
 
+	//배회 기준점을 넣는 멤버 변수
 	UPROPERTY();
 	FVector SpawnPointLocation;
+
+	//배회에서 다음 지점을 미리 계산해 놓는 멤버변수
 	UPROPERTY();
 	FVector NextPointLocation;
 
+	//애니메이션 일치를 위한 리플리케이트 애님몽타주 인덱스 멤버변수
 	UPROPERTY(Replicated)
 	int32 AtkMontageNumber = 1;
 
@@ -139,6 +138,12 @@ protected:
 	UPROPERTY(BlueprintReadOnly, ReplicatedUsing = OnRep_ChangeJumpMontageSection)
 	bool bIsJumpEnd = false;
 
+	//보스인지 확인하기 위한 변수
+	UPROPERTY(Replicated);
+	bool bIsBoss;
+
+
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -156,12 +161,20 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 public:
+	EZombieAnimType GetAnimType() const
+	{
+		return AnimType;
+	}
 	void SetSpawnPointLocation(FVector Loc)
 	{
 		SpawnPointLocation = Loc;
 	}
 
 	void SetIsJumpEnd(bool IsEnd);
+	void SetIsBoss(bool IsBoos)
+	{
+		bIsBoss = IsBoos;
+	}
 
 public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const
@@ -197,6 +210,10 @@ public:
 	UFloatingPawnMovement* GetMovement() const
 	{
 		return Movement;
+	}
+	bool GetIsBoss() const
+	{
+		return bIsBoss;
 	}
 
 	FName GetTableRowName() const

@@ -36,5 +36,10 @@ namespace RSTags
 		UE_DEFINE_GAMEPLAY_TAG(CurrentAmmo, "SetByCaller.Stat.CurrentAmmo");
 		UE_DEFINE_GAMEPLAY_TAG(MaxAmmo, "SetByCaller.Stat.MaxAmmo");
 		UE_DEFINE_GAMEPLAY_TAG(ShotSpread, "SetByCaller.Stat.ShotSpread");
+
+		UE_DEFINE_GAMEPLAY_TAG(FireBulletChance, "SetByCaller.Stat.FireBulletChance");
+		UE_DEFINE_GAMEPLAY_TAG(ElectricBulletChance, "SetByCaller.Stat.ElectricBulletChance");
+		UE_DEFINE_GAMEPLAY_TAG(IceBulletChance, "SetByCaller.Stat.IceBulletChance");
+		UE_DEFINE_GAMEPLAY_TAG(PoisonBulletChance, "SetByCaller.Stat.PoisonBulletChance");
 	}
 }

@@ -17,6 +17,12 @@ public:
 	AZombieSpecial_Spiter();
 
 protected:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "NeedProperty", meta = (AllowPrivateAccess = "true"));
+	TSubclassOf<UGameplayAbility> SkillLaunchAbility;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "NeedProperty", meta = (AllowPrivateAccess = "true"));
+	TSubclassOf<UGameplayAbility> SkillHitAbility;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "NeedProperty", meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<AZombieProjectileBase> NormalProjectile;
 
@@ -30,6 +36,7 @@ protected:
 	void SpawnSpitProjectile();
 
 public:
+	virtual void InitAbility();
 	virtual void Attack();
 	virtual void SkillStart();
 	virtual void SkillEnd();

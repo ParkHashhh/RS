@@ -10,11 +10,14 @@
 #include "RS/Data/Subsystem/DataSubsystem.h"
 #include "RS/Player/PlayerCharacterBase.h"
 #include "RS/Zombie/ZombieBase.h"
+#include "RS/Zombie/ZombieManager.h"
 
 AMainGameMode::AMainGameMode()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	bUseSeamlessTravel = true;
+
+	StageZombieManagerComponent = CreateDefaultSubobject<UZombieManager>(TEXT("ZombieManager"));
 }
 
 void AMainGameMode::Tick(float DeltaSeconds)
@@ -148,6 +151,11 @@ void AMainGameMode::OnMonsterDead(const APlayerState* PlayerState, const IKillab
 	}
 
 	OnKillInfoChanged.Broadcast(Found);
+}
+
+TObjectPtr<UZombieManager> AMainGameMode::GetZombieManager()
+{
+	return StageZombieManagerComponent;
 }
 
 void AMainGameMode::BeginPlay()

@@ -16,6 +16,10 @@ void UPlayerAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 	DOREPLIFETIME(UPlayerAttributeSet, MaxAmmo);
 	DOREPLIFETIME(UPlayerAttributeSet, CriticalChance);
 	DOREPLIFETIME(UPlayerAttributeSet, CriticalDamage);
+	DOREPLIFETIME(UPlayerAttributeSet, FireBulletChance);
+	DOREPLIFETIME(UPlayerAttributeSet, ElectricBulletChance);
+	DOREPLIFETIME(UPlayerAttributeSet, IceBulletChance);
+	DOREPLIFETIME(UPlayerAttributeSet, PoisonBulletChance);
 }
 
 void UPlayerAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
@@ -60,6 +64,18 @@ void UPlayerAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCall
 	}
 }
 
+void UPlayerAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
+{
+	Super::PreAttributeChange(Attribute, NewValue);
+
+	if (Attribute == GetFireBulletChanceAttribute()
+		|| Attribute == GetElectricBulletChanceAttribute()
+		|| Attribute == GetIceBulletChanceAttribute()
+		|| Attribute == GetPoisonBulletChanceAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0.f, 100.f);
+	}
+}
 
 void UPlayerAttributeSet::OnHPChanged(AActor* Instigator)
 {
@@ -148,4 +164,23 @@ void UPlayerAttributeSet::OnRep_CriticalChance(const FGameplayAttributeData& Old
 void UPlayerAttributeSet::OnRep_CriticalDamage(const FGameplayAttributeData& OldValue)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UPlayerAttributeSet, CriticalDamage, OldValue);
+}
+void UPlayerAttributeSet::OnRep_FireBulletChance(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UPlayerAttributeSet, FireBulletChance, OldValue);
+}
+
+void UPlayerAttributeSet::OnRep_ElectricBulletChance(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UPlayerAttributeSet, ElectricBulletChance, OldValue);
+}
+
+void UPlayerAttributeSet::OnRep_IceBulletChance(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UPlayerAttributeSet, IceBulletChance, OldValue);
+}
+
+void UPlayerAttributeSet::OnRep_PoisonBulletChance(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UPlayerAttributeSet, PoisonBulletChance, OldValue);
 }

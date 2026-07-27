@@ -54,6 +54,16 @@ void AZombieNormal::BeginPlay()
 	//시작 지점을 미리 보관하고, 다음 이동 지점을 하나 만들어둔다.
 	SpawnPointLocation = GetActorLocation();
 	CalcNextPointLocation();
+
+	//클라는 애님 인스턴스 연결이 불완전해 위에서 return되었을 수 있으므로 이곳에서 한번 더 호출한다.
+	//이 함수 안에 기준속도를 넣어주는 이벤트 함수가 들어있기 때문이다.
+	if (!HasAuthority())
+	{
+		OnRep_ChangeAnimSet();
+	}
+
+	//초기 스탯 지정이 완료되면 이동속도, 감지거리를 넣어준다.
+	ChangeSpeed_Walk();
 }
 
 void AZombieNormal::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -70,6 +80,11 @@ void AZombieNormal::Attack()
 
 void AZombieNormal::InitStatData(const FZombieDefaultInfo* Data)
 {
+	if (!HasAuthority())
+	{
+		return;
+	}
+
 	if (!ASC || !NormalAttributeSet)
 	{
 		RS_LOG_DEBUG(LogRSInit, Error, TEXT("%s: ASC or AttributeSet is nullptr"), *LOG_LINE_INFO);
@@ -89,15 +104,14 @@ void AZombieNormal::InitStatData(const FZombieDefaultInfo* Data)
 	NormalAttributeSet->SetDetectRange_Hearing(Data->DetectRange_Hearing);
 	NormalAttributeSet->SetNormal_Rarity(Data->Normal_Rarity);
 
-	//초기 스탯 지정이 완료되면 이동속도, 감지거리를 넣어준다.
-	ChangeSpeed_Walk();
-
 	TObjectPtr<AZombieAIController> Ctrl = GetController<AZombieAIController>();
 	if (IsValid(Ctrl))
 	{
 		Ctrl->SetDetectRange_Sight(NormalAttributeSet->GetDetectRange_Sight());
 		Ctrl->SetDetectRange_Hearing(NormalAttributeSet->GetDetectRange_Hearing());
 	}
+
+	SetIsBoss(Data->bIsBoss);
 }
 
 float AZombieNormal::GetHalfHeight()

@@ -25,7 +25,7 @@ class RS_API AZombieAIController : public AAIController
 	GENERATED_BODY()
 
 public:
-	AZombieAIController();
+	AZombieAIController(const FObjectInitializer& ObjectInitializer);
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))

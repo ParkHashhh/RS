@@ -10,6 +10,7 @@
 #include "RS/GAS/BaseAttributeSet.h"
 #include "RS/RSTypes.h"
 #include "NavigationSystem.h"
+#include "RS/Player/PlayerCharacterBase.h"
 
 UBTTask_TraceNoneBoss::UBTTask_TraceNoneBoss()
 {
@@ -49,6 +50,14 @@ EBTNodeResult::Type UBTTask_TraceNoneBoss::ExecuteTask(UBehaviorTreeComponent& O
 		return EBTNodeResult::Failed;
 	}
 
+	//만약 타겟이 있는데 타겟이 죽은 상태라면 마찬가지로 동작하지 못하게 해야 한다.
+	APlayerCharacterBase* CastedTarget = Cast<APlayerCharacterBase>(Target);
+	if (!IsValid(CastedTarget) || CastedTarget->IsDead())
+	{
+		BlackboardComp->SetValueAsObject(TEXT("Target"), nullptr);
+		return EBTNodeResult::Failed;
+	}
+
 	//만약 내비링크를 사용중이라면 자체 이동중이므로 이동 명령을 내리지 않는다.
 	bool bIsUsingNavLink = BlackboardComp->GetValueAsBool(TEXT("IsUsingNavLink"));
 	if (bIsUsingNavLink)
@@ -74,7 +83,6 @@ EBTNodeResult::Type UBTTask_TraceNoneBoss::ExecuteTask(UBehaviorTreeComponent& O
 
 	//좀비가 유효하므로 애니메이션을 변경한다.
 	Zombie->ChangeAnim(EZombieAnimType::Run);
-	Zombie->ChangeSpeed_Run();
 
 	//추적중이므로 이동을 완료할 때 까지는 현상유지를 해야 한다.
 	//이 동안은 태스크의 Tick이 수행된다.
@@ -115,6 +123,15 @@ void UBTTask_TraceNoneBoss::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* N
 	AZombieBase* Zombie = Ctrl->GetPawn<AZombieBase>();
 	if (!IsValid(Zombie))
 	{
+		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+		return;
+	}
+
+	//만약 타겟이 있는데 타겟이 죽은 상태라면 마찬가지로 동작하지 못하게 해야 한다.
+	APlayerCharacterBase* CastedTarget = Cast<APlayerCharacterBase>(Target);
+	if (!IsValid(CastedTarget) || CastedTarget->IsDead())
+	{
+		BlackboardComp->SetValueAsObject(TEXT("Target"), nullptr);
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 		return;
 	}
@@ -187,7 +204,6 @@ void UBTTask_TraceNoneBoss::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, ui
 	if (IsValid(Zombie))
 	{
 		Zombie->ChangeAnim(EZombieAnimType::CombatIdle);
-		Zombie->ChangeSpeed_Walk();
 	}
 }
 

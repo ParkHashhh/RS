@@ -9,6 +9,7 @@
 #include "MainGameMode.generated.h"
 
 class AZombieBase;
+class UZombieManager;
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnKillInfoChanged, const FKillInfo*)
 
@@ -33,6 +34,10 @@ private:
 
 	FOnKillInfoChanged OnKillInfoChanged;
 
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly,meta=(AllowPrivateAccess = "true"))
+	TObjectPtr<UZombieManager> StageZombieManagerComponent;
+
 public:
 	AMainGameMode();
 
@@ -51,6 +56,8 @@ public:
 
 	void OnDead(const APawn* InInstigator, const IKillableInterface* Killed);
 	void OnMonsterDead(const APlayerState* PlayerState, const IKillableInterface* Killable);
+
+	TObjectPtr<UZombieManager> GetZombieManager();
 
 protected:
 	virtual void BeginPlay() override;

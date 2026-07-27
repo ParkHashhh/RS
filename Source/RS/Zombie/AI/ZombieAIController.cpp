@@ -13,8 +13,10 @@
 #include "Navigation/PathFollowingComponent.h"
 #include "RS/Zombie/ZombieBase.h"
 #include "GameFramework/FloatingPawnMovement.h"
+#include "RS/Player/PlayerCharacterBase.h"
+#include "Navigation/CrowdFollowingComponent.h"
 
-AZombieAIController::AZombieAIController()
+AZombieAIController::AZombieAIController(const FObjectInitializer& ObjectInitializer)
 {
 	//인공지능에 사용할 감각 컴포넌트를 생성한다.
 	AIPerception = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("Perception"));
@@ -203,6 +205,23 @@ void AZombieAIController::OnTarget(AActor* Actor, FAIStimulus Stimulus)
 	//감지에 성공함
 	if (Stimulus.WasSuccessfullySensed())
 	{
+		//1. 만약 현재 감지한 플레이어가 죽은 플레이어라면 우선 하단의 블랙보드 타겟 지정 코드를 생략하도록 한다.
+		APlayerCharacterBase* TargetPlayer = Cast<APlayerCharacterBase>(Actor);
+		if (IsValid(TargetPlayer))
+		{
+			if (TargetPlayer->IsDead())
+			{
+				//2. 만약 감지한 죽은 플레이어가 내가 추적중인 플레이어였을 경우, 블랙보드의 타겟을 지워주는 작업을 추가로 진행한다.
+				if (Target == TargetPlayer)
+				{
+					Blackboard->SetValueAsObject(TEXT("Target"), nullptr);
+					TargetPerceptionType = EDetectPerceptionType::None;
+				}
+
+				return;
+			}
+		}
+
 		//현재 타겟을 감지한 감각이 무엇인지 확인
 		EDetectPerceptionType CurrentType = EDetectPerceptionType::None;
 		if (Stimulus.Type == UAISense::GetSenseID<UAISenseConfig_Sight>())

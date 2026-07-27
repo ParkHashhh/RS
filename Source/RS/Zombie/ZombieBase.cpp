@@ -21,6 +21,9 @@
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Navigation/PathFollowingComponent.h"
+#include "RS/Player/PlayerCharacterBase.h"
+#include "RS/GameMode/MainGameMode.h"
+#include "RS/Zombie/ZombieManager.h"
 
 // Sets default values
 AZombieBase::AZombieBase()
@@ -143,6 +146,7 @@ void AZombieBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 	DOREPLIFETIME(AZombieBase, SkillMontageNumber)
 	DOREPLIFETIME(AZombieBase, bIsJumpEnd)
 	DOREPLIFETIME(AZombieBase, PrevAnimType)
+	DOREPLIFETIME(AZombieBase, bIsBoss)
 }
 
 void AZombieBase::SetIsJumpEnd(bool IsEnd)
@@ -271,14 +275,28 @@ void AZombieBase::ChangeAnim(EZombieAnimType Type)
 			return;
 		}
 
-		//몽타주 재생 신호가 들어온 경우
-		if (Type == EZombieAnimType::Attack || Type == EZombieAnimType::Special_Skill || Type == EZombieAnimType::Jump)
+		if (Type == EZombieAnimType::Idle ||
+			Type == EZombieAnimType::CombatIdle ||
+			Type == EZombieAnimType::Walk ||
+			Type == EZombieAnimType::Run ||
+			Type == EZombieAnimType::Roar ||
+			Type == EZombieAnimType::Death)
+		{
+			if (Type == EZombieAnimType::Walk)
+			{
+				ChangeSpeed_Walk();
+			}
+			else if (Type == EZombieAnimType::Run)
+			{
+				ChangeSpeed_Run();
+			}
+
+			AnimInstance->SetAnim(Type);
+		}
+		else
 		{
 			UseAnimMontage(Type, PrevAnimType);
-			return;
 		}
-
-		AnimInstance->SetAnim(Type);
 	}
 }
 
@@ -288,7 +306,10 @@ void AZombieBase::UseAnimMontage(EZombieAnimType Type, EZombieAnimType BeforeTyp
 	//공격 신호가 들어왔다면 몽타주를 재생하라고 한 뒤 바로 탈출한다.
 	if (Type == EZombieAnimType::Attack)
 	{
-		AtkMontageNumber = FMath::RandRange(1, AnimInstance->GetAtkMontageNum());
+		if (HasAuthority())
+		{
+			AtkMontageNumber = FMath::RandRange(1, AnimInstance->GetAtkMontageNum());
+		}
 		AnimInstance->PlayAttackMontage(AtkMontageNumber);
 		//좀비가 공격을 한다면 기저에 재생되고 있는 애니메이션을 전투 대기로 바꿔준다.
 		AnimInstance->SetAnim(EZombieAnimType::CombatIdle);
@@ -340,7 +361,7 @@ void AZombieBase::CalcNextPointLocation()
 	}
 	else
 	{
-		NextPointLocation = GetActorLocation();
+		NextPointLocation = GetActorLocation();	
 	}
 }
 
@@ -361,6 +382,7 @@ void AZombieBase::CallBackHP(AActor* InstigatorActor)
 		//1. 인공지능 종료
 		//2. 무브먼트 종료
 		//3. 캡슐의 충돌 제거
+		//4. 좀비 매니저에서 해당 좀비 제거
 
 		AAIController* Ctrl = GetController<AAIController>();
 		if (IsValid(Ctrl))
@@ -372,6 +394,11 @@ void AZombieBase::CallBackHP(AActor* InstigatorActor)
 		Movement->StopMovementImmediately();
 		Movement->Deactivate();
 		Movement->SetComponentTickEnabled(false);
+
+		//좀비 매니저를 얻어온 후 나 자신을 제거하도록 함수의 인자로 넘겨준다.
+		AMainGameMode* GameMode = GetWorld()->GetAuthGameMode<AMainGameMode>();
+		UZombieManager* ZombieMgr = GameMode->GetZombieManager();
+		ZombieMgr->ZombieUnRegister(this);
 
 		//디졸브 기능 활성화
 		bDissolveEnable = true;
@@ -387,7 +414,9 @@ void AZombieBase::CallBackHP(AActor* InstigatorActor)
 		UBlackboardComponent* BB = Ctrl->GetBlackboardComponent();
 		if (Ctrl && BB)
 		{
-			if (BB->GetValueAsObject(TEXT("Target")) == nullptr)
+			APlayerCharacterBase* CastedTarget = Cast<APlayerCharacterBase>(InstigatorActor);
+			//이때도 타겟이 죽은 타겟이 아니여야 한다.
+			if (BB->GetValueAsObject(TEXT("Target")) == nullptr && !CastedTarget->IsDead())
 			{
 				Ctrl->GetBlackboardComponent()->SetValueAsObject(TEXT("Target"), InstigatorActor);
 			}
@@ -581,23 +610,38 @@ void AZombieBase::OnRep_ChangeAnimType()
 		return;
 	}
 
-	//액터가 복제될 때 애님 인스턴스를 멤버 변수에 넣지 않은 상태일 수 있으므로 안전장치를 만든다.
+	//애님 인스턴스를 제대로 못 가져올 경우를 대비해 한번 더 가져오도록 한다.
 	if (!IsValid(AnimInstance))
 	{
 		AnimInstance = Cast<UZombieAnimInstance>(Mesh->GetAnimInstance());
 	}
 
-	//몽타주 재생 신호가 들어온 경우
-	if (AnimType == EZombieAnimType::Attack || AnimType == EZombieAnimType::Special_Skill)
+	if (!IsValid(AnimInstance))
 	{
-		UseAnimMontage(AnimType, PrevAnimType);
 		return;
 	}
 
-	//클라이언트의 애님 인스턴스에게 애니메이션 타입 변환 함수를 호출하도록 신호를 보낸다.
-	if (IsValid(AnimInstance))
+	if (AnimType == EZombieAnimType::Idle ||
+		AnimType == EZombieAnimType::CombatIdle ||
+		AnimType == EZombieAnimType::Walk ||
+		AnimType == EZombieAnimType::Run ||
+		AnimType == EZombieAnimType::Roar ||
+		AnimType == EZombieAnimType::Death)
 	{
+		if (AnimType == EZombieAnimType::Walk)
+		{
+			ChangeSpeed_Walk();
+		}
+		else if (AnimType == EZombieAnimType::Run)
+		{
+			ChangeSpeed_Run();
+		}
+
 		AnimInstance->SetAnim(AnimType);
+	}
+	else
+	{
+		UseAnimMontage(AnimType, PrevAnimType);
 	}
 }
 
@@ -608,6 +652,7 @@ void AZombieBase::OnRep_ChangeAnimSet()
 	{
 		return;
 	}
+	
 	AnimInstance = AnimInst;
 
 	AnimInstance->SetAnimPresetIndexBackup(AnimIndex);

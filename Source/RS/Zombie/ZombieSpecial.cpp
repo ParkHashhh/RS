@@ -52,6 +52,16 @@ void AZombieSpecial::BeginPlay()
 	//시작 지점을 미리 보관하고, 다음 이동 지점을 하나 만들어둔다.
 	SpawnPointLocation = GetActorLocation();
 	CalcNextPointLocation();
+
+	//클라는 애님 인스턴스 연결이 불완전해 위에서 return되었을 수 있으므로 이곳에서 한번 더 호출한다.
+	//이 함수 안에 기준속도를 넣어주는 이벤트 함수가 들어있기 때문이다.
+	if (!HasAuthority())
+	{
+		OnRep_ChangeAnimSet();
+	}
+
+	//초기 스탯 지정이 완료되면 이동속도, 감지거리를 넣어준다.
+	ChangeSpeed_Walk();
 }
 
 void AZombieSpecial::PossessedBy(AController * NewController)
@@ -98,15 +108,14 @@ void AZombieSpecial::InitStatData(const FZombieDefaultInfo* Data)
 	SpecialAttributeSet->SetSpecial_SkillDamage(Data->Special_SkillDamage);
 	SpecialAttributeSet->SetSpecial_SkillDotDamage(Data->Special_SkillDotDamage);
 
-	//초기 스탯 지정이 완료되면 이동속도, 감지거리를 넣어준다.
-	ChangeSpeed_Walk();	
-
 	TObjectPtr<AZombieAIController> Ctrl = GetController<AZombieAIController>();
 	if (IsValid(Ctrl))
 	{
 		Ctrl->SetDetectRange_Sight(SpecialAttributeSet->GetDetectRange_Sight());
 		Ctrl->SetDetectRange_Hearing(SpecialAttributeSet->GetDetectRange_Hearing());
 	}
+
+	SetIsBoss(Data->bIsBoss);
 }
 
 float AZombieSpecial::GetHalfHeight()
@@ -126,7 +135,10 @@ void AZombieSpecial::UseAnimMontage(EZombieAnimType Type, EZombieAnimType Before
 	//특수 스킬 신호가 들어왔다면 특수스킬 몽타주를 재생한다.
 	if (Type == EZombieAnimType::Special_Skill)
 	{
-		SkillMontageNumber = FMath::RandRange(1, AnimInstance->GetSkillMontageNum());
+		if (HasAuthority())
+		{
+			SkillMontageNumber = FMath::RandRange(1, AnimInstance->GetSkillMontageNum());
+		}
 		AnimInstance->PlaySkillMontage(SkillMontageNumber);
 		//좀비가 공격을 한다면 기저에 재생되고 있는 애니메이션을 전투 대기로 바꿔준다.
 		AnimInstance->SetAnim(EZombieAnimType::CombatIdle);
@@ -136,16 +148,6 @@ void AZombieSpecial::UseAnimMontage(EZombieAnimType Type, EZombieAnimType Before
 void AZombieSpecial::InitAbility()
 {
 	Super::InitAbility();
-
-	if (SkillLaunchAbility)
-	{
-		ASC->GiveAbility(FGameplayAbilitySpec(SkillLaunchAbility, 1));
-	}
-
-	if (SkillHitAbility)
-	{
-		ASC->GiveAbility(FGameplayAbilitySpec(SkillHitAbility, 1));
-	}
 }
 
 void AZombieSpecial::SkillStart()

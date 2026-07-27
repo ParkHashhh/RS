@@ -3,24 +3,64 @@
 
 #include "ZombieBossAttributeSet.h"
 #include "RS/Zombie/ZombieBase.h"
+#include "RS/Zombie/ZombieBoss.h"
 #include "RS/LogCategory.h"
+#include "GameplayEffectExtension.h"
 
 UZombieBossAttributeSet::UZombieBossAttributeSet()
 {
 
 }
 
+void UZombieBossAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
+{
+	AActor* Instigator = nullptr;
+	float Damage = 0.f;
+
+	const FGameplayEffectContextHandle& Context = Data.EffectSpec.GetContext();
+
+	if (Context.IsValid())
+	{
+		Instigator = Context.GetOriginalInstigator();
+		Damage = Data.EvaluatedData.Magnitude * -1.f;
+		if (!IsValid(Instigator))
+		{
+			Instigator = Context.GetInstigator();
+		}
+	}
+
+	if (Data.EvaluatedData.Attribute == GetCurrentHPAttribute())
+	{
+		OnHPChanged(Instigator, Damage);
+	}
+}
+
 void UZombieBossAttributeSet::OnHPChanged(AActor* Instigator)
 {
-	RS_LOG_DEBUG(LogRSBattle, Log, TEXT("좀비가 공격받음"));
-
 	//좀비의 HP변화를 처리하는 함수를 호출한다.
-	if (UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent())
+	UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent();
+	if (IsValid(ASC))
 	{
 		//GetOwnerActor와 GetAvatarActor의 차이점 체크
-		if (auto* Zombie = Cast<AZombieBase>(ASC->GetAvatarActor()))
+		AZombieBase* Zombie = Cast<AZombieBase>(ASC->GetAvatarActor());
+		if (IsValid(Zombie))
 		{
 			Zombie->CallBackHP(Instigator);
+		}
+	}
+}
+
+void UZombieBossAttributeSet::OnHPChanged(AActor* Instigator, float Damage)
+{
+	//좀비의 HP변화를 처리하는 함수를 호출한다.
+	UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent();
+	if (IsValid(ASC))
+	{
+		//GetOwnerActor와 GetAvatarActor의 차이점 체크
+		AZombieBoss* Zombie = Cast<AZombieBoss>(ASC->GetAvatarActor());
+		if (IsValid(Zombie))
+		{
+			Zombie->CallBackHP(Instigator, Damage);
 		}
 	}
 }

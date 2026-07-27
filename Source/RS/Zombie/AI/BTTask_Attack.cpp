@@ -10,6 +10,7 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "RS/LogCategory.h"
 #include "RS/Zombie/Animation/ZombieAnimInstance.h"
+#include "RS/Player/PlayerCharacterBase.h"
 
 
 UBTTask_Attack::UBTTask_Attack()
@@ -43,6 +44,14 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 	AZombieBase* Zombie = Ctrl->GetPawn<AZombieBase>();
 	if (!IsValid(Zombie))
 	{
+		return EBTNodeResult::Failed;
+	}
+
+	//만약 타겟이 있는데 타겟이 죽은 상태라면 마찬가지로 동작하지 못하게 해야 한다.
+	APlayerCharacterBase* CastedTarget = Cast<APlayerCharacterBase>(Target);
+	if (!IsValid(CastedTarget) || CastedTarget->IsDead())
+	{
+		BlackboardComp->SetValueAsObject(TEXT("Target"), nullptr);
 		return EBTNodeResult::Failed;
 	}
 
@@ -91,6 +100,15 @@ void UBTTask_Attack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemo
 		return;
 	}
 
+	//만약 타겟이 있는데 타겟이 죽은 상태라면 마찬가지로 동작하지 못하게 해야 한다.
+	APlayerCharacterBase* CastedTarget = Cast<APlayerCharacterBase>(Target);
+	if (!IsValid(CastedTarget) || CastedTarget->IsDead())
+	{
+		BlackboardComp->SetValueAsObject(TEXT("Target"), nullptr);
+		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+		return;
+	}
+
 	float Distance = Zombie->CalcDistanceToTarget(Target);
 
 	UBaseAttributeSet* ZombieAttri = Zombie->GetAttributeSet();
@@ -128,7 +146,7 @@ void UBTTask_Attack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemo
 				//회전이 끝났을 때 태스크를 종료시킨다	
 				Zombie->ChangeAnim(EZombieAnimType::CombatIdle);
 				Zombie->GetAnimInst()->SetIsTurn(false);
-				FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+				FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 				return;
 			}
 		}
@@ -136,7 +154,7 @@ void UBTTask_Attack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemo
 		{
 			//사거리 밖이라면 머리를 돌릴 필요 없이 바로 종료시키면 된다.
 			BlackboardComp->SetValueAsBool(TEXT("AttackPossible"), false);
-			FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
+			FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 			return;
 		}
 	}

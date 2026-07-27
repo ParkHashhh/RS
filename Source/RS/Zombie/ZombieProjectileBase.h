@@ -18,8 +18,8 @@ UCLASS()
 class RS_API AZombieProjectileBase : public AActor
 {
 	GENERATED_BODY()
-	
-public:	
+
+public:
 	// Sets default values for this actor's properties
 	AZombieProjectileBase();
 
@@ -52,13 +52,19 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-public:	
+public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
 public:
 	void SetOwnerController(AController* Ctrl);
 	void SetAbilityTag(FGameplayTag Tag);
+
+public:
+	UProjectileMovementComponent* GetProjMovement() const
+	{
+		return Movement;
+	}
 	
 protected:
 	UFUNCTION()

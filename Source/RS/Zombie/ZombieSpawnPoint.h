@@ -7,7 +7,8 @@
 #include "ZombieSpawnPoint.generated.h"
 
 class USplineComponent;
-class UArrowComponent;
+class UArrowComponent;	
+class UBoxComponent;
 
 UCLASS()
 class RS_API AZombieSpawnPoint : public AActor
@@ -24,6 +25,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere)
 	TObjectPtr<USplineComponent>	FirstDstList;
+
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<UBoxComponent>	DetectArea;
 
 #if WITH_EDITORONLY_DATA
 	/** Component shown in the editor only to indicate character facing */
@@ -48,11 +52,22 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "NeedProperty")
 	float		SpawnRadius;
 
+	//시간에 기반해 무한 스폰을 하는 스폰 포인트인지를 결정하는 변수
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "NeedProperty")
 	bool		bInfiniteSpawnUseTimer;
 
+	//초기 스폰용 스폰 포인트인지를 결정하는 불리언 변수
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "NeedProperty")
-	bool		bDefaultSpawn = false;;
+	bool		bDefaultSpawn = false;
+
+	//수량에 따라 스폰포인트 활성화 여부를 제어할 불리언 변수
+	bool		bSpawnActivateByMaxCount = true;
+
+	//영역 내의 플레이어 수
+	int32 PlayerNumInArea = 0;
+
+	//플레이어 존재에 따른 스폰 포인트 활성화 여부를 제어할 불리언 변수
+	bool bSpawnActivateByPlayerIn = false;
 
 protected:
 	// Called when the game starts or when spawned
@@ -69,5 +84,16 @@ private:
 	void SpawnZombie();
 	bool CalcRandomSpawnLoc(FVector& Loc);
 	bool CalcRandomFirstDst(FVector& Loc);
+
+	UFUNCTION()
+	void PlayerInArea(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	UFUNCTION()
+	void PlayerOutArea(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+public:
+	void SpawnZombieByBossTrigger(AActor* Target);
+	void SetSpawnActivation(bool IsActivate);
 
 };

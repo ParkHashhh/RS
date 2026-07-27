@@ -4,6 +4,7 @@
 #include "ZombieAnimInstance.h"
 #include "RS/Zombie/ZombieBase.h"
 #include "RS/Zombie/ZombieSpecial.h"
+#include "RS/Zombie/ZombieBoss.h"
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "RS/LogCategory.h"
@@ -29,22 +30,34 @@ void UZombieAnimInstance::PlayAttackMontage(int32 Number)
 {
 	FName Key = *FString::Printf(TEXT("Attack%d"), Number);
 	//만든 키로 몽타주를 찾는다.
-	UAnimMontage* Montage = *(AnimPresetArray[AnimIndex_Backup].AtkMontageMap.Find(Key));
-	Montage_Play(Montage);
+	TObjectPtr<UAnimMontage>* FindResult = AnimPresetArray[AnimIndex_Backup].AtkMontageMap.Find(Key);
+	if (FindResult)
+	{
+		UAnimMontage* Montage = *FindResult;
+		Montage_Play(Montage);
+	}
 }
 
 void UZombieAnimInstance::PlaySkillMontage(int32 Number)
 {
 	FName Key = *FString::Printf(TEXT("Skill%d"), Number);
 	//만든 키로 몽타주를 찾는다.
-	UAnimMontage* Montage = *(AnimPresetArray[AnimIndex_Backup].SkillMontageMap.Find(Key));
-	Montage_Play(Montage);
+	TObjectPtr<UAnimMontage>* FindResult = AnimPresetArray[AnimIndex_Backup].SkillMontageMap.Find(Key);
+	if (FindResult)
+	{
+		UAnimMontage* Montage = *FindResult;
+		Montage_Play(Montage);
+	}
 }
 
 void UZombieAnimInstance::PlayCommonMontage(const FName& Name)
 {
-	UAnimMontage* Montage = *(AnimPresetArray[AnimIndex_Backup].CommonMontageMap.Find(Name));
-	Montage_Play(Montage);
+	TObjectPtr<UAnimMontage>* FindResult = AnimPresetArray[AnimIndex_Backup].CommonMontageMap.Find(Name);
+	if (FindResult)
+	{
+		UAnimMontage* Montage = *FindResult;
+		Montage_Play(Montage);
+	}
 }
 
 void UZombieAnimInstance::SetIsTurn(bool IsTurn)
@@ -69,10 +82,42 @@ bool UZombieAnimInstance::ChechRoarAnimValid()
 void UZombieAnimInstance::FinishJump()
 {
 	//점프 몽타주가 재생중인지 확인한다.
-	UAnimMontage* Montage = *(AnimPresetArray[AnimIndex_Backup].CommonMontageMap.Find(TEXT("Jump")));
-	if (Montage_IsPlaying(Montage))
+	TObjectPtr<UAnimMontage>* FindResult = AnimPresetArray[AnimIndex_Backup].CommonMontageMap.Find(TEXT("Jump"));
+	if (FindResult)
 	{
-		Montage_JumpToSection(TEXT("End"), Montage);
+		UAnimMontage* Montage = *FindResult;
+		if (Montage_IsPlaying(Montage))
+		{
+			Montage_JumpToSection(TEXT("End"), Montage);
+		}
+	}
+}
+
+void UZombieAnimInstance::BehemothLeapAttackEndSection()
+{
+	//베히모스의 리프어택 몽타주가 재생중인지 확인한다. (Skill5)
+	TObjectPtr<UAnimMontage>* FindResult = AnimPresetArray[AnimIndex_Backup].SkillMontageMap.Find(TEXT("Skill5"));
+	if (FindResult)
+	{
+		UAnimMontage* Montage = *FindResult;
+		if (Montage_IsPlaying(Montage))
+		{
+			Montage_JumpToSection(TEXT("End"), Montage);
+		}
+	}
+}
+
+void UZombieAnimInstance::BehemothThrowingStoneSection()
+{
+	//베히모스의 쓰로잉 스톤 몽타주가 재생중인지 확인한다. (Skill4)
+	TObjectPtr<UAnimMontage>* FindResult = AnimPresetArray[AnimIndex_Backup].SkillMontageMap.Find(TEXT("Skill4"));
+	if (FindResult)
+	{
+		UAnimMontage* Montage = *FindResult;
+		if (Montage_IsPlaying(Montage))
+		{
+			Montage_JumpToSection(TEXT("Throw"), Montage);
+		}
 	}
 }
 
@@ -200,5 +245,167 @@ void UZombieAnimInstance::AnimNotify_MoveStart()
 				PFComp->ResumeMove();
 			}
 		}
+	}
+}
+
+void UZombieAnimInstance::AnimNotify_BSkill1()
+{
+	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
+	if (Zombie->HasAuthority())
+	{
+		Zombie->Skill1();
+	}
+}
+
+void UZombieAnimInstance::AnimNotify_BSkill1End()
+{
+	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
+	if (Zombie->HasAuthority())
+	{
+		Zombie->Skill1End();
+	}
+}
+
+void UZombieAnimInstance::AnimNotify_BSkill2()
+{
+	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
+	if (Zombie->HasAuthority())
+	{
+		Zombie->Skill2();
+	}
+}
+
+void UZombieAnimInstance::AnimNotify_BSkill2End()
+{
+	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
+	if (Zombie->HasAuthority())
+	{
+		Zombie->Skill2End();
+	}
+}
+
+void UZombieAnimInstance::AnimNotify_BSkill3()
+{
+	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
+	if (Zombie->HasAuthority())
+	{
+		Zombie->Skill3();
+	}
+}
+
+void UZombieAnimInstance::AnimNotify_BSkill3End()
+{
+	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
+	if (Zombie->HasAuthority())
+	{
+		Zombie->Skill3End();
+	}
+}
+
+void UZombieAnimInstance::AnimNotify_BSkill4()
+{
+	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
+	if (Zombie->HasAuthority())
+	{
+		Zombie->Skill4();
+	}
+}
+
+void UZombieAnimInstance::AnimNotify_BSkill4End()
+{
+	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
+	if (Zombie->HasAuthority())
+	{
+		Zombie->Skill4End();
+	}
+}
+
+void UZombieAnimInstance::AnimNotify_BSkill5()
+{
+	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
+	if (Zombie->HasAuthority())
+	{
+		Zombie->Skill5();
+	}
+}
+
+void UZombieAnimInstance::AnimNotify_BSkill5End()
+{
+	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
+	if (Zombie->HasAuthority())
+	{
+		Zombie->Skill5End();
+	}
+}
+
+void UZombieAnimInstance::AnimNotify_BSkill6()
+{
+	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
+	if (Zombie->HasAuthority())
+	{
+		Zombie->Skill6();
+	}
+}
+
+void UZombieAnimInstance::AnimNotify_BSkill6End()
+{
+	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
+	if (Zombie->HasAuthority())
+	{
+		Zombie->Skill6End();
+	}
+}
+
+void UZombieAnimInstance::AnimNotify_BRangeAttack()
+{
+	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
+	if (Zombie->HasAuthority())
+	{
+		Zombie->RangeAttack();
+	}
+}
+
+void UZombieAnimInstance::AnimNotify_BRangeAttackEnd()
+{
+	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
+	if (Zombie->HasAuthority())
+	{
+		Zombie->RangeAttackEnd();
+	}
+}
+
+void UZombieAnimInstance::AnimNotify_DecideLoc()
+{
+	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
+	if (Zombie->HasAuthority())
+	{
+		Zombie->SetLandingLoc();
+	}
+}
+
+void UZombieAnimInstance::AnimNotify_LandingAttack()
+{
+	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
+	if (Zombie->HasAuthority())
+	{
+		Zombie->ApplyLandingAttack();
+	}
+}
+
+void UZombieAnimInstance::AnimNotify_Launch()
+{
+	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
+	if (Zombie->HasAuthority())
+	{
+		Zombie->LaunchProjectile();
+	}
+}
+
+void UZombieAnimInstance::AnimNotify_SpawnStone()
+{
+	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
+	if (Zombie->HasAuthority())
+	{
+		Zombie->SpawnStone();
 	}
 }

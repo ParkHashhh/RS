@@ -102,7 +102,6 @@ void AZombieProjectileBase::ProjectileStop(const FHitResult& ImpactResult)
 
 void AZombieProjectileBase::SpawnGroundHitParticle(const FHitResult& ImpactResult)
 {
-	//스피터는 입에서 머즐 파티클이 스폰되어야 한다.
 	if (Particle)
 	{
 		FVector SpawnLoc = ImpactResult.ImpactPoint;

@@ -8,7 +8,6 @@
 #include "Navigation/PathFollowingComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "RS/LogCategory.h"
-#include "RS/Zombie/AI/WanderNavFilter.h"
 
 
 UBTTask_Wander::UBTTask_Wander()

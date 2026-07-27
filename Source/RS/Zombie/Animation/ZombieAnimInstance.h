@@ -99,6 +99,12 @@ public:
 	bool ChechRoarAnimValid();
 	void FinishJump();
 
+	//베히모스 보스용 리프어택 몽타주 섹션 변경 함수
+	void BehemothLeapAttackEndSection();
+
+	//베히모스 보스용 쓰로잉스톤 몽타주 섹션 변경 함수
+	void BehemothThrowingStoneSection();
+
 public:
 	UFUNCTION()
 	void AnimNotify_Attack();
@@ -129,4 +135,58 @@ public:
 
 	UFUNCTION()
 	void AnimNotify_MoveStart();
+
+	UFUNCTION()
+	void AnimNotify_BSkill1();
+
+	UFUNCTION()
+	void AnimNotify_BSkill1End();
+
+	UFUNCTION()
+	void AnimNotify_BSkill2();
+
+	UFUNCTION()
+	void AnimNotify_BSkill2End();
+
+	UFUNCTION()
+	void AnimNotify_BSkill3();
+
+	UFUNCTION()
+	void AnimNotify_BSkill3End();
+
+	UFUNCTION()
+	void AnimNotify_BSkill4();
+
+	UFUNCTION()
+	void AnimNotify_BSkill4End();
+
+	UFUNCTION()
+	void AnimNotify_BSkill5();
+
+	UFUNCTION()
+	void AnimNotify_BSkill5End();
+
+	UFUNCTION()
+	void AnimNotify_BSkill6();
+
+	UFUNCTION()
+	void AnimNotify_BSkill6End();
+
+	UFUNCTION()
+	void AnimNotify_BRangeAttack();
+
+	UFUNCTION()
+	void AnimNotify_BRangeAttackEnd();
+
+	UFUNCTION()
+	void AnimNotify_DecideLoc();
+
+	UFUNCTION()
+	void AnimNotify_LandingAttack();
+
+	UFUNCTION()
+	void AnimNotify_Launch();
+
+	UFUNCTION()
+	void AnimNotify_SpawnStone();
 };

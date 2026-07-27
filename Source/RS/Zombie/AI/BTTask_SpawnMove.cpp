@@ -8,7 +8,6 @@
 #include "Navigation/PathFollowingComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "RS/LogCategory.h"
-#include "RS/Zombie/AI/WanderNavFilter.h"
 
 
 UBTTask_SpawnMove::UBTTask_SpawnMove()
@@ -117,6 +116,7 @@ void UBTTask_SpawnMove::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeM
 	//5.0 이내의 거리라면 도착한 것으로 간주한다.
 	if (Distance <= 5.f)
 	{
+		Zombie->SetSpawnPointLocation(Zombie->GetActorLocation());
 		FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
 		return;
 	}

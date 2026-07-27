@@ -200,6 +200,9 @@ struct RS_API FZombieDefaultInfo : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Detect")
 	float DetectRange_Hearing;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|CheckBoss")
+	bool bIsBoss;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Type")
 	float Normal_Rarity;
 
@@ -211,12 +214,64 @@ struct RS_API FZombieDefaultInfo : public FTableRowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Damage")
 	float Special_SkillDotDamage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Damage")
+	float	Boss_Skill1Damage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Cooldown")
+	float	Boss_Skill1Cooldown;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Damage")
+	float	Boss_Skill2Damage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Cooldown")
+	float	Boss_Skill2Cooldown;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Damage")
+	float	Boss_Skill3Damage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Cooldown")
+	float	Boss_Skill3Cooldown;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Damage")
+	float	Boss_Skill4Damage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Cooldown")
+	float	Boss_Skill4Cooldown;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Damage")
+	float	Boss_Skill5Damage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Cooldown")
+	float	Boss_Skill5Cooldown;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Damage")
+	float	Boss_Skill6Damage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Cooldown")
+	float	Boss_Skill6Cooldown;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Range")
+	float	Boss_MeleeAttackDistance;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Range")
+	float	Boss_MiddleAttackDistance;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Range")
+	float	Boss_RangeAttackDistance;
 };
 
+//보스의 스킬은 1~7이 되도록 위치를 고정한다.
 UENUM(BlueprintType)
 enum class EZombieAnimType : uint8
 {
 	Idle,
+	Boss_Skill1,
+	Boss_Skill2,
+	Boss_Skill3,
+	Boss_Skill4,
+	Boss_Skill5,
+	Boss_Skill6,
 	CombatIdle,
 	Walk,
 	Run,

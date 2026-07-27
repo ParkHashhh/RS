@@ -132,7 +132,26 @@ protected:
 	UPROPERTY(Transient, VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess=true))
 	TObjectPtr<UPlayerAnimInstance> AnimInst;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Combat|BulletElement")
+	float FireDamageRatio = 0.3f;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Combat|BulletElement")
+	float FireRadius = 300.f;        
+
+	UPROPERTY(EditDefaultsOnly, Category = "Combat|BulletElement")
+	TObjectPtr<class UNiagaraSystem> FireExplosionVFX; 
+
+	UPROPERTY(EditDefaultsOnly, Category = "Combat|BulletElement")
+	float ElectricDamageRatio = 0.5f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Combat|BulletElement")
+	float ElectricChainRadius = 1000.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Combat|BulletElement")
+	int32 ElectricChainCount = 4;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Combat|BulletElement")
+	TObjectPtr<class UNiagaraSystem> ElectricChainVFX;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, BlueprintGetter=K2_IsDashing, meta=(AllowPrivateAccess=true))
 	bool bIsDashing = false;
@@ -452,6 +471,10 @@ protected:
 	void ExecuteBulletTrailEffect(const FVector& MuzzleLocation, const FVector& TrailEnd);
 	void ExecuteDecalEffect(const FHitResult& Hit);
 	void ExecuteHitEffect(const FHitResult& Hit);
+	void TryApplyBulletElements(AActor* TargetActor, const FHitResult& Hit);
+	void ApplyFireExplosion(const FVector& Location);
+	void ApplyElectricChain(AActor* FirstTarget, const FVector& HitLocation);
+
 
 public:
 	void ExecuteMuzzleEffect(const FVector& MuzzleLocation, const FRotator& MuzzleRotation);
