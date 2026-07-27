@@ -202,6 +202,7 @@ void ARSGameState::SetProgress(FName TableRowName, float NewProgress)
 	if (FStageObjectiveEntry* Objective = FindObjective(TableRowName))
 	{
 		Objective->CurreentProgress = NewProgress;
+
 		OnObjectiveChangedDelegate.Broadcast();
 	}
 }

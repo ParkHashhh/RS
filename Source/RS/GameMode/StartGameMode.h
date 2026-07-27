@@ -3,18 +3,18 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/GameModeBase.h"
+#include "RSGameMode.h"
 #include "StartGameMode.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
-class RS_API AStartGameMode : public AGameModeBase
+class RS_API AStartGameMode : public ARSGameMode
 {
 	GENERATED_BODY()
 
 public:
 	AStartGameMode();
-	
+
 };

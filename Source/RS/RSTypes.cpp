@@ -18,6 +18,25 @@ int32 FStageObjective::GetGoal(FName RowName, const UDataSubsystem* DataSubsyste
 	return 0;
 }
 
+FStageObjective::FStageObjective(const FStageObjectiveEntry& Entry, const UDataSubsystem* DataSubsystem)
+{
+	TableRowName = Entry.TableRowName;
+	Current = Entry.CurreentProgress;
+
+	if (DataSubsystem)
+	{
+		if (const FStageObjectiveTableInfo* Info = DataSubsystem->GetStageObjectiveTableInfo(Entry.TableRowName))
+		{
+			Goal = Info->Goal;
+
+			FDataTableRowHandle RowHandle;
+			RowHandle.DataTable = DataSubsystem->GetStageObjectiveInfoTable();
+			RowHandle.RowName = Info->TargetTableRowName;
+			Targets.Emplace(RowHandle);
+		}
+	}
+}
+
 void FStageObjectiveEntry::PreReplicatedRemove(const FStageObjectiveList& InArraySerializer)
 {
 	if (InArraySerializer.Owner)

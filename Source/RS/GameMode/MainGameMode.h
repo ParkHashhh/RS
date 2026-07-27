@@ -11,7 +11,10 @@
 class AZombieBase;
 class UZombieManager;
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnKillInfoChanged, const FKillInfo*)
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnKillInfoChanged, const FKillInfo*);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnTimeElapsed, float);
+
+DECLARE_MULTICAST_DELEGATE(FOnAllObjectiveCleared);
 
 /**
  *
@@ -33,6 +36,9 @@ private:
 	bool bStartStage = false;
 
 	FOnKillInfoChanged OnKillInfoChanged;
+	FOnTimeElapsed OnTimeElapsed;
+
+	FOnAllObjectiveCleared OnAllObjectivesCleared;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly,meta=(AllowPrivateAccess = "true"))
@@ -87,5 +93,20 @@ public:
 
 private:
 	void HandleKillInfoChanged(const FKillInfo* KillInfo);
+	void HandleTimeElapsed(float AccumulatedSec);
+
+	void HandleAllObjectiveCleared();
+
+	void CheckAllObjectiveClear();
+#pragma endregion
+
+#pragma region EndStage
+private:
+	UPROPERTY(EditDefaultsOnly, meta=(AllowPrivateAccess=true))
+	TSoftObjectPtr<UWorld> LobbyLevelAsset;
+
+	FTransform GetPortalLocation() const;
+	ATravelPortal* SpawnPortal(const FTransform& PortalLocation) const;
+
 #pragma endregion
 };

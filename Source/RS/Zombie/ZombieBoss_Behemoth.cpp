@@ -693,7 +693,18 @@ void AZombieBoss_Behemoth::LaunchProjectile()
 	AActor* Target = Cast<AActor>(BB->GetValueAsObject(TEXT("Target")));
 
 	FVector StartLoc = SpawnedStone->GetActorLocation();
-	FVector EndLoc = Target->GetActorLocation();
+
+	FVector EndLoc = FVector::ZeroVector;
+	if (IsValid(Target))
+	{
+		//공격 모션이 시작되었을 때 타겟이 유효하다면 그 위치를
+		EndLoc = Target->GetActorLocation();
+	}
+	else
+	{
+		//유효하지 않다면 일정 거리 앞의 지점을 목표로 잡는다.
+		EndLoc = GetActorLocation() + GetActorForwardVector() * 1000.f;
+	}
 	FVector ResultVector;
 
 	FCollisionResponseParams CRParam;

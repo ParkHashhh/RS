@@ -3,17 +3,17 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/GameModeBase.h"
-#include "RS/Player/PlayerCharacterBase.h"
+#include "RSGameMode.h"
 #include "RSInGameMode.generated.h"
 
+class APlayerCharacterBase;
 /**
  *
  */
 class ATravelPortal;
 
 UCLASS()
-class RS_API ARSInGameMode : public AGameModeBase
+class RS_API ARSInGameMode : public ARSGameMode
 {
 	GENERATED_BODY()
 

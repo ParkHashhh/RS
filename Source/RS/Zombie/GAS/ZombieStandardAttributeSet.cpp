@@ -18,4 +18,5 @@ void UZombieStandardAttributeSet::OnHPChanged(AActor* Instigator)
 			Zombie->CallBackHP(Instigator);
 		}
 	}
+
 }

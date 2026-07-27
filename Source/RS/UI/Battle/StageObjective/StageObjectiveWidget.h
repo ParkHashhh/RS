@@ -31,4 +31,7 @@ public:
 
 protected:
 	virtual void NativeConstruct() override;
+
+private:
+	void RefreshContents();
 };

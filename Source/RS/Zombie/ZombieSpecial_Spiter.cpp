@@ -44,7 +44,17 @@ void AZombieSpecial_Spiter::SpawnSpitProjectile()
 	AZombieAIController* Ctrl = Cast<AZombieAIController>(GetController());
 	UBlackboardComponent* BB = Ctrl->GetBlackboardComponent();
 	AActor* Player = Cast<AActor>(BB->GetValueAsObject(TEXT("Target")));
-	FVector PlayerLoc = Player->GetActorLocation();
+	FVector PlayerLoc = FVector::ZeroVector;
+	if (IsValid(Player))
+	{
+		//공격 모션이 시작되었을 때 타겟이 유효하다면 그 위치를
+		PlayerLoc = Player->GetActorLocation();
+	}
+	else
+	{
+		//유효하지 않다면 일단 스피터 앞의 사거리만큼의 지점을 잡는다.
+		PlayerLoc = GetActorLocation() + GetActorForwardVector() * 1000.f;
+	}
 	PlayerLoc.Z += 40.f;
 	FRotator LocToPlayer = UKismetMathLibrary::FindLookAtRotation(LaunchLoc, PlayerLoc);
 	//회전값 중 상하 각도만 사용한다.
@@ -90,7 +100,17 @@ void AZombieSpecial_Spiter::Attack()
 	AZombieAIController* Ctrl = Cast<AZombieAIController>(GetController());
 	UBlackboardComponent* BB = Ctrl->GetBlackboardComponent();
 	AActor* Player = Cast<AActor>(BB->GetValueAsObject(TEXT("Target")));
-	FVector PlayerLoc = Player->GetActorLocation();
+	FVector PlayerLoc = FVector::ZeroVector;
+	if (IsValid(Player))
+	{
+		//공격 모션이 시작되었을 때 타겟이 유효하다면 그 위치를
+		PlayerLoc = Player->GetActorLocation();
+	}
+	else
+	{
+		//유효하지 않다면 일단 스피터 앞의 사거리만큼의 지점을 잡는다.
+		PlayerLoc = GetActorLocation() + GetActorForwardVector() * 1000.f;
+	}
 	PlayerLoc.Z += 40.f;
 	FRotator LocToPlayer = UKismetMathLibrary::FindLookAtRotation(LaunchLoc, PlayerLoc);
 	//회전값 중 상하 각도만 사용한다.

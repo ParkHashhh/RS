@@ -6,6 +6,7 @@
 #include "RSPlayerState.h"
 #include "Attribute/PlayerAttributeSet.h"
 #include "PlayerControllerBase.h"
+#include "Components/SplineComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -1518,6 +1519,8 @@ void APlayerCharacterBase::TryApplyBulletElements(AActor* TargetActor, const FHi
 {
 	ApplyFireExplosion(Hit.ImpactPoint);
 	ApplyElectricChain(TargetActor, Hit.ImpactPoint);
+	ApplyIceSlow(TargetActor);
+	ApplyPoisonDot(TargetActor);
 }
 
 void APlayerCharacterBase::ApplyFireExplosion(const FVector& Location)
@@ -1584,18 +1587,75 @@ void APlayerCharacterBase::ApplyElectricChain(AActor* FirstTarget, const FVector
 		Server_ApplyDamage(Nearest, FHitResult(), ElectricDamage);
 		RS_PRINT_SCREEN(3.f, FColor::Cyan, TEXT("[Electric] Damage : %.1f, Chain #%d : %s"), ElectricDamage, i + 1, *Nearest->GetName());
 
-		if (IsValid(ElectricChainVFX))
+		if (ElectricChainVFXClass)
 		{
-			if (UNiagaraComponent* BeamComp = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
-				GetWorld(), ElectricChainVFX, CurrentSource->GetActorLocation()))
+			FVector StartLoc = CurrentSource->GetActorLocation();
+			FVector EndLoc = Nearest->GetActorLocation();
+
+			AActor* VFXActor = GetWorld()->SpawnActorDeferred<AActor>(
+				ElectricChainVFXClass, FTransform(StartLoc),
+				this, this, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+
+			if (VFXActor)
 			{
-				BeamComp->SetVectorParameter(FName("BeamEnd"), Nearest->GetActorLocation());
+				VFXActor->FinishSpawning(FTransform(StartLoc));   // 컴포넌트 재구성 먼저 끝내고
+
+				if (USplineComponent* Spline = VFXActor->FindComponentByClass<USplineComponent>())
+				{
+					Spline->ClearSplinePoints();
+					Spline->AddSplinePoint(FVector::ZeroVector, ESplineCoordinateSpace::Local);
+					Spline->AddSplinePoint(EndLoc - StartLoc, ESplineCoordinateSpace::Local);
+				}
 			}
 		}
-
 		HitTargets.Add(Nearest);
 		CurrentSource = Nearest;
 	}
+}
+void APlayerCharacterBase::ApplyIceSlow(AActor* TargetActor)
+{
+	auto* TargetASC = TargetActor->FindComponentByClass<UAbilitySystemComponent>();
+	if (!TargetASC)
+	{
+		return;
+	}
+
+	FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
+	TSubclassOf<UGameplayEffect> Effect = GetEffect(TEXT("IceSlow"));
+
+	FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(Effect, 1.0f, EffectContext);
+	SpecHandle.Data.Get()->SetSetByCallerMagnitude(
+		FGameplayTag::RequestGameplayTag(TEXT("SetByCaller.State.SlowRatio")), 1.f - IceSlowRatio);
+	SpecHandle.Data.Get()->SetSetByCallerMagnitude(
+		FGameplayTag::RequestGameplayTag(TEXT("SetByCaller.State.SlowDuration")), IceSlowDuration);
+
+	ASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
+}
+
+void APlayerCharacterBase::ApplyPoisonDot(AActor* TargetActor)
+{
+	auto* TargetASC = TargetActor->FindComponentByClass<UAbilitySystemComponent>();
+	if (!TargetASC)
+	{
+		return;
+	}
+
+	TSubclassOf<UGameplayEffect> Effect = GetEffect(TEXT("Poison"));
+	if (!Effect)
+	{
+		return;
+	}
+
+	const float PoisonDamage = GetAttributeSet()->GetAttackPower() * PoisonDamageRatio;
+
+	FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
+	FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(Effect, 1.0f, EffectContext);
+	SpecHandle.Data.Get()->SetSetByCallerMagnitude(
+		FGameplayTag::RequestGameplayTag(TEXT("SetByCaller.State.HP")), -PoisonDamage);
+	SpecHandle.Data.Get()->SetSetByCallerMagnitude(
+		FGameplayTag::RequestGameplayTag(TEXT("SetByCaller.State.PoisonDuration")), PoisonDuration);
+
+	ASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
 }
 void APlayerCharacterBase::OnRep_TextureName()
 {
@@ -1674,8 +1734,7 @@ void APlayerCharacterBase::Multicast_ExecuteVisualEffect_Implementation(const FH
 	CueParams.PhysicalMaterial = Hit.PhysMaterial;
 
 	// 타격인지 데칼(벽)인지 태그로 구분하여 실행
-	FGameplayTag Tag = bIsHit
-		                   ? FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Damage"))
+	FGameplayTag Tag = bIsHit  ? FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Damage"))
 		                   : FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Weapon.Impact"));
 
 	UGameplayCueManager::ExecuteGameplayCue_NonReplicated(this, Tag, CueParams);

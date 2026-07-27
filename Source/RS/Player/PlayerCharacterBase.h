@@ -151,7 +151,20 @@ protected:
 	int32 ElectricChainCount = 4;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Combat|BulletElement")
-	TObjectPtr<class UNiagaraSystem> ElectricChainVFX;
+	TSubclassOf<AActor> ElectricChainVFXClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Combat|BulletElement")
+	float IceSlowRatio = 0.3f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Combat|BulletElement")
+	float IceSlowDuration = 3.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Combat|BulletElement")
+	float PoisonDamageRatio = 0.2f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Combat|BulletElement")
+	float PoisonDuration = 3.f;
+
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, BlueprintGetter=K2_IsDashing, meta=(AllowPrivateAccess=true))
 	bool bIsDashing = false;
@@ -474,7 +487,8 @@ protected:
 	void TryApplyBulletElements(AActor* TargetActor, const FHitResult& Hit);
 	void ApplyFireExplosion(const FVector& Location);
 	void ApplyElectricChain(AActor* FirstTarget, const FVector& HitLocation);
-
+	void ApplyIceSlow(AActor* TargetActor);
+	void ApplyPoisonDot(AActor* TargetActor);
 
 public:
 	void ExecuteMuzzleEffect(const FVector& MuzzleLocation, const FRotator& MuzzleRotation);

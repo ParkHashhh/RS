@@ -29,6 +29,9 @@ void UBaseAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 
 	if (Data.EvaluatedData.Attribute == GetCurrentHPAttribute())
 	{
+		RS_PRINT_SCREEN(2.f, FColor::Yellow, TEXT("[HP] %s : %.1f (Current : %.1f)"),
+			*AvatarActor->GetName(), Data.EvaluatedData.Magnitude, GetCurrentHP());
+
 		OnHPChanged(Instigator);
 
 		if (GetCurrentHP() <= 0.0f)
@@ -85,6 +88,7 @@ void UBaseAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribute,
 					float TargetCurrentHP = FMath::Clamp(GetCurrentHP() + Diff, 0.0f, NewValue);
 					// RS_LOG_DEBUG(LogRSGAS, Log, TEXT("%s: MaxHP increased. Target Current HP: %.2f"), *LOG_LINE_INFO, TargetCurrentHP);
 					ASC->SetNumericAttributeBase(GetCurrentHPAttribute(), TargetCurrentHP);
+
 				}
 			}
 			else if (GetCurrentHP() < NewValue)

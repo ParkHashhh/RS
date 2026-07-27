@@ -397,8 +397,11 @@ void AZombieBase::CallBackHP(AActor* InstigatorActor)
 
 		//좀비 매니저를 얻어온 후 나 자신을 제거하도록 함수의 인자로 넘겨준다.
 		AMainGameMode* GameMode = GetWorld()->GetAuthGameMode<AMainGameMode>();
-		UZombieManager* ZombieMgr = GameMode->GetZombieManager();
-		ZombieMgr->ZombieUnRegister(this);
+		if (GameMode)
+		{
+			UZombieManager* ZombieMgr = GameMode->GetZombieManager();
+			ZombieMgr->ZombieUnRegister(this);
+		}
 
 		//디졸브 기능 활성화
 		bDissolveEnable = true;

@@ -6,6 +6,7 @@
 #include "StageObjectiveEntryObject.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
+#include "RS/LogCategory.h"
 #include "RS/RSConstants.h"
 
 void UStageObjectiveEntryWidget::SetProgressText(const FText& InProgressText) const
@@ -38,24 +39,15 @@ void UStageObjectiveEntryWidget::NativeOnListItemObjectSet(UObject* ListItemObje
 		return;
 	}
 
+	const FText InProgressText = FText::Format(FText::FromString(TEXT("{0} / {1}")),
+	                                           FMath::RoundToInt32(EntryObject->Current),
+	                                           FMath::RoundToInt32(EntryObject->Goal));
 
-	FText Temp = FText::Format(FText::FromString(TEXT("{0} / {1}")),
-	                           FMath::RoundToInt32(EntryObject->Current), FMath::RoundToInt32(EntryObject->Goal));
+	const float InProgressRatio = FMath::IsNearlyZero(EntryObject->Goal)
+		                              ? 0.f
+		                              : EntryObject->Current / EntryObject->Goal;
 
-	if (GetWorld())
-	{
-		if (auto* GS = GetWorld()->GetGameState<ARSGameState>())
-		{
-			if (GS->OnObjectiveStateChangedDelegates.IsValidIndex(EntryObject->Idx))
-			{
-				GS->OnObjectiveStateChangedDelegates[EntryObject->Idx].AddUObject(
-					this, &ThisClass::OnObjectiveProgressChanged);
-			}
-		}
-	}
-
-	Init(EntryObject->Title, EntryObject->Description, Temp,
-	     FMath::IsNearlyZero(EntryObject->Goal) ? 0.f : EntryObject->Current / EntryObject->Goal);
+	Init(EntryObject->Title, EntryObject->Description, InProgressText, InProgressRatio);
 }
 
 void UStageObjectiveEntryWidget::Init(const FText& Title, const FText& Description, const FText& InProgressText,

@@ -9,6 +9,7 @@
 #include "RS/LogCategory.h"
 #include "RS/Data/Subsystem/DataSubsystem.h"
 #include "RS/Player/PlayerCharacterBase.h"
+#include "RS/Player/Actor/TravelPortal.h"
 #include "RS/Zombie/ZombieBase.h"
 #include "RS/Zombie/ZombieManager.h"
 
@@ -27,6 +28,7 @@ void AMainGameMode::Tick(float DeltaSeconds)
 	if (bStartStage)
 	{
 		StageElapsedTime += DeltaSeconds;
+		OnTimeElapsed.Broadcast(StageElapsedTime);
 	}
 }
 
@@ -163,6 +165,9 @@ void AMainGameMode::BeginPlay()
 	Super::BeginPlay();
 
 	OnKillInfoChanged.AddUObject(this, &ThisClass::HandleKillInfoChanged);
+	OnTimeElapsed.AddUObject(this, &ThisClass::HandleTimeElapsed);
+
+	OnAllObjectivesCleared.AddUObject(this, &ThisClass::HandleAllObjectiveCleared);
 }
 
 void AMainGameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -202,18 +207,15 @@ void AMainGameMode::Initialize()
 
 void AMainGameMode::InitializeStageObjective()
 {
-	if (const UGameInstance* GI = GetGameInstance())
+	if (const auto* DataSubsystem = GetCachedSubsystem<UDataSubsystem>())
 	{
-		if (const auto* DataSubsystem = GI->GetSubsystem<UDataSubsystem>())
+		const FName StageRowName(*UGameplayStatics::GetCurrentLevelName(this));
+		if (const FStageTableInfo* StageInfo = DataSubsystem->GetStageTableInfo(StageRowName))
 		{
-			const FName StageRowName(*UGameplayStatics::GetCurrentLevelName(this));
-			if (const FStageTableInfo* StageInfo = DataSubsystem->GetStageTableInfo(StageRowName))
+			for (int32 Idx = 0; Idx < StageInfo->ObjectiveRowNames.Num(); ++Idx)
 			{
-				for (int32 Idx = 0; Idx < StageInfo->ObjectiveRowNames.Num(); ++Idx)
-				{
-					const FName ObjectiveRowName = StageInfo->ObjectiveRowNames[Idx];
-					StageObjectiveEntries.Emplace(ObjectiveRowName, 0.0f, Idx);
-				}
+				const FName ObjectiveRowName = StageInfo->ObjectiveRowNames[Idx];
+				StageObjectiveEntries.Emplace(ObjectiveRowName, 0.0f, Idx);
 			}
 		}
 	}
@@ -236,7 +238,49 @@ const FStageObjectiveEntry* AMainGameMode::GetStageObjectiveEntry(int32 Index) c
 
 void AMainGameMode::HandleKillInfoChanged(const FKillInfo* KillInfo)
 {
-	UGameInstance* GI = GetGameInstance();
+	auto* GS = GetGameState<ARSGameState>();
+	if (!GS)
+	{
+		return;
+	}
+
+	const auto* DataSubsystem = GetCachedSubsystem<UDataSubsystem>();
+	if (!DataSubsystem)
+	{
+		return;
+	}
+
+	for (auto& Entry : StageObjectiveEntries)
+	{
+		if (const FStageObjectiveTableInfo* TableInfo = DataSubsystem->GetStageObjectiveTableInfo(Entry.TableRowName))
+		{
+			switch (TableInfo->ClearCondition)
+			{
+			case EClearCondition::KillBoss:
+				// if (KillInfo->bIsBoss)
+				{
+					GS->SetProgress(Entry.TableRowName, KillInfo->KillCount);
+				}
+				break;
+			case EClearCondition::KillEnemy:
+				if (TableInfo->TargetTableRowName == KillInfo->MonsterRowName || TableInfo->TargetTableRowName.IsNone())
+				{
+					Entry.CurreentProgress = FMath::Clamp(KillInfo->KillCount, 0.0f, TableInfo->Goal);
+					GS->SetProgress(Entry.TableRowName, Entry.CurreentProgress);
+				}
+				break;
+			default:
+				break;
+			}
+		}
+	}
+
+	CheckAllObjectiveClear();
+}
+
+void AMainGameMode::HandleTimeElapsed(float AccumulatedSec)
+{
+	const UGameInstance* GI = GetGameInstance();
 	if (!GI)
 	{
 		return;
@@ -248,35 +292,110 @@ void AMainGameMode::HandleKillInfoChanged(const FKillInfo* KillInfo)
 		return;
 	}
 
-	if (FStageObjectiveEntry* Entry = StageObjectiveEntries.FindByPredicate(
-		[&KillInfo, &DataSubsystem](const FStageObjectiveEntry& Entry)
+	for (auto& Entry : StageObjectiveEntries)
+	{
+		if (const FStageObjectiveTableInfo* TableInfo = DataSubsystem->GetStageObjectiveTableInfo(Entry.TableRowName))
 		{
-			if (const FStageObjectiveTableInfo* TableInfo = DataSubsystem->GetStageObjectiveTableInfo(
-				Entry.TableRowName))
+			switch (TableInfo->ClearCondition)
 			{
-				if (TableInfo->ClearCondition == EClearCondition::KillEnemy)
+			case EClearCondition::SurviveTime:
+				if (auto* GS = GetGameState<ARSGameState>())
 				{
-					if (TableInfo->TargetTableRowName == KillInfo->MonsterRowName
-						|| TableInfo->TargetTableRowName.IsNone())
-					{
-						return true;
-					}
+					Entry.CurreentProgress = FMath::Clamp(AccumulatedSec, 0.0f, TableInfo->Goal);
+					GS->SetProgress(Entry.TableRowName, AccumulatedSec);
 				}
-				else if (TableInfo->ClearCondition == EClearCondition::KillBoss)
+
+				CheckAllObjectiveClear();
+
+				return;
+			default:
+				break;
+			}
+		}
+	}
+}
+
+void AMainGameMode::HandleAllObjectiveCleared()
+{
+	if (!ActivePortal)
+	{
+		ActivePortal = SpawnPortal(GetPortalLocation());
+	}
+}
+
+void AMainGameMode::CheckAllObjectiveClear()
+{
+	const auto* DataSubsystem = GetCachedSubsystem<UDataSubsystem>();
+	if (!DataSubsystem)
+	{
+		return;
+	}
+
+	for (const FStageObjectiveEntry& Objective : StageObjectiveEntries)
+	{
+		if (const FStageObjectiveTableInfo* Info = DataSubsystem->GetStageObjectiveTableInfo(Objective.TableRowName))
+		{
+			if (Objective.CurreentProgress < Info->Goal)
+			{
+				return;
+			}
+		}
+	}
+
+	OnAllObjectivesCleared.Broadcast();
+}
+
+FTransform AMainGameMode::GetPortalLocation() const
+{
+	if (!GameState)
+	{
+		return {};
+	}
+
+	for (const auto& PS : GameState->PlayerArray)
+	{
+		if (PS)
+		{
+			if (const APlayerController* PC = PS->GetPlayerController())
+			{
+				if (const auto* Char = PC->GetPawn<APlayerCharacterBase>())
 				{
-					if (TableInfo->TargetTableRowName == KillInfo->MonsterRowName)
+					if (IsValid(Char) && !Char->IsDead())
 					{
-						return true;
+						return Char->GetTransform();
 					}
 				}
 			}
-
-			return false;
-		}))
-	{
-		if (auto* GS = GetGameState<ARSGameState>())
-		{
-			GS->SetProgress(Entry->TableRowName, KillInfo->KillCount);
 		}
 	}
+
+	return {};
+}
+
+ATravelPortal* AMainGameMode::SpawnPortal(const FTransform& PortalLocation) const
+{
+	if (!TravelPortalClass)
+	{
+		return nullptr;
+	}
+
+	// TSoftObjectPtr는 객체의 경로(Path)를 가리키는 포인터 역할을 하지, 메모리에 로드된 객체 자체가 아닙니다.
+	// 따라서 if (!LobbyLevelAsset) 문을 작성하면 언리얼은 "이 포인터가 가리키는 UWorld 메모리 객체가 현재 로드되어 있는가?"를 검사하게 됩니다.
+	if (LobbyLevelAsset.IsNull())
+	{
+		return nullptr;;
+	}
+
+	FActorSpawnParameters Params;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+	if (auto* Portal = GetWorld()->SpawnActor<ATravelPortal>(TravelPortalClass, PortalLocation, Params))
+	{
+		FString PackagePath = LobbyLevelAsset.GetLongPackageName();
+		FName LevelName = FName(*FPackageName::GetShortName(PackagePath));
+		Portal->SetTarget(LevelName, PackagePath);
+
+		return Portal;
+	}
+
+	return nullptr;
 }

@@ -4,6 +4,7 @@
 #include "PaperSprite.h"
 #include "Net/Serialization/FastArraySerializer.h"
 
+struct FStageObjectiveEntry;
 class ARSGameState;
 struct FStageObjectiveList;
 class UDataSubsystem;
@@ -420,6 +421,8 @@ struct FStageObjective
 		  Goal(Goal)
 	{
 	}
+
+	FStageObjective(const FStageObjectiveEntry& Entry, const UDataSubsystem* DataSubsystem);
 };
 
 UENUM(BlueprintType)
@@ -501,7 +504,7 @@ struct RS_API FStageObjectiveEntry : public FFastArraySerializerItem
 };
 
 USTRUCT()
-struct FStageObjectiveList : public FFastArraySerializer
+struct RS_API FStageObjectiveList : public FFastArraySerializer
 {
 	GENERATED_BODY()
 
@@ -535,4 +538,12 @@ public:
 
 private:
 	void RebuildIndexMap();
+};
+
+UENUM(BlueprintType)
+enum class EStageResult : uint8
+{
+	None,
+	Win,
+	Lose,
 };

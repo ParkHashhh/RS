@@ -3,6 +3,7 @@
 
 #include "StageObjectiveEntryObject.h"
 
+#include "RS/LogCategory.h"
 #include "RS/RSTypes.h"
 
 void UStageObjectiveEntryObject::Initialize(const FStageObjective& Objective, const UDataSubsystem* DataSubsystem,
@@ -19,20 +20,6 @@ void UStageObjectiveEntryObject::Initialize(const FStageObjective& Objective, co
 
 	Current = Objective.Current;
 	Goal = Objective.Goal;
-
-	if (GetWorld())
-	{
-		if (auto* GS = GetWorld()->GetGameState<ARSGameState>())
-		{
-			if (GS->OnObjectiveStateChangedDelegates.IsValidIndex(InIdx))
-			{
-				Idx = InIdx;
-
-				GS->OnObjectiveStateChangedDelegates[InIdx].AddUObject(this, &ThisClass::OnObjectiveStateChanged);
-				OnObjectiveStateChanged();
-			}
-		}
-	}
 }
 
 void UStageObjectiveEntryObject::OnObjectiveStateChanged()
