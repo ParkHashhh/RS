@@ -22,12 +22,12 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "UI")
 	TSubclassOf<UUserWidget> ColonyWidgetClass;
-
+	UPROPERTY()
 	TObjectPtr<UUserWidget> ColonyWidget;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "UI")
 	TSubclassOf<UUserWidget> MapSelectWidgetClass;
-
+	UPROPERTY()
 	TObjectPtr<UUserWidget> MapSelectWidget;
 
 public:

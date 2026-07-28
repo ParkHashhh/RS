@@ -1517,10 +1517,27 @@ void APlayerCharacterBase::ExecuteHitEffect(const FHitResult& Hit)
 
 void APlayerCharacterBase::TryApplyBulletElements(AActor* TargetActor, const FHitResult& Hit)
 {
-	ApplyFireExplosion(Hit.ImpactPoint);
-	ApplyElectricChain(TargetActor, Hit.ImpactPoint);
-	ApplyIceSlow(TargetActor);
-	ApplyPoisonDot(TargetActor);
+	float Rand = FMath::FRandRange(0.f, 100.f);
+
+	if (AttributeSet->GetFireBulletChance() > Rand)
+	{
+		ApplyFireExplosion(Hit.ImpactPoint);
+	}
+	Rand = FMath::FRandRange(0.f, 100.f);
+	if (AttributeSet->GetElectricBulletChance() > Rand)
+	{
+		ApplyElectricChain(TargetActor, Hit.ImpactPoint);
+	}
+	Rand = FMath::FRandRange(0.f, 100.f);
+	if (AttributeSet->GetIceBulletChance() > Rand)
+	{
+		ApplyIceSlow(TargetActor);
+	}
+	Rand = FMath::FRandRange(0.f, 100.f);
+	if (AttributeSet->GetPoisonBulletChance() > Rand)
+	{
+		ApplyPoisonDot(TargetActor);
+	}
 }
 
 void APlayerCharacterBase::ApplyFireExplosion(const FVector& Location)
