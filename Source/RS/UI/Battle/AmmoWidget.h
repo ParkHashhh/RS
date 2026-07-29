@@ -8,7 +8,7 @@
 
 struct FOnAttributeChangeData;
 class UTextBlock;
-class UImage;
+class UProgressBar;
 /**
  *
  */
@@ -18,9 +18,6 @@ class RS_API UAmmoWidget : public UCharacterBoundUserWidget
 	GENERATED_BODY()
 
 private:
-	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<UImage> AmmoBar;
-
 	UPROPERTY(Transient)
 	TWeakObjectPtr<UMaterialInterface> CurrentMI;
 

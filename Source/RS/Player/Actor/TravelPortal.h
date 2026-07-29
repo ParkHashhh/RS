@@ -34,7 +34,7 @@ protected:
 	TSet<TWeakObjectPtr<APlayerCharacterBase>> ReadyPlayers;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Portal")
-	float DepartureDelay = 3.f;
+	float DepartureDelay = 1.f;
 
 	FTimerHandle DepartureTimerHandle;
 

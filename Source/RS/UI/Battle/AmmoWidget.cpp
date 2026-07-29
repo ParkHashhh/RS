@@ -3,7 +3,7 @@
 
 #include "AmmoWidget.h"
 
-#include "Components/Image.h"
+#include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
 #include "RS/LogCategory.h"
 #include "RS/RSConstants.h"
@@ -13,11 +13,6 @@
 void UAmmoWidget::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
-
-	if (AmmoBar)
-	{
-		AmmoBarMaterialInstance = AmmoBar->GetDynamicMaterial();
-	}
 }
 
 bool UAmmoWidget::TryBindCharacterDelegates(APlayerCharacterBase* Character)
@@ -80,8 +75,8 @@ void UAmmoWidget::OnMaxAmmoChanged(const FOnAttributeChangeData& Data)
 	{
 		CurrentMI = Selected;
 
-		AmmoBar->SetBrushFromMaterial(Selected);
-		AmmoBarMaterialInstance = AmmoBar->GetDynamicMaterial();
+		AmmoBarMaterialInstance = UMaterialInstanceDynamic::Create(Selected, this);
+
 		RS_LOG_DEBUG(LogRSUI, Log, TEXT("%s: Ammo Widget MI changed."), *LOG_LINE_INFO);
 	}
 

@@ -28,6 +28,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "UI")
 	TSubclassOf<UUserWidget> MapSelectWidgetClass;
 	UPROPERTY()
+
 	TObjectPtr<UUserWidget> MapSelectWidget;
 
 public:

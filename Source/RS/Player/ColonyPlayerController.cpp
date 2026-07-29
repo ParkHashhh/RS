@@ -46,7 +46,7 @@ void AColonyPlayerController::ShowMapSelcetWidget()
 		FInputModeUIOnly InputMode;
 		InputMode.SetWidgetToFocus(MapSelectWidget->TakeWidget());
 		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-		SetInputMode(InputMode);		
+		SetInputMode(InputMode);
 
 		MapSelectWidget->AddToViewport();
 	}

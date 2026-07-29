@@ -8,7 +8,7 @@
 #include "StageObjectiveEntryWidget.generated.h"
 
 class UStageObjectiveEntryObject;
-class UImage;
+class UProgressBar;
 class UTextBlock;
 /**
  *
@@ -28,10 +28,7 @@ class RS_API UStageObjectiveEntryWidget : public UUserWidget, public IUserObject
 	TObjectPtr<UTextBlock> ProgressText;
 
 	UPROPERTY(meta=(BindWidget))
-	TObjectPtr<UImage> ProgressBar;
-
-	UPROPERTY(Transient)
-	TObjectPtr<UMaterialInstanceDynamic> ProgressMaterial;
+	TObjectPtr<UProgressBar> ProgressBar;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UStageObjectiveEntryObject> EntryObject;
@@ -42,8 +39,6 @@ public:
 	void SetProgressRatio(float ProgressRatio) const;
 
 protected:
-	virtual void NativeOnInitialized() override;
-
 	virtual void NativeOnListItemObjectSet(UObject* ListItemObject) override;
 
 private:

@@ -7,7 +7,7 @@
 #include "HPBarWidget.generated.h"
 
 struct FOnAttributeChangeData;
-class UImage;
+class UProgressBar;
 /**
  *
  */
@@ -21,10 +21,7 @@ public:
 
 private:
 	UPROPERTY(meta=(BindWidget, AllowPrivateAccess=true), BlueprintReadOnly, Category="HPBar|Asset")
-	TObjectPtr<UImage> HPBar;
-
-	UPROPERTY(Transient, BlueprintReadOnly, meta=(AllowPrivateAccess=true))
-	TObjectPtr<UMaterialInstanceDynamic> HPBarMaterialInstance;
+	TObjectPtr<UProgressBar> HPBar;
 
 	float CurrHP = 0.0f;
 	float MaxHP = 1.0f;

@@ -4,10 +4,9 @@
 #include "StageObjectiveEntryWidget.h"
 
 #include "StageObjectiveEntryObject.h"
-#include "Components/Image.h"
+#include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
 #include "RS/LogCategory.h"
-#include "RS/RSConstants.h"
 
 void UStageObjectiveEntryWidget::SetProgressText(const FText& InProgressText) const
 {
@@ -16,19 +15,8 @@ void UStageObjectiveEntryWidget::SetProgressText(const FText& InProgressText) co
 
 void UStageObjectiveEntryWidget::SetProgressRatio(float ProgressRatio) const
 {
-	ProgressMaterial->SetScalarParameterValue(ProgressParamName, ProgressRatio);
+	ProgressBar->SetPercent(ProgressRatio);
 }
-
-void UStageObjectiveEntryWidget::NativeOnInitialized()
-{
-	Super::NativeOnInitialized();
-
-	if (ProgressBar)
-	{
-		ProgressMaterial = ProgressBar->GetDynamicMaterial();
-	}
-}
-
 void UStageObjectiveEntryWidget::NativeOnListItemObjectSet(UObject* ListItemObject)
 {
 	IUserObjectListEntry::NativeOnListItemObjectSet(ListItemObject);
@@ -68,9 +56,9 @@ void UStageObjectiveEntryWidget::Init(const FText& Title, const FText& Descripti
 		ProgressText->SetText(InProgressText);
 	}
 
-	if (ProgressMaterial)
+	if (ProgressBar)
 	{
-		ProgressMaterial->SetScalarParameterValue(ProgressParamName, ProgressRatio);
+		ProgressBar->SetPercent(ProgressRatio);
 	}
 }
 

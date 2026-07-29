@@ -3,7 +3,7 @@
 
 #include "HPBarWidget.h"
 
-#include "Components/Image.h"
+#include "Components/ProgressBar.h"
 #include "RS/LogCategory.h"
 #include "RS/Player/PlayerCharacterBase.h"
 #include "RS/Player/Attribute/PlayerAttributeSet.h"
@@ -16,11 +16,6 @@ UHPBarWidget::UHPBarWidget(const FObjectInitializer& ObjectInitializer)
 void UHPBarWidget::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
-
-	if (HPBar)
-	{
-		HPBarMaterialInstance = HPBar->GetDynamicMaterial();
-	}
 }
 
 bool UHPBarWidget::TryBindCharacterDelegates(APlayerCharacterBase* Character)
@@ -68,6 +63,10 @@ void UHPBarWidget::OnCurrHpChanged(const FOnAttributeChangeData& Data)
 	CurrHP = Data.NewValue;
 
 	K2_OnHPChanged(MaxHP != 0 ? CurrHP / MaxHP : 0);
+	if (HPBar)
+	{
+		HPBar->SetPercent(MaxHP != 0 ? CurrHP / MaxHP : 0.f);
+	}
 }
 
 void UHPBarWidget::OnMaxHpChanged(const FOnAttributeChangeData& Data)
@@ -76,4 +75,8 @@ void UHPBarWidget::OnMaxHpChanged(const FOnAttributeChangeData& Data)
 	MaxHP = Data.NewValue;
 
 	K2_OnHPChanged(MaxHP != 0 ? CurrHP / MaxHP : 0);
+	if (HPBar)
+	{
+		HPBar->SetPercent(MaxHP != 0 ? CurrHP / MaxHP : 0.f);
+	}
 }
