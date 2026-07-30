@@ -38,6 +38,10 @@ protected:
 
 	FTimerHandle DepartureTimerHandle;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UNiagaraComponent> RangeNiagaraComp;
+
+
 protected:
 	virtual void BeginPlay() override;
 

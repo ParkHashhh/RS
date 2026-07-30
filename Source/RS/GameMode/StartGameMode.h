@@ -6,6 +6,8 @@
 #include "RSGameMode.h"
 #include "StartGameMode.generated.h"
 
+class UStageResultStatEntryObject;
+class UListView;
 /**
  *
  */
@@ -17,4 +19,13 @@ class RS_API AStartGameMode : public ARSGameMode
 public:
 	AStartGameMode();
 
+private:
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UListView> StageResultStatListView;
+
+	UPROPERTY()
+	TArray<TObjectPtr<UStageResultStatEntryObject>> StageResultStatEntryObjects;
+
+public:
+	void Init();
 };

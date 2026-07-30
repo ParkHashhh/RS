@@ -15,49 +15,6 @@ ARSGameState::ARSGameState()
 void ARSGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME(ARSGameState, ObjectiveDisplayEntries);
-	DOREPLIFETIME(ARSGameState, Objective1);
-	DOREPLIFETIME(ARSGameState, Objective2);
-	DOREPLIFETIME(ARSGameState, Objective3);
-	DOREPLIFETIME(ARSGameState, StageLevel);
-	DOREPLIFETIME(ARSGameState, bBossStage);
-}
-
-void ARSGameState::SetObjective1(const FStageObjective& InObjective)
-{
-	if (!HasAuthority() || Objective1 == InObjective)
-	{
-		return;
-	}
-
-	Objective1 = InObjective;
-
-	InnerOnRepObjective1();
-}
-
-void ARSGameState::SetObjective2(const FStageObjective& InObjective)
-{
-	if (!HasAuthority() || Objective2 == InObjective)
-	{
-		return;
-	}
-
-	Objective2 = InObjective;
-
-	InnerOnRepObjective2();
-}
-
-void ARSGameState::SetObjective3(const FStageObjective& InObjective)
-{
-	if (!HasAuthority() || Objective3 == InObjective)
-	{
-		return;
-	}
-
-	Objective3 = InObjective;
-
-	InnerOnRepObjective3();
 }
 
 void ARSGameState::Initialize(const TArray<FStageObjectiveEntry>& Objectives)
@@ -74,102 +31,8 @@ void ARSGameState::Initialize(const TArray<FStageObjectiveEntry>& Objectives)
 
 	OnObjectiveChangedDelegate.Broadcast();
 
-	// if (const UGameInstance* GI = GetGameInstance())
-	// {
-	// 	if (auto* DataSubsystem = GI->GetSubsystem<UDataSubsystem>())
-	// 	{
-	// 		FName LevelName = FName(UGameplayStatics::GetCurrentLevelName(GetWorld(), true));
-	// 		if (const FStageTableInfo* StageInfo = DataSubsystem->GetStageTableInfo(LevelName))
-	// 		{
-	// 			for (int32 Idx = 0; Idx < StageInfo->ObjectiveRowNames.Num(); ++Idx)
-	// 			{
-	// 				if (StageInfo->ObjectiveRowNames.IsValidIndex(Idx))
-	// 				{
-	// 					const FName ObjectiveRowName = StageInfo->ObjectiveRowNames[Idx];
-	// 					if (const FStageObjectiveTableInfo* ObjectiveInfo
-	// 						= DataSubsystem->GetStageObjectiveTableInfo(ObjectiveRowName))
-	// 					{
-	// 						FStageObjective Objective;
-	// 						Objective.TableRowName = ObjectiveRowName;
-	// 						Objective.Current = 0.0f;
-	// 						Objective.Goal = ObjectiveInfo->Goal;
-	// 						// 임시
-	// 						switch (Idx)
-	// 						{
-	// 						case 0:
-	// 							Objective1 = Objective;
-	// 							break;
-	// 						case 1:
-	// 							Objective2 = Objective;
-	// 							break;
-	// 						case 2:
-	// 							Objective3 = Objective;
-	// 							break;
-	// 						default:
-	// 							return;
-	// 						}
-	//
-	// 						OnObjectiveStateChangedDelegates[Idx].Broadcast();
-	// 					}
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// }
-
 	bInitialized = true;
 	InnerOnRepInitialized();
-}
-
-void ARSGameState::OnRep_Objective1()
-{
-	InnerOnRepObjective1();
-}
-
-void ARSGameState::InnerOnRepObjective1()
-{
-	if (!Objective1.IsValid())
-	{
-		return;
-	}
-
-	PrevObjective1Progress = Objective1.Current;
-
-	OnObjectiveStateChangedDelegates[0].Broadcast();
-}
-
-void ARSGameState::OnRep_Objective2()
-{
-	InnerOnRepObjective2();
-}
-
-void ARSGameState::InnerOnRepObjective2()
-{
-	if (!Objective2.IsValid())
-	{
-		return;
-	}
-
-	PrevObjective2Progress = Objective2.Current;
-
-	OnObjectiveStateChangedDelegates[1].Broadcast();
-}
-
-void ARSGameState::OnRep_Objective3()
-{
-	InnerOnRepObjective3();
-}
-
-void ARSGameState::InnerOnRepObjective3()
-{
-	if (!Objective3.IsValid())
-	{
-		return;
-	}
-
-	PrevObjective3Progress = Objective3.Current;
-
-	OnObjectiveStateChangedDelegates[2].Broadcast();
 }
 
 void ARSGameState::OnRep_Initialized()
@@ -180,10 +43,6 @@ void ARSGameState::OnRep_Initialized()
 void ARSGameState::InnerOnRepInitialized()
 {
 	OnGameStateReadyDelegate.Broadcast();
-}
-
-void ARSGameState::OnRep_ObjectiveDisplayEntries()
-{
 }
 
 FStageObjectiveEntry* ARSGameState::AddObjective(FName TableRowName, float CurrentProgress, int32 DisplayOrder)

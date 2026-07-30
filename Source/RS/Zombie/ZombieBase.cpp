@@ -595,6 +595,28 @@ void AZombieBase::SpawnZombieAttackParticle()
 	}
 }
 
+void AZombieBase::SpawnZombieSkillParticle()
+{
+	TObjectPtr<UParticleSystem>* ParticlePtr = ParticleMap.Find(TEXT("Skill"));
+	TObjectPtr<UNiagaraSystem>* NiagaraPtr = NiagaraParticleMap.Find(TEXT("Skill"));
+	if (ParticlePtr)
+	{
+		UParticleSystem* Particle = *ParticlePtr;
+		FVector SpawnLoc = GetActorLocation();;
+		FRotator SpawnRot = GetActorRotation();
+		FVector Scale = FVector(2.f, 2.f, 2.f);
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Particle, SpawnLoc, SpawnRot, Scale);
+	}
+	else if (NiagaraPtr)
+	{
+		UNiagaraSystem* Niagara = *NiagaraPtr;
+		FVector SpawnLoc = GetActorLocation();
+		FRotator SpawnRot = GetActorRotation();
+		FVector Scale = FVector(2.f, 2.f, 2.f);
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), Niagara, SpawnLoc, SpawnRot, Scale);
+	}
+}
+
 void AZombieBase::PlayZombieRoarSound()
 {
 	TObjectPtr<USoundBase>* SoundPtr = SoundCueMap.Find(TEXT("Roar"));

@@ -27,7 +27,4 @@ public:
 	int32 Idx;
 
 	void Initialize(const FStageObjective& Objective, const UDataSubsystem* DataSubsystem, int32 InIdx);
-
-private:
-	void OnObjectiveStateChanged();
 };

@@ -112,6 +112,13 @@ void AZombieNormal::InitStatData(const FZombieDefaultInfo* Data)
 	}
 
 	SetIsBoss(Data->bIsBoss);
+
+	//일반 좀비는 공격 사거리가 곧 추적 중단 사거리이다.
+	UBlackboardComponent* BB = Ctrl->GetBlackboardComponent();
+	if (IsValid(BB))
+	{
+		BB->SetValueAsFloat(TEXT("TraceEndDistance"), NormalAttributeSet->GetAttackDistance());
+	}
 }
 
 float AZombieNormal::GetHalfHeight()

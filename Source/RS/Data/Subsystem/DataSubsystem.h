@@ -60,6 +60,8 @@ private:
 	FOnTableInfoLoaded OnStageObjectiveInfoLoadedDelegate;
 	FOnTableInfoLoaded OnStageInfoLoadedDelegate;
 
+	float TotalWeight{0.f};
+
 public:
 	template <typename T>
 	void ExecuteOrBindOnItemInfoLoaded(T* Object, void (T::*Callback)())
@@ -226,6 +228,12 @@ public:
 		return StageInfoTable;
 	}
 
+	UFUNCTION(BlueprintPure)
+	float GetTotalWeight() const
+	{
+		return TotalWeight;
+	}
+
 private:
 	void LoadItemInfoTable();
 
@@ -263,4 +271,14 @@ private:
 
 	UFUNCTION()
 	void OnStageTableInfoLoaded(FPrimaryAssetId LoadedAssetID);
+
+#pragma region Item
+
+public:
+	TArray<FName> GetThreeRandomItmes() const;
+
+private:
+	TArray<FName> GetRandomItems(int32 Count) const;
+
+#pragma endregion
 };

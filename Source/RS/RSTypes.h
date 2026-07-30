@@ -70,6 +70,7 @@ struct RS_API FStatBase : public FTableRowBase
 	float RunSpeed{0.f};
 };
 
+
 USTRUCT(BlueprintType)
 struct RS_API FItemTableInfo : public FTableRowBase
 {
@@ -87,8 +88,14 @@ struct RS_API FItemTableInfo : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bIsStackable{true};
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	EItemUseType UseType{EItemUseType::Equipment};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	EGrade Grade{EGrade::Common};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	float Weight{0.f};
 
 	// 모든 아이템 스탯 처리를 일괄 담당할 마스터 GE 클래스 레퍼런스
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item|GAS")
@@ -163,6 +170,30 @@ struct RS_API FPlayerDefaultInfo : public FTableRowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Stat|Shot")
 	int32 Ammo{};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Stat|Shot")
+	float FireBulletChancePercent{};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Stat|Shot")
+	float FireBulletDamagePercent{};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Stat|Shot")
+	float ElectricBulletChancePercent{};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Stat|Shot")
+	float ElectricBulletDamagePercent{};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Stat|Shot")
+	float IceBulletChancePercent{};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Stat|Shot")
+	float IceBulletDamagePercent{};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Stat|Shot")
+	float PoisonBulletChancePercent{};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Stat|Shot")
+	float PoisonBulletDamagePercent{};
 };
 
 UENUM(BlueprintType)
@@ -541,9 +572,9 @@ private:
 };
 
 UENUM(BlueprintType)
-enum class EStageResult : uint8
+enum class EStageResultStatType : uint8
 {
 	None,
-	Win,
-	Lose,
+	Kill,
+	Time,
 };

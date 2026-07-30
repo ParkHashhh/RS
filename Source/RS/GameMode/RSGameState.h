@@ -37,42 +37,12 @@ class RS_API ARSGameState : public AGameStateBase
 public:
 	ARSGameState();
 
-	// private:
-	UPROPERTY(ReplicatedUsing=OnRep_ObjectiveDisplayEntries, VisibleAnywhere, BlueprintReadOnly,
-		meta=(AllowPrivateAccess=true))
-	TArray<FStageObjectiveDisplayEntry> ObjectiveDisplayEntries;
-
-	UPROPERTY(ReplicatedUsing=OnRep_Objective1, EditDefaultsOnly, BlueprintReadOnly, meta=(AllowPrivateAccess))
-	FStageObjective Objective1;
-
-	int32 PrevObjective1Progress = 0;
-
-	UPROPERTY(ReplicatedUsing=OnRep_Objective2, EditDefaultsOnly, BlueprintReadOnly, meta=(AllowPrivateAccess))
-	FStageObjective Objective2;
-
-	int32 PrevObjective2Progress = 0;
-
-	UPROPERTY(ReplicatedUsing=OnRep_Objective3, EditDefaultsOnly, BlueprintReadOnly, meta=(AllowPrivateAccess))
-	FStageObjective Objective3;
-
-	int32 PrevObjective3Progress = 0;
-
-	UPROPERTY(Replicated, BlueprintReadOnly)
-	int32 StageLevel = 1;
-
-	UPROPERTY(Replicated, BlueprintReadOnly)
-	bool bBossStage = false;
+private:
 
 	UPROPERTY(ReplicatedUsing=OnRep_Initialized)
 	bool bInitialized = false;
 
 	FOnGameStateReady OnGameStateReadyDelegate;
-
-public:
-	TArray<FOnObjectiveStateChanged> OnObjectiveStateChangedDelegates
-	{
-		FOnObjectiveStateChanged(), FOnObjectiveStateChanged(), FOnObjectiveStateChanged(),
-	};
 
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -90,60 +60,12 @@ public:
 		OnGameStateReadyDelegate.RemoveAll(Object);
 	}
 
-	const FStageObjective& GetObjective1() const
-	{
-		return Objective1;
-	}
-
-	void SetObjective1(const FStageObjective& InObjective);
-
-	const FStageObjective& GetObjective2() const
-	{
-		return Objective2;
-	}
-
-	void SetObjective2(const FStageObjective& InObjective);
-
-	const FStageObjective& GetObjective3() const
-	{
-		return Objective3;
-	}
-
-	void SetObjective3(const FStageObjective& InObjective);
-
-	int32 GetStageLevel() const
-	{
-		return StageLevel;
-	}
-
-	bool IsBossStage() const
-	{
-		return bBossStage;
-	}
-
-	// TODO: 데이터로 스테이지 초기화 변경 필요
 	void Initialize(const TArray<FStageObjectiveEntry>& Objectives);
 
 protected:
 	UFUNCTION()
-	void OnRep_Objective1();
-	void InnerOnRepObjective1();
-
-	UFUNCTION()
-	void OnRep_Objective2();
-	void InnerOnRepObjective2();
-
-	UFUNCTION()
-	void OnRep_Objective3();
-	void InnerOnRepObjective3();
-
-	UFUNCTION()
 	void OnRep_Initialized();
 	void InnerOnRepInitialized();
-
-private:
-	UFUNCTION()
-	void OnRep_ObjectiveDisplayEntries();
 
 private:
 	UPROPERTY(Replicated)

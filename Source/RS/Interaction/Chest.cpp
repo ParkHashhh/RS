@@ -5,6 +5,7 @@
 
 #include "InteractableComponent.h"
 #include "RS/LogCategory.h"
+#include "RS/Data/Subsystem/DataSubsystem.h"
 #include "RS/Player/PlayerCharacterBase.h"
 #include "RS/Player/PlayerControllerBase.h"
 
@@ -31,11 +32,14 @@ void AChest::OnInteractionCompleted(AActor* Interactor)
 
 	// TODO: 상자 열림 연출
 
-	// TODO: 아이템 생성
-	TArray<FName> RewardItemRowNames
+	const UGameInstance* GI = GetGameInstance();
+	const auto* DataSubsystem = GI->GetSubsystem<UDataSubsystem>();
+	if (!DataSubsystem)
 	{
-		FName(TEXT("attack_power")), FName(TEXT("critical_chance")), FName(TEXT("hp_booster"))
-	};
+		return;
+	}
+
+	const TArray<FName> RewardItemRowNames = DataSubsystem->GetThreeRandomItmes();
 
 	if (const auto* InteractPlayer = Cast<APlayerCharacterBase>(Interactor))
 	{

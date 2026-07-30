@@ -44,5 +44,4 @@ public:
 	void EndSpit();
 	virtual float GetHalfHeight();
 	virtual void SpawnZombieAttackParticle();
-	
 };

@@ -65,11 +65,10 @@ EBTNodeResult::Type UBTTask_TraceNoneBoss::ExecuteTask(UBehaviorTreeComponent& O
 		return EBTNodeResult::InProgress;
 	}
 
-	//이미 공격 사거리 안이라면 추적을 할 필요가 없다.
+	//이미 추적 중단 거리 안이라면 추적을 할 필요가 없다.
 	float Distance = Zombie->CalcDistanceToTarget(Target);
-	UBaseAttributeSet* ZombieAttri = Zombie->GetAttributeSet();
-	float AttackRange = ZombieAttri->GetAttackDistance();
-	if (Distance < AttackRange)
+	float TraceEndRange = BlackboardComp->GetValueAsFloat(TEXT("TraceEndDistance"));
+	if (Distance < TraceEndRange)
 	{
 		return EBTNodeResult::Failed;
 	}
@@ -157,10 +156,9 @@ void UBTTask_TraceNoneBoss::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* N
 	{
 		//타겟이 사거리 안으로 들어왔다면 공격 태스크로 진입한다.
 		float Distance = Zombie->CalcDistanceToTarget(Target);
-		UBaseAttributeSet* ZombieAttri = Zombie->GetAttributeSet();
-		float AttackRange = ZombieAttri->GetAttackDistance();
+		float TraceEndRange = BlackboardComp->GetValueAsFloat(TEXT("TraceEndDistance"));
 
-		if (Distance <= AttackRange)
+		if (Distance <= TraceEndRange)
 		{
 			BlackboardComp->SetValueAsBool(TEXT("AttackPossible"), true);
 			FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);

@@ -21,27 +21,3 @@ void UStageObjectiveEntryObject::Initialize(const FStageObjective& Objective, co
 	Current = Objective.Current;
 	Goal = Objective.Goal;
 }
-
-void UStageObjectiveEntryObject::OnObjectiveStateChanged()
-{
-	if (GetWorld())
-	{
-		if (const auto* GS = GetWorld()->GetGameState<ARSGameState>())
-		{
-			switch (Idx)
-			{
-			case 0:
-				Current = GS->GetObjective1().Current;
-				break;
-			case 1:
-				Current = GS->GetObjective2().Current;
-				break;
-			case 2:
-				Current = GS->GetObjective3().Current;
-				break;
-			default:
-				break;
-			}
-		}
-	}
-}

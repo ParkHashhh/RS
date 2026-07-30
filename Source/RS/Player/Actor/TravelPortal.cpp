@@ -20,6 +20,10 @@ ATravelPortal::ATravelPortal()
 	NiagaraComp = CreateDefaultSubobject<UNiagaraComponent>(TEXT("PortalVFX"));
 	NiagaraComp->SetupAttachment(CollisionComp);
 	NiagaraComp->SetAutoActivate(true);
+
+	RangeNiagaraComp = CreateDefaultSubobject<UNiagaraComponent>(TEXT("RangeIndicatorComp"));
+	RangeNiagaraComp->SetupAttachment(CollisionComp);
+	RangeNiagaraComp->SetAutoActivate(true);
 }
 
 void ATravelPortal::BeginPlay()

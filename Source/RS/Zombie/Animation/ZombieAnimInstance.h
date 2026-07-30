@@ -99,6 +99,9 @@ public:
 	bool ChechRoarAnimValid();
 	void FinishJump();
 
+	//스토커용 리프어택 몽타주 섹션 변경 함수
+	void StalkerLeapAttackEndSection();
+
 	//베히모스 보스용 리프어택 몽타주 섹션 변경 함수
 	void BehemothLeapAttackEndSection();
 

@@ -23,6 +23,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "NeedProperty", meta = (AllowPrivateAccess = "true"))
 	bool bEnableNormalAttack;
 
+	//스킬 사용 전 사전 준비가 필요한 경우 이 변수를 켠다.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "NeedProperty", meta = (AllowPrivateAccess = "true"))
+	bool bNeedPreparationToSkill = false;
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void PossessedBy(AController* NewController);
@@ -34,9 +38,8 @@ public:
 	virtual void InitAbility();
 	virtual float GetHalfHeight();
 	virtual void SpawnZombieAttackParticle();
-
-public:
 	virtual void SkillStart();
 	virtual void SkillEnd();
-	
+	virtual void PreparationSkill();
+	virtual void OnEndAbility();
 };

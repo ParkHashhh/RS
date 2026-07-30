@@ -63,4 +63,21 @@ namespace RSUtils
 
 	bool ServerTravelWithInventory(UWorld* World, const FString& InURL, bool bStoreInventory = false,
 	                               bool bAbsolute = false, bool bShouldSkipGameNotify = false);
+
+	FORCEINLINE bool CheckChance(float Percent)
+	{
+		Percent = FMath::Clamp(Percent, 0.0f, 100.0f);
+
+		if (Percent <= 0.0f)
+		{
+			return false;
+		}
+
+		if (Percent >= 100.0f)
+		{
+			return true;
+		}
+
+		return FMath::FRand() * 100.0f < Percent;
+	}
 }

@@ -246,6 +246,7 @@ public:
 	virtual void PlayZombieAttackSound();
 	virtual void PlayZombieSkillSound();
 	virtual void SpawnZombieAttackParticle();
+	virtual void SpawnZombieSkillParticle();
 	virtual void PlayZombieRoarSound();
 
 public:

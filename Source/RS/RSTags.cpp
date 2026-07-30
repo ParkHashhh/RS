@@ -38,8 +38,12 @@ namespace RSTags
 		UE_DEFINE_GAMEPLAY_TAG(ShotSpread, "SetByCaller.Stat.ShotSpread");
 
 		UE_DEFINE_GAMEPLAY_TAG(FireBulletChance, "SetByCaller.Stat.FireBulletChance");
+		UE_DEFINE_GAMEPLAY_TAG(FireBulletDamage, "SetByCaller.Stat.FireBulletDamage");
 		UE_DEFINE_GAMEPLAY_TAG(ElectricBulletChance, "SetByCaller.Stat.ElectricBulletChance");
+		UE_DEFINE_GAMEPLAY_TAG(ElectricBulletDamage, "SetByCaller.Stat.ElectricBulletDamage");
 		UE_DEFINE_GAMEPLAY_TAG(IceBulletChance, "SetByCaller.Stat.IceBulletChance");
+		UE_DEFINE_GAMEPLAY_TAG(IceBulletDamage, "SetByCaller.Stat.IceBulletDamage");
 		UE_DEFINE_GAMEPLAY_TAG(PoisonBulletChance, "SetByCaller.Stat.PoisonBulletChance");
+		UE_DEFINE_GAMEPLAY_TAG(PoisonBulletDamage, "SetByCaller.Stat.PoisonBulletDamage");
 	}
 }

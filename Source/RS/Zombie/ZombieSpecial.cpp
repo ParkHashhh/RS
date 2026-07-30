@@ -87,6 +87,11 @@ void AZombieSpecial::Attack()
 
 void AZombieSpecial::InitStatData(const FZombieDefaultInfo* Data)
 {
+	if (!HasAuthority())
+	{
+		return;
+	}
+
 	if (!ASC || !SpecialAttributeSet)
 	{
 		RS_LOG_DEBUG(LogRSInit, Error, TEXT("%s: ASC or AttributeSet is nullptr"), *LOG_LINE_INFO);
@@ -116,6 +121,16 @@ void AZombieSpecial::InitStatData(const FZombieDefaultInfo* Data)
 	}
 
 	SetIsBoss(Data->bIsBoss);
+
+	//특수 좀비 또한 공격 사거리가 추적 중단 거리이다.
+	UBlackboardComponent* BB = Ctrl->GetBlackboardComponent();
+	if (IsValid(BB))
+	{
+		BB->SetValueAsFloat(TEXT("TraceEndDistance"), SpecialAttributeSet->GetAttackDistance());
+
+		//스킬 사용 전 사전 준비가 필요한 좀비임을 블랙보드에 등록한다.
+		BB->SetValueAsBool(TEXT("IsNeedPreparation"), bNeedPreparationToSkill);
+	}
 }
 
 float AZombieSpecial::GetHalfHeight()
@@ -126,6 +141,14 @@ float AZombieSpecial::GetHalfHeight()
 void AZombieSpecial::SpawnZombieAttackParticle()
 {
 	Super::SpawnZombieAttackParticle();
+}
+
+void AZombieSpecial::PreparationSkill()
+{
+}
+
+void AZombieSpecial::OnEndAbility()
+{
 }
 
 void AZombieSpecial::UseAnimMontage(EZombieAnimType Type, EZombieAnimType BeforeType)

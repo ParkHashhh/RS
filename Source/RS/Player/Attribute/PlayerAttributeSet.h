@@ -52,6 +52,7 @@ public:
 	ATTRIBUTE_ACCESSORS_BASIC(UPlayerAttributeSet, MaxAmmo)
 	ATTRIBUTE_ACCESSORS_BASIC(UPlayerAttributeSet, CriticalChance)
 	ATTRIBUTE_ACCESSORS_BASIC(UPlayerAttributeSet, CriticalDamage)
+
 	ATTRIBUTE_ACCESSORS_BASIC(UPlayerAttributeSet, FireBulletChance)
 	ATTRIBUTE_ACCESSORS_BASIC(UPlayerAttributeSet, ElectricBulletChance)
 	ATTRIBUTE_ACCESSORS_BASIC(UPlayerAttributeSet, IceBulletChance)

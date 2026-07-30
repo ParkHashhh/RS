@@ -1517,10 +1517,34 @@ void APlayerCharacterBase::ExecuteHitEffect(const FHitResult& Hit)
 
 void APlayerCharacterBase::TryApplyBulletElements(AActor* TargetActor, const FHitResult& Hit)
 {
-	ApplyFireExplosion(Hit.ImpactPoint);
-	ApplyElectricChain(TargetActor, Hit.ImpactPoint);
-	ApplyIceSlow(TargetActor);
-	ApplyPoisonDot(TargetActor);
+	if (!IsValid(ASC))
+	{
+		return;
+	}
+
+	const float FirePercent = ASC->GetNumericAttribute(UPlayerAttributeSet::GetFireBulletChanceAttribute());
+	if (RSUtils::CheckChance(FirePercent))
+	{
+		ApplyFireExplosion(Hit.ImpactPoint);
+	}
+
+	const float ElectricPercent = ASC->GetNumericAttribute(UPlayerAttributeSet::GetElectricBulletChanceAttribute());
+	if (RSUtils::CheckChance(ElectricPercent))
+	{
+		ApplyElectricChain(TargetActor, Hit.ImpactPoint);
+	}
+
+	const float IcePercent = ASC->GetNumericAttribute(UPlayerAttributeSet::GetIceBulletChanceAttribute());
+	if (RSUtils::CheckChance(IcePercent))
+	{
+		ApplyIceSlow(TargetActor);
+	}
+
+	const float PoisonPercent = ASC->GetNumericAttribute(UPlayerAttributeSet::GetPoisonBulletChanceAttribute());
+	if (RSUtils::CheckChance(PoisonPercent))
+	{
+		ApplyPoisonDot(TargetActor);
+	}
 }
 
 void APlayerCharacterBase::ApplyFireExplosion(const FVector& Location)
@@ -1582,7 +1606,7 @@ void APlayerCharacterBase::ApplyElectricChain(AActor* FirstTarget, const FVector
 		if (!Nearest)
 		{
 			break;
-		} 
+		}
 
 		Server_ApplyDamage(Nearest, FHitResult(), ElectricDamage);
 		RS_PRINT_SCREEN(3.f, FColor::Cyan, TEXT("[Electric] Damage : %.1f, Chain #%d : %s"), ElectricDamage, i + 1, *Nearest->GetName());
@@ -1930,7 +1954,15 @@ void APlayerCharacterBase::OnPlayerDefaultInfoLoaded()
 					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::DefensePower, Info->DefensePower);
 					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::MaxAmmo, Info->Ammo);
 					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::CurrentAmmo, Info->Ammo);
-					RS_LOG_DEBUG(LogRSProperties, Log, TEXT("%s: Ammo: %d"), *LOG_LINE_INFO, Info->Ammo);
+
+					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::FireBulletChance, Info->FireBulletChancePercent);
+					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::FireBulletDamage, Info->FireBulletDamagePercent);
+					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::IceBulletChance, Info->IceBulletChancePercent);
+					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::IceBulletDamage, Info->IceBulletDamagePercent);
+					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::ElectricBulletChance, Info->ElectricBulletChancePercent);
+					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::ElectricBulletDamage, Info->ElectricBulletDamagePercent);
+					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::PoisonBulletChance, Info->PoisonBulletChancePercent);
+					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::PoisonBulletDamage, Info->PoisonBulletDamagePercent);
 
 					ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
 				}

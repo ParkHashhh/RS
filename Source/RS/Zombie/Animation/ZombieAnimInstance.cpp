@@ -93,6 +93,20 @@ void UZombieAnimInstance::FinishJump()
 	}
 }
 
+void UZombieAnimInstance::StalkerLeapAttackEndSection()
+{
+	//스토커의 리프어택 몽타주가 재생중인지 확인한다. (Skill1)
+	TObjectPtr<UAnimMontage>* FindResult = AnimPresetArray[AnimIndex_Backup].SkillMontageMap.Find(TEXT("Skill1"));
+	if (FindResult)
+	{
+		UAnimMontage* Montage = *FindResult;
+		if (Montage_IsPlaying(Montage))
+		{
+			Montage_JumpToSection(TEXT("End"), Montage);
+		}
+	}
+}
+
 void UZombieAnimInstance::BehemothLeapAttackEndSection()
 {
 	//베히모스의 리프어택 몽타주가 재생중인지 확인한다. (Skill5)

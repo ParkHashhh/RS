@@ -33,6 +33,9 @@ AZombieSpecial_Spiter::AZombieSpecial_Spiter()
 	Cast<UCapsuleComponent>(Body)->SetCapsuleHalfHeight(HalfHeight);
 
 	Mesh->SetRelativeLocationAndRotation(FVector(0.0, 0.0, -HalfHeight), FRotator(0.0, -90.0, 0.0));
+
+	//스피터는 스킬 사용에 사전 준비가 필요 없다.
+	bNeedPreparationToSkill = false;
 }
 
 void AZombieSpecial_Spiter::SpawnSpitProjectile()

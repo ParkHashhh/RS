@@ -28,7 +28,7 @@ void UDataStorageSubsystem::StoreAllPlayerInventory()
 			{
 				const TArray<FInventoryEntry>& Entries = RSPS->GetInventoryComponent()->GetEntries();
 
-				TArray<TTuple<FName, int32>> TempInventory;
+				TArray<FItemStorageInfo> TempInventory;
 				TempInventory.Reserve(Entries.Num());
 				for (const FInventoryEntry& Entry : Entries)
 				{
@@ -59,7 +59,7 @@ void UDataStorageSubsystem::RestorePlayerInventory(const ARSPlayerController* Ne
 	if (const auto* PS = NewPlayer->GetPlayerState<ARSPlayerState>())
 	{
 		const FUniqueNetIdRepl& UID = PS->GetUniqueId();
-		if (TArray<TTuple<FName, int32>>* Stored = TempInventoryStorage.Find(UID))
+		if (TArray<FItemStorageInfo>* Stored = TempInventoryStorage.Find(UID))
 		{
 			RS_LOG_DEBUG(LogRSInventory, Log, TEXT("%s: Restoring player inventory. Count: %d"),
 			             *LOG_LINE_INFO, Stored->Num());
@@ -74,4 +74,12 @@ void UDataStorageSubsystem::RestorePlayerInventory(const ARSPlayerController* Ne
 			TempInventoryStorage.Remove(UID);
 		}
 	}
+}
+
+void UDataStorageSubsystem::StoreAllPlayerStageResult()
+{
+}
+
+void UDataStorageSubsystem::RestorePlayerStageResult(const ARSPlayerController* NewPlayer)
+{
 }
