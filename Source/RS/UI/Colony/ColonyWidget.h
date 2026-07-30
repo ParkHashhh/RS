@@ -18,8 +18,6 @@ public:
 	UColonyWidget(const FObjectInitializer& ObjectInitializer);
 
 protected:
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UButton> StageButton;
 
 protected:
 	virtual void NativeOnInitialized() override;

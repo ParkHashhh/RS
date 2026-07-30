@@ -27,7 +27,6 @@ void USelectSlotWidget::NativeOnInitialized()
 	SkillRightButton->OnClicked.AddDynamic(this, &USelectSlotWidget::SkillRightButtonClick);
 
 	StartButton->OnClicked.AddDynamic(this, &USelectSlotWidget::StartButtonClick);
-	JoinButton->OnClicked.AddDynamic(this, &USelectSlotWidget::TestJoinLocalHost);
 
 }
 

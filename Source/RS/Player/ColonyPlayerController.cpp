@@ -7,7 +7,7 @@
 #include "RS/GameMode/RSGameInstance.h"
 #include "RS/GameMode/RSInGameMode.h"
 #include "RS/RSUtils.h"
-
+#include "Kismet/GameplayStatics.h"
 AColonyPlayerController::AColonyPlayerController()
 {
 	bShowMouseCursor = true;
@@ -47,7 +47,7 @@ void AColonyPlayerController::ShowMapSelcetWidget()
 		InputMode.SetWidgetToFocus(MapSelectWidget->TakeWidget());
 		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 		SetInputMode(InputMode);		
-
+		UGameplayStatics::PlaySound2D(this, MapSelectOpenSound);
 		MapSelectWidget->AddToViewport();
 	}
 }
@@ -59,7 +59,7 @@ void AColonyPlayerController::RemoveMapSelectWidget()
 		bShowMouseCursor = false;
 		FInputModeGameOnly InputMode;
 		SetInputMode(InputMode);
-
+		UGameplayStatics::PlaySound2D(this, MapSelectCloseSound);
 		MapSelectWidget->RemoveFromParent();
 	}
 }

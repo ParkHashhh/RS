@@ -22,6 +22,9 @@ protected:
 	TObjectPtr<UButton> StartButton;
 
 	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UButton> OptionButton;
+
+	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> ExitButton;
 
 protected:

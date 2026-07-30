@@ -15,7 +15,6 @@ void UColonyWidget::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
 
-	StageButton->OnClicked.AddDynamic(this, &UColonyWidget::StageClick);
 }
 
 void UColonyWidget::StageClick()

@@ -31,6 +31,11 @@ protected:
 
 	TObjectPtr<UUserWidget> MapSelectWidget;
 
+	UPROPERTY(EditDefaultsOnly, Category = "UI|Sound")
+	TObjectPtr<USoundBase> MapSelectOpenSound;
+	UPROPERTY(EditDefaultsOnly, Category = "UI|Sound")
+	TObjectPtr<USoundBase> MapSelectCloseSound;
+
 public:
 	TObjectPtr<UUserWidget> GetColonyWidget()
 	{

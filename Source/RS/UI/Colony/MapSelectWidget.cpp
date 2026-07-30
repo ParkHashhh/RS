@@ -56,7 +56,9 @@ void UMapSelectWidget::HandleConfirmClicked()
 
 	if (AColonyPlayerController* PC = Cast<AColonyPlayerController>(GetOwningPlayer()))
 	{
+		
 		PC->Server_RequestPortal(CurrentSelectedCard->GetLevelName(), CurrentSelectedCard->GetLevelPackagePath());
+		PC->RemoveMapSelectWidget();
 	}
 }
 
