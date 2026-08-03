@@ -449,6 +449,9 @@ private:
 	void SpecPrevKey(const FInputActionValue& Value);
 	void CursorKey(const FInputActionValue& Value);
 	void CursorReleaseKey(const FInputActionValue& Value);
+
+	void PauseKey(const FInputActionValue& Value);
+
 	void RotationMouse(const FInputActionValue& Value);
 
 
@@ -489,7 +492,6 @@ protected:
 	void ApplyElectricChain(AActor* FirstTarget, const FVector& HitLocation);
 	void ApplyIceSlow(AActor* TargetActor);
 	void ApplyPoisonDot(AActor* TargetActor);
-
 public:
 	void ExecuteMuzzleEffect(const FVector& MuzzleLocation, const FRotator& MuzzleRotation);
 	void PlayFootStepSound();
@@ -497,6 +499,7 @@ public:
 	void PlayMagazineInsert();
 	void ReloadAmmo();
 	bool UseAmmo();
+	void SetBrightness(float Value);
 
 public:
 	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode) override;

@@ -30,7 +30,7 @@
 #include "RS/UI/Common/Interaction/InteractionWidget.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "NiagaraFunctionLibrary.h"
-
+#include "RS/UI/RSGameUserSettings.h"
 // Sets default values
 APlayerCharacterBase::APlayerCharacterBase()
 {
@@ -145,11 +145,12 @@ void APlayerCharacterBase::BeginPlay()
 			PlayerController->PlayerCameraManager->ViewPitchMax = 40.f;
 		}
 	}
-
-	SetMouseSensitivity(0.7f, 0.7f);
+	const float SavedSensitivity = URSGameUserSettings::Get()->GetMouseSensitivity();
+	SetMouseSensitivity(SavedSensitivity, SavedSensitivity);
 	AnimInst = Cast<UPlayerAnimInstance>(GetMesh()->GetAnimInstance());
 
-
+	const float SavedBrightness = URSGameUserSettings::Get()->GetBrightness();
+	SetBrightness(SavedBrightness);
 	UpdatePlayerSpeedState();
 	UpdatePlayerCameraState();
 	AttachWeapon();
@@ -451,6 +452,11 @@ void APlayerCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::OnInteractPressed);
 		EnhancedInput->BindAction(Action, ETriggerEvent::Completed, this, &APlayerCharacterBase::OnInteractReleased);
 	}
+	Action = InputData->FindAction(FInputKeyNames::Pause);
+	if (Action)
+	{
+		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::PauseKey);
+	}
 
 #if !UE_BUILD_SHIPPING
 	Action = InputData->FindAction(FInputKeyNames::Debug_00);
@@ -745,6 +751,59 @@ void APlayerCharacterBase::CursorReleaseKey(const FInputActionValue& Value)
 
 }
 
+void APlayerCharacterBase::PauseKey(const FInputActionValue& Value)
+{
+	auto* PC = GetController<APlayerControllerBase>();
+	if (!PC)
+	{
+		return;
+	}
+
+	ULocalPlayer* LP = PC->GetLocalPlayer();
+	if (!LP)
+	{
+		return;
+	}
+
+	auto* UISubsystem = LP->GetSubsystem<UUISubsystem>();
+	if (!UISubsystem)
+	{
+		return;
+	}
+
+	// Settings가 열려있으면 ESC는 Settings만 닫고 끝 (Pause는 건드리지 않음)
+	if (URSUserWidget* SettingWidget = UISubsystem->FindWidget(FName(TEXT("settings"))))
+	{
+		if (SettingWidget->GetVisibility() == ESlateVisibility::Visible)
+		{
+			SettingWidget->SetVisibility(ESlateVisibility::Collapsed);
+			return;
+		}
+	}
+
+	URSUserWidget* PauseWidget = UISubsystem->FindWidget(FName(TEXT("pause")));
+	if (!PauseWidget)
+	{
+		return;
+	}
+
+	const bool bShow = PauseWidget->GetVisibility() != ESlateVisibility::Visible;
+	PauseWidget->SetVisibility(bShow ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+
+	if (bShow)
+	{
+		PC->SetInputMode(FInputModeGameAndUI());
+	}
+	else
+	{
+		FInputModeGameOnly InputMode{};
+		InputMode.SetConsumeCaptureMouseDown(true);
+		PC->SetInputMode(InputMode);
+	}
+
+	PC->bShowMouseCursor = bShow;
+}
+
 
 void APlayerCharacterBase::Server_SpawnGrenade_Implementation(const FVector& SpawnLocation,
                                                               const FRotator& GrenadeRotation)
@@ -769,6 +828,17 @@ void APlayerCharacterBase::Server_SpawnGrenade_Implementation(const FVector& Spa
 	}
 }
 
+void APlayerCharacterBase::SetBrightness(float Value)
+{
+	if (Camera)
+	{
+		Camera->PostProcessSettings.bOverride_AutoExposureBias = true;
+		Camera->PostProcessSettings.AutoExposureBias = FMath::GetMappedRangeValueClamped(FVector2D(0.f, 2.f), FVector2D(-2.f, 2.f), Value);
+		Camera->PostProcessBlendWeight = 1.0f;
+		Camera->PostProcessSettings.bOverride_ColorGamma = true;
+		Camera->PostProcessSettings.ColorGamma = FVector4(Value, Value, Value, 1.f);
+	}
+}
 void APlayerCharacterBase::Server_SpawnHeal_Implementation(const FVector& SpawnLocation, const FRotator& HealRotation)
 {
 	if (HealPackActor)

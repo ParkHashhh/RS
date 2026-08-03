@@ -9,6 +9,8 @@
 #include "RS/Inventory/InventoryComponent.h"
 #include "RS/UI/Battle/BattleHUDWidget.h"
 #include "RS/UI/Battle/Reward/RewardPopupWidget.h"
+#include "RS/UI/PauseWidget.h"
+#include "RS/UI/Start/SettingWidget.h"
 
 APlayerControllerBase::APlayerControllerBase()
 {
@@ -34,6 +36,8 @@ void APlayerControllerBase::BeginPlay()
 
 		CreateBattleHUD();
 		CreateEndPopUp();
+		CreatePauseWidget();
+		CreateSettingWidget();
 	}
 }
 
@@ -148,6 +152,40 @@ void APlayerControllerBase::CreateRewardPopupWidget(const TArray<FName>& RewardI
 
 	PopupWidget->Init(RewardItemRowNames);
 }
+void APlayerControllerBase::CreatePauseWidget()
+{
+	if (!IsValid(PauseWidgetClass))
+	{
+		return;
+	}
+
+	auto* PauseWidget = CreateWidget<UPauseWidget>(this, PauseWidgetClass);
+	if (!IsValid(PauseWidget))
+	{
+		return;
+	}
+
+	PauseWidget->AddToViewport();
+	PauseWidget->SetVisibility(ESlateVisibility::Collapsed);
+}
+
+void APlayerControllerBase::CreateSettingWidget()
+{
+	if (!IsValid(SettingWidgetClass))
+	{
+		return;
+	}
+
+	auto* SettingWidget = CreateWidget<USettingWidget>(this, SettingWidgetClass);
+	if (!IsValid(SettingWidget))
+	{
+		return;
+	}
+
+	SettingWidget->AddToViewport();
+	SettingWidget->SetVisibility(ESlateVisibility::Collapsed);
+}
+
 
 void APlayerControllerBase::ShowEndPopUp()
 {

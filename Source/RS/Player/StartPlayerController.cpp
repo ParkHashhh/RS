@@ -4,6 +4,7 @@
 #include "StartPlayerController.h"
 #include "Blueprint/UserWidget.h"
 #include "RS/LogCategory.h"
+#include "RS/UI/Start/SettingWidget.h"
 
 AStartPlayerController::AStartPlayerController()
 {
@@ -25,4 +26,22 @@ void AStartPlayerController::BeginPlay()
 			StartWidget->AddToViewport();
 		}
 	}
+	CreateSettingWidget();
+}
+
+void AStartPlayerController::CreateSettingWidget()
+{
+	if (!IsValid(SettingWidgetClass))
+	{
+		return;
+	}
+
+	auto* SettingWidget = CreateWidget<USettingWidget>(this, SettingWidgetClass);
+	if (!IsValid(SettingWidget))
+	{
+		return;
+	}
+
+	SettingWidget->AddToViewport();
+	SettingWidget->SetVisibility(ESlateVisibility::Collapsed);
 }

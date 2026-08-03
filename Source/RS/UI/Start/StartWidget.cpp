@@ -5,6 +5,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "RS/RSUtils.h"
 #include "RS/GameMode/RSGameInstance.h"
+#include "RS/UI/Subsystem/UISubsystem.h"
 #include "Kismet/GameplayStatics.h"
 
 
@@ -18,6 +19,7 @@ void UStartWidget::NativeOnInitialized()
 
 	StartButton->OnClicked.AddDynamic(this, &UStartWidget::StartClick);
 	ExitButton->OnClicked.AddDynamic(this, &UStartWidget::ExitClick);
+	OptionButton->OnClicked.AddDynamic(this, &UStartWidget::OptionClick);
 }
 
 void UStartWidget::StartClick()
@@ -32,4 +34,23 @@ void UStartWidget::StartClick()
 void UStartWidget::ExitClick()
 {
 	UKismetSystemLibrary::QuitGame(GetWorld(), nullptr, EQuitPreference::Quit, false);
+}
+void UStartWidget::OptionClick()
+{
+	ULocalPlayer* LP = GetOwningLocalPlayer();
+	if (!LP)
+	{
+		return;
+	}
+
+	auto* UISubsystem = LP->GetSubsystem<UUISubsystem>();
+	if (!UISubsystem)
+	{
+		return;
+	}
+
+	if (URSUserWidget* SettingsWidget = UISubsystem->FindWidget(FName(TEXT("settings"))))
+	{
+		SettingsWidget->SetVisibility(ESlateVisibility::Visible);
+	}
 }

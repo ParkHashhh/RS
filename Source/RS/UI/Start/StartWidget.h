@@ -36,4 +36,6 @@ public:
 
 	UFUNCTION()
 	void ExitClick();
+	UFUNCTION()
+	void OptionClick();
 };

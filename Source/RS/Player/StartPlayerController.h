@@ -24,6 +24,11 @@ protected:
 
 	TObjectPtr<UUserWidget> StartWidget;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "UI")
+	TSubclassOf<UUserWidget> SettingWidgetClass;
+
 protected:
 	virtual void BeginPlay() override;
+
+	void CreateSettingWidget();
 };

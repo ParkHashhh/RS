@@ -11,6 +11,8 @@
 class APlayerCharacterBase;
 class URewardPopupWidget;
 class UBattleHUDWidget;
+class UPauseWidget;
+class USettingWidget;
 /**
  *
  */
@@ -36,6 +38,12 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<UUserWidget> EndPopUpWidget;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UPauseWidget> PauseWidgetClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<USettingWidget> SettingWidgetClass;
 
 	int32 CurrentSpectateIndex = 0;
 
@@ -97,6 +105,7 @@ public:
 
 private:
 	void CreateRewardPopupWidget(const TArray<FName>& RewardItemRowNames);
-
+	void CreatePauseWidget();
+	void CreateSettingWidget();
 #pragma endregion Interaction
 };

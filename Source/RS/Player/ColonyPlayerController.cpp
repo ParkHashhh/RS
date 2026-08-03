@@ -35,6 +35,12 @@ void AColonyPlayerController::BeginPlay()
 	{
 		MapSelectWidget = CreateWidget<UUserWidget>(GetWorld(), MapSelectWidgetClass);
 	}
+
+	URSGameInstance* GI = Cast<URSGameInstance>(GetGameInstance());
+	if (IsValid(GI))
+	{
+		GI->StopBGM();
+	}
 }
 
 void AColonyPlayerController::ShowMapSelcetWidget()

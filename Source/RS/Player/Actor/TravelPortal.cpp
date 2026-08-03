@@ -90,6 +90,6 @@ void ATravelPortal::ExecuteTravel()
 {
 	if (URSGameInstance* GI = Cast<URSGameInstance>(GetGameInstance()))
 	{
-		GI->LevelLoading(TargetLevelName, TargetLevelPackagePath, TEXT(""), false, true);
+		GI->LevelLoading(TargetLevelName, TargetLevelPackagePath, TEXT(""), false, true,true);
 	}
 }
