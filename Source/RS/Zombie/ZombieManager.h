@@ -8,6 +8,7 @@
 
 class AZombieBase;
 class AZombieSpawnPoint;
+class UGameplayEffect;
 
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -32,6 +33,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "NeedProperty", meta=(AllowPrivateAccess = "true"))
 	int32 MaxZombieCount = 150;
 
+	//좀비를 즉시 죽이기 위한 이펙트
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "NeedProperty", meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<UGameplayEffect> InstantKillGE;
+
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
@@ -50,11 +55,14 @@ public:
 	//배치된 스폰 포인트를 등록하는 함수
 	void SpawnPointRegister(AZombieSpawnPoint* SpawnPoint);
 
-	//모든 스폰포인트의 활성화/비활성화를 조절하는 함수
+	//모든 스폰포인트의 활성화/비활성화를 조절하는 함수 (최대 개체수 조절)
 	void SetSpawnPointActivation(bool Activate);
 
-	//모든 좀비를 사망 처리하는 함수
+	//모든 좀비를 사망 처리하는 함수 (스테이지 클리어)
 	void AllZombieDeath();
+
+	//모든 스테이지를 파괴하는 함수 (스테이지 클리어)
+	void AllSpawnPointDestroy();
 
 		
 };

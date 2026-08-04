@@ -42,6 +42,7 @@ protected:
 	TObjectPtr<UNiagaraComponent> RangeNiagaraComp;
 
 
+
 protected:
 	virtual void BeginPlay() override;
 

@@ -118,7 +118,7 @@ void USelectSlotWidget::TestJoinLocalHost()
 
 		if (URSGameInstance* GI = GetGameInstance<URSGameInstance>())
 		{
-			RSUtils::OpenLevelWithInventory(GetWorld(), TEXT("Colony"), true, true, URL);
+			RSUtils::OpenLevelWithDataStorage(GetWorld(), TEXT("Colony"), true, true, URL);
 		}
 
 		RS_PRINT_SCREEN(1000.f, FColor::Red, TEXT("URL : %s"),*URL);

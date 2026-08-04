@@ -668,12 +668,13 @@ TArray<FName> UDataSubsystem::GetRandomItems(int32 Count) const
 		float CurrentWeight = 0.0f;
 		for (int32 i = 0; i < Candidates.Num(); ++i)
 		{
-			CurrentWeight += Candidates[i].Info->Weight;
+			auto& [RowName, Info] = Candidates[i];
+			CurrentWeight += Info->Weight;
 			if (Dice <= CurrentWeight)
 			{
-				Result.Emplace(Candidates[i].RowName);
+				Result.Emplace(RowName);
 				Candidates.RemoveAtSwap(i);
-				TempTotalWeight -= Candidates[i].Info->Weight;
+				TempTotalWeight -= Info->Weight;
 				break;
 			}
 		}

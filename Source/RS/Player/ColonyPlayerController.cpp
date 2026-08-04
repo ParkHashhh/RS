@@ -8,6 +8,10 @@
 #include "RS/GameMode/RSInGameMode.h"
 #include "RS/RSUtils.h"
 #include "Kismet/GameplayStatics.h"
+#include "RS/UI/Colony/Result/StageResultWidget.h"
+#include "RS/Data/Subsystem/DataStorageSubsystem.h"
+#include "RS/Player/RSPlayerState.h"
+
 AColonyPlayerController::AColonyPlayerController()
 {
 	bShowMouseCursor = true;
@@ -41,6 +45,7 @@ void AColonyPlayerController::BeginPlay()
 	{
 		GI->StopBGM();
 	}
+	
 }
 
 void AColonyPlayerController::ShowMapSelcetWidget()
@@ -70,11 +75,56 @@ void AColonyPlayerController::RemoveMapSelectWidget()
 	}
 }
 
+// 1회성이기 때문에 멤버변수로 놓을 필요없음
+void AColonyPlayerController::ShowStageResultWidget()
+{
+	if (!IsValid(StageResultWidgetClass))
+	{
+		RS_PRINT_SCREEN(100.f, FColor::Red, TEXT("ShowStageResultWidget: StageResultWidgetClass is NOT set"));
+		return;
+	}
+
+	UStageResultWidget* Widget = CreateWidget<UStageResultWidget>(this, StageResultWidgetClass);
+	if (!IsValid(Widget))
+	{
+		return;
+	}
+
+
+	bShowMouseCursor = true;
+	FInputModeUIOnly InputMode;
+	InputMode.SetWidgetToFocus(Widget->TakeWidget());
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	SetInputMode(InputMode);
+
+	Widget->AddToViewport();
+
+}
+
 void AColonyPlayerController::Server_RequestPortal_Implementation(FName LevelName, const FString& PackagePath)
 {
 	ARSInGameMode* GM = GetWorld()->GetAuthGameMode<ARSInGameMode>();
 	if (IsValid(GM))
 	{
 		GM->CreateOrUpdatePortal(LevelName, PackagePath);
+	}
+}
+
+void AColonyPlayerController::Client_ShowStageResultWidget_Implementation()
+{
+	ShowStageResultWidget();
+}
+
+void AColonyPlayerController::Server_ClearPendingStageResult_Implementation()
+{
+	if (const ARSPlayerState* PS = GetPlayerState<ARSPlayerState>())
+	{
+		if (const UGameInstance* GI = GetGameInstance())
+		{
+			if (auto* StorageSubsystem = GI->GetSubsystem<UDataStorageSubsystem>())
+			{
+				StorageSubsystem->ConsumePendingStageResult(PS->GetUniqueId());
+			}
+		}
 	}
 }

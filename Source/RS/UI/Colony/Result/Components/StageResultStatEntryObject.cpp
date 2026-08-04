@@ -35,16 +35,23 @@ FText UStageResultStatEntryObject::GetStatValueText() const
 
 	case EStageResultStatType::Time:
 		{
-			// 초 단위 float를 FTimespan으로 변환하여 mm:ss 포맷팅
-			const FTimespan TimeSpan = FTimespan::FromSeconds(StatValue);
+			const int32 TotalSeconds = FMath::Max(0, FMath::FloorToInt(StatValue));
 
-			const FFormatNamedArguments Args = {
-				{TEXT("Minutes"), FText::AsNumber(TimeSpan.GetMinutes())},
-				{TEXT("Seconds"), FText::AsNumber(TimeSpan.GetSeconds())}
+			const auto [Quot, Rem] = div(TotalSeconds, 60);
+			const int32 Minutes = Quot;
+			const int32 Seconds = Rem;
+
+			FNumberFormattingOptions NumberFormat;
+			NumberFormat.MinimumIntegralDigits = 2;
+			NumberFormat.MaximumIntegralDigits = 2;
+
+			const FFormatNamedArguments Args =
+			{
+				{TEXT("Minutes"), FText::AsNumber(Minutes, &NumberFormat)},
+				{TEXT("Seconds"), FText::AsNumber(Seconds, &NumberFormat)}
 			};
 
-			// {Minutes:02} 패딩 옵션으로 2자리 수(01, 02...) 유지
-			return FText::Format(NSLOCTEXT("StageResult", "TimeFormat", "{Minutes:02}:{Seconds:02}"), Args);
+			return FText::Format(NSLOCTEXT("StageResult", "TimeFormat", "{Minutes}:{Seconds}"), Args);
 		}
 
 	default:

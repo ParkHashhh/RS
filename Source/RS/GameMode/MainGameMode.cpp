@@ -317,6 +317,13 @@ void AMainGameMode::HandleTimeElapsed(float AccumulatedSec)
 
 void AMainGameMode::HandleAllObjectiveCleared()
 {
+	//모든 좀비를 죽인다.
+	StageZombieManagerComponent->AllZombieDeath();
+
+	//모든 스폰포인트를 파괴한다.
+	StageZombieManagerComponent->AllSpawnPointDestroy();
+
+	//탈출 포탈이 없다면 생성한다.
 	if (!ActivePortal)
 	{
 		ActivePortal = SpawnPortal(GetPortalLocation());

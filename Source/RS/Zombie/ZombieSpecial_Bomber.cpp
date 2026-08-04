@@ -47,17 +47,39 @@ AZombieSpecial_Bomber::AZombieSpecial_Bomber()
 void AZombieSpecial_Bomber::BeginPlay()
 {
 	Super::BeginPlay();
+
+	//원래 스케일을 백업한다.
+	OriginScale = GetActorScale3D();
 }
 
 void AZombieSpecial_Bomber::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AZombieSpecial_Bomber, bIsPrintClient)
+	DOREPLIFETIME(AZombieSpecial_Bomber, bIsReadyToExplosion)
 }
 
 void AZombieSpecial_Bomber::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	if (bIsReadyToExplosion)
+	{
+		//델타타임을 이용해 곱할 배율을 만든다.
+		Rate += 0.2 * DeltaTime;
+		FVector NewScale = OriginScale * Rate;
+
+		//베이스 증가량에 추가로 약간의 랜덤값을 더해 진동 연출을 만든다.
+		float Frequency = 50.f;
+		float Amplitude = 0.1f;
+		Radian += DeltaTime;
+		float PlusValue = FMath::Sin(DeltaTime * Frequency) * Amplitude;
+		FVector PlusScale = FVector(PlusValue, PlusValue, PlusValue);
+
+		NewScale += PlusScale;
+
+		SetActorScale3D(NewScale);
+	}
 }
 
 void AZombieSpecial_Bomber::InitAbility()
@@ -73,11 +95,15 @@ void AZombieSpecial_Bomber::InitAbility()
 void AZombieSpecial_Bomber::SkillStart()
 {
 	//부들부들 떨며 몸이 살짝 커지는 연출 이곳에서 추가
+	bIsReadyToExplosion = true;
 }
 
 void AZombieSpecial_Bomber::SkillEnd()
 {
 	Super::SkillEnd();
+
+	//폭발준비 연출은 더이상 하지 않아도 된다.
+	bIsReadyToExplosion = false;
 
 	//어빌리티를 발동한다.
 	Explosion();
@@ -111,6 +137,12 @@ void AZombieSpecial_Bomber::Death()
 {
 	//어빌리티를 발동한다.
 	Explosion();
+
+	//폭발준비 연출은 더이상 하지 않아도 된다.
+	if (HasAuthority())
+	{
+		bIsReadyToExplosion = false;
+	}
 
 	//폭발 연출을 화면에 출력한다.
 	SpawnEffect();
@@ -180,6 +212,7 @@ void AZombieSpecial_Bomber::SpawnEffect()
 		FVector Scale = FVector(2.f, 2.f, 2.f);
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Particle, SpawnLoc, SpawnRot, Scale);
 	}
+
 	else if (NiagaraParticle)
 	{
 		FVector SpawnLoc = GetActorLocation();

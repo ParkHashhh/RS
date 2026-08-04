@@ -42,14 +42,16 @@ public:
 	UPROPERTY()
 	TObjectPtr<UAudioComponent> BGMComponent;
 
+	
 public:
 	virtual void Init() override;
 
 	void LevelLoading(const FName& LevelName, const FString& PackagePath, const FString& Options, bool bListen = false,
 	                  bool IsServerTravel = false, bool
-	                  bStoreInventory = false);
+	                  bStoreData = false);
 
 public:
+
 	void StopBGM();
 	bool IsListen() const
 	{

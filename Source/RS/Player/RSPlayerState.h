@@ -109,4 +109,31 @@ protected:
 
 private:
 	void InitializePlayerState();
+
+#pragma region StageResult
+private:
+	int32 KillCount;
+	float PlayTime;
+
+public:
+	int32 GetKillCount() const
+	{
+		return KillCount;
+	}
+
+	void SetKillCount(int32 InKillCount)
+	{
+		this->KillCount = InKillCount;
+	}
+
+	float GetPlayTime() const
+	{
+		return PlayTime;
+	}
+
+	void SetPlayTime(float InPlayTime)
+	{
+		this->PlayTime = InPlayTime;
+	}
+#pragma endregion
 };

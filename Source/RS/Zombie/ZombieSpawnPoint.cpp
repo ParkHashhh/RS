@@ -12,6 +12,7 @@
 #include "RS/Zombie/ZombieManager.h"
 #include "Components/BoxComponent.h"
 #include "RS/LogCategory.h"
+#include "RS/Player/PlayerCharacterBase.h"
 
 // Sets default values
 AZombieSpawnPoint::AZombieSpawnPoint()
@@ -67,6 +68,9 @@ void AZombieSpawnPoint::BeginPlay()
 	{
 		DetectArea->OnComponentBeginOverlap.AddDynamic(this, &AZombieSpawnPoint::PlayerInArea);
 		DetectArea->OnComponentEndOverlap.AddDynamic(this, &AZombieSpawnPoint::PlayerOutArea);
+
+		FTimerHandle TempHandle;
+		GetWorld()->GetTimerManager().SetTimer(TempHandle, FTimerDelegate::CreateUObject(this, &AZombieSpawnPoint::CheckStartOverlap), 0.1f, false);
 	}
 
 	//디폴트 스폰 설정이 되어 있는 경우에만 처음에 스폰을 한다.
@@ -261,6 +265,33 @@ bool AZombieSpawnPoint::CalcRandomFirstDst(FVector& Loc)
 void AZombieSpawnPoint::PlayerInArea(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	AddPlayerCount(OtherActor);
+}
+
+void AZombieSpawnPoint::PlayerOutArea(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	APlayerCharacterBase* DetectedActor = Cast<APlayerCharacterBase>(OtherActor);
+	if (IsValid(DetectedActor))
+	{
+		--PlayerNumInArea;
+
+		//만약의 상황을 대비해 0 이하로는 가지 못하게 한다.
+		if (PlayerNumInArea < 0)
+		{
+			PlayerNumInArea = 0;
+		}
+
+		//영역 내의 플레이어가 0명이 되면 타이머를 Clear 한다.
+		if (PlayerNumInArea == 0)
+		{
+			GetWorld()->GetTimerManager().ClearTimer(SpawnTimer);
+		}
+	}
+}
+
+void AZombieSpawnPoint::AddPlayerCount(AActor* OtherActor)
+{
 	APlayerCharacterBase* DetectedActor = Cast<APlayerCharacterBase>(OtherActor);
 	if (IsValid(DetectedActor))
 	{
@@ -289,24 +320,16 @@ void AZombieSpawnPoint::PlayerInArea(UPrimitiveComponent* OverlappedComponent, A
 	}
 }
 
-void AZombieSpawnPoint::PlayerOutArea(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+void AZombieSpawnPoint::CheckStartOverlap()
 {
-	APlayerCharacterBase* DetectedActor = Cast<APlayerCharacterBase>(OtherActor);
-	if (IsValid(DetectedActor))
+	if (IsValid(DetectArea))
 	{
-		--PlayerNumInArea;
-
-		//만약의 상황을 대비해 0 이하로는 가지 못하게 한다.
-		if (PlayerNumInArea < 0)
+		//플레이어의 스폰 지점이 영역 안에 존재하면 더하기 이벤트가 호출되지 않으므로 한번 강제 체크를 한다.
+		TArray<AActor*> OverlapingActorArray;
+		DetectArea->GetOverlappingActors(OverlapingActorArray);
+		for (AActor* Actor : OverlapingActorArray)
 		{
-			PlayerNumInArea = 0;
-		}
-
-		//영역 내의 플레이어가 0명이 되면 타이머를 Clear 한다.
-		if (PlayerNumInArea == 0)
-		{
-			GetWorld()->GetTimerManager().ClearTimer(SpawnTimer);
+			AddPlayerCount(Actor);
 		}
 	}
 }

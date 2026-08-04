@@ -5,6 +5,7 @@
 #include "RS/Zombie/ZombieBase.h"
 #include "RS/Zombie/ZombieSpecial.h"
 #include "RS/Zombie/ZombieBoss.h"
+#include "RS/Zombie/AI/ZombieAIController.h"
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "RS/LogCategory.h"
@@ -250,14 +251,10 @@ void UZombieAnimInstance::AnimNotify_MoveStart()
 	TObjectPtr<AZombieBase> Zombie = Cast<AZombieBase>(TryGetPawnOwner());
 	if (Zombie->HasAuthority())
 	{
-		AAIController* Ctrl = Zombie->GetController<AAIController>();
+		AZombieAIController* Ctrl = Zombie->GetController<AZombieAIController>();
 		if (IsValid(Ctrl))
 		{
-			UPathFollowingComponent* PFComp = Ctrl->GetPathFollowingComponent();
-			if (PFComp->GetStatus() == EPathFollowingStatus::Paused)
-			{
-				PFComp->ResumeMove();
-			}
+			Ctrl->RollBackSpeed();
 		}
 	}
 }

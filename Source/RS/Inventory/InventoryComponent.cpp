@@ -10,7 +10,9 @@
 #include "Net/UnrealNetwork.h"
 #include "RS/LogCategory.h"
 #include "RS/RSTypes.h"
+#include "RS/Data/Subsystem/DataStorageSubsystem.h"
 #include "RS/Data/Subsystem/DataSubsystem.h"
+#include "RS/Player/RSPlayerState.h"
 
 void FInventoryEntry::PreReplicatedRemove(const FInventoryList& InArraySerializer)
 {
@@ -101,6 +103,24 @@ const FInventoryEntry* FInventoryList::FindEntry(const FDataTableRowHandle& RowH
 		[&](const FInventoryEntry& Entry)
 		{
 			return Entry.Item && Entry.Item->GetItemRowHandle() == RowHandle;
+		});
+}
+
+FInventoryEntry* FInventoryList::FindEntry(FName ItemRowName)
+{
+	return Entries.FindByPredicate(
+		[&ItemRowName](const FInventoryEntry& Entry)
+		{
+			return Entry.Item && Entry.Item->GetItemRowHandle().RowName == ItemRowName;
+		});
+}
+
+const FInventoryEntry* FInventoryList::FindEntry(FName ItemRowName) const
+{
+	return Entries.FindByPredicate(
+		[&ItemRowName](const FInventoryEntry& Entry)
+		{
+			return Entry.Item && Entry.Item->GetItemRowHandle().RowName == ItemRowName;
 		});
 }
 
@@ -341,6 +361,26 @@ const UItemInstance* UInventoryComponent::FindItem(const FDataTableRowHandle& Ro
 	return nullptr;
 }
 
+UItemInstance* UInventoryComponent::FindItem(FName ItemRowName)
+{
+	if (auto Entry = InventoryList.FindEntry(ItemRowName))
+	{
+		return Entry->Item;
+	}
+
+	return nullptr;
+}
+
+const UItemInstance* UInventoryComponent::FindItem(FName ItemRowName) const
+{
+	if (const FInventoryEntry* Entry = InventoryList.FindEntry(ItemRowName))
+	{
+		return Entry->Item;
+	}
+
+	return nullptr;
+}
+
 int32 UInventoryComponent::GetItemCount(const FGuid& ItemGuid) const
 {
 	if (const UItemInstance* Item = FindItem(ItemGuid))
@@ -395,6 +435,57 @@ void UInventoryComponent::HandleEntryRemoved(const FInventoryEntry& Entry)
 	}
 
 	OnItemRemoved(Entry.Item);
+}
+
+TArray<FItemStorageInfo> UInventoryComponent::GetNewAchivedItems() const
+{
+	TArray<FItemStorageInfo> Result;
+	const auto* PS = Cast<APlayerState>(GetOwner());
+	if (!IsValid(PS))
+	{
+		return Result;
+	}
+
+	const UGameInstance* GI = GetOwner()->GetGameInstance();
+	const auto* DataStorageSubsystem = GI->GetSubsystem<UDataStorageSubsystem>();
+	if (!DataStorageSubsystem)
+	{
+		return Result;
+	}
+
+	TArray<FItemStorageInfo> PrePreviousItems;
+	if (!DataStorageSubsystem->TryGetPrePreviousInventoryStorage(PS, PrePreviousItems))
+	{
+		return Result;
+	}
+
+	for (const FInventoryEntry& Entry : GetEntries())
+	{
+		if (UItemInstance* Item = Entry.Item)
+		{
+			if (FItemStorageInfo* Found = PrePreviousItems.FindByPredicate(
+				[&Item](const FItemStorageInfo& Prev)
+				{
+					return !Prev.RowName.IsNone() && Item && Item->GetItemRowHandle().RowName == Prev.RowName;
+				}))
+			{
+				int32 AchiveCount = Item->GetItemCount() - Found->Count;
+				if (AchiveCount > 0)
+				{
+					Result.Emplace(Found->RowName, AchiveCount);
+				}
+			}
+			else
+			{
+				if (Item->GetItemCount() > 0)
+				{
+					Result.Emplace(Item->GetItemRowHandle().RowName, Item->GetItemCount());
+				}
+			}
+		}
+	}
+
+	return Result;
 }
 
 void UInventoryComponent::ApplyGameplayEffect(UItemInstance* Item)

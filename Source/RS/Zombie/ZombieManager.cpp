@@ -5,6 +5,7 @@
 #include "RS/Zombie/ZombieBase.h"
 #include "RS/Zombie/ZombieSpawnPoint.h"
 #include "RS/LogCategory.h"
+#include "AbilitySystemComponent.h"
 
 // Sets default values for this component's properties
 UZombieManager::UZombieManager()
@@ -86,11 +87,39 @@ void UZombieManager::SetSpawnPointActivation(bool Activate)
 	//배열을 순회하며 모든 스폰포인트의 스위치를 조정한다.
 	for (auto SpawnPoint : SpawnPointArray)
 	{
-		SpawnPoint->SetSpawnActivation(Activate);
+		if (IsValid(SpawnPoint))
+		{
+			SpawnPoint->SetSpawnActivation(Activate);
+		}
 	}
 }
 
 void UZombieManager::AllZombieDeath()
 {
+	//좀비 배열을 순회하며 체력을 0으로 바꿔버린다.
+	for (auto Zombie : AllZombieArray)
+	{
+		if (IsValid(Zombie))
+		{
+			UAbilitySystemComponent* ASC = Zombie->GetAbilitySystemComponent();
+			if (ASC && InstantKillGE)
+			{
+				FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
+				Context.AddSourceObject(Zombie);
+				ASC->ApplyGameplayEffectToSelf(InstantKillGE->GetDefaultObject<UGameplayEffect>(), 1.f, Context);
+			}
+		}
+	}
+}
+
+void UZombieManager::AllSpawnPointDestroy()
+{
+	for (auto SpawnPoint : SpawnPointArray)
+	{
+		if (IsValid(SpawnPoint))
+		{
+			SpawnPoint->Destroy();
+		}
+	}
 }
 

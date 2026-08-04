@@ -90,6 +90,9 @@ public:
 	FInventoryEntry* FindEntry(const FDataTableRowHandle& RowHandle);
 	const FInventoryEntry* FindEntry(const FDataTableRowHandle& RowHandle) const;
 
+	FInventoryEntry* FindEntry(FName ItemRowName);
+	const FInventoryEntry* FindEntry(FName ItemRowName) const;
+
 	FInventoryEntry& AddEntry(UItemInstance* Item);
 
 	bool RemoveEntry(const FGuid& Guid);
@@ -138,6 +141,8 @@ public:
 	virtual UAbilitySystemComponent* GetASC() const override;
 
 #pragma region Inventory
+
+public:
 	UItemInstance* CreateItemInstance(const FDataTableRowHandle& RowHandle, int32 Count);
 
 	bool CanAddItem(const FDataTableRowHandle& RowHandle, int32 Count) const;
@@ -153,6 +158,9 @@ public:
 
 	UItemInstance* FindItem(const FDataTableRowHandle& RowHandle);
 	const UItemInstance* FindItem(const FDataTableRowHandle& RowHandle) const;
+
+	UItemInstance* FindItem(FName ItemRowName);
+	const UItemInstance* FindItem(FName ItemRowName) const;
 
 	int32 GetItemCount(const FGuid& ItemGuid) const;
 	int32 GetItemCount(const FDataTableRowHandle& RowHandle) const;
@@ -181,6 +189,8 @@ public:
 		return ItemModifiedStats;
 	}
 
+	TArray<FItemStorageInfo> GetNewAchivedItems() const;
+
 protected:
 	void ApplyGameplayEffect(UItemInstance* Item);
 	void UpdateGameplayEffect(UItemInstance* Item);
@@ -192,5 +202,6 @@ private:
 	void OnItemRemoved(UItemInstance* Item);
 
 	void CalculateItemModifiedStats();
+
 #pragma endregion
 };

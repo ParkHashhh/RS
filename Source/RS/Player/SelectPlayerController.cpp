@@ -118,6 +118,5 @@ void ASelectPlayerController::Server_SetSelectedCharacterInfo_Implementation(FNa
 		UE_LOG(LogTemp, Warning, TEXT("Saved to PlayerState. Now GetTextureName: [%s]"), *PS->GetTextureName().ToString());
 	}
 
-	RSUtils::ServerTravelWithInventory(GetWorld(), TEXT("Colony"), true);
-
+	RSUtils::ServerTravelWithDataStorage(GetWorld(), TEXT("Colony"), true);
 }

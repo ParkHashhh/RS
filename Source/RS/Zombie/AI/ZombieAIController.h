@@ -52,6 +52,9 @@ protected:
 	UPROPERTY();
 	EDetectPerceptionType TargetPerceptionType;
 
+	//속도 변경 시 점프의 시작인지 끝인지 확인하기 위한 변수
+	bool bIsJumpStart = false;
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
@@ -72,5 +75,6 @@ public:
 
 public:
 	void ActivateBT();
-	
+	void SetZeroSpeed();
+	void RollBackSpeed();
 };

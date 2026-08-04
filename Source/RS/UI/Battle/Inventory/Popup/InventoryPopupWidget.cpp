@@ -143,8 +143,11 @@ void UInventoryPopupWidget::AddStat(const FGameplayTag& StatTag, const FText& St
 
 void UInventoryPopupWidget::OnGameplayReadyChanged(bool bGameplayReady)
 {
-	if (auto* PS = GetOwningPlayerState<ARSPlayerState>())
+	if (bGameplayReady)
 	{
-		Init(PS->GetInventoryComponent());
+		if (auto* PS = GetOwningPlayerState<ARSPlayerState>())
+		{
+			Init(PS->GetInventoryComponent());
+		}
 	}
 }

@@ -30,7 +30,10 @@
 #include "RS/UI/Common/Interaction/InteractionWidget.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "NiagaraFunctionLibrary.h"
+#include "RS/UI/Colony/Result/StageResultWidget.h"
+#include "RS/Data/Subsystem/DataStorageSubsystem.h"
 #include "RS/UI/RSGameUserSettings.h"
+
 // Sets default values
 APlayerCharacterBase::APlayerCharacterBase()
 {
@@ -133,11 +136,33 @@ void APlayerCharacterBase::BeginPlay()
 				SubSystem->AddMappingContext(InputData->Context, 0);
 			}
 		}
-		FInputModeGameOnly InputModeData;
 
-		InputModeData.SetConsumeCaptureMouseDown(true);
-		PlayerController->SetInputMode(InputModeData);
-		PlayerController->bShowMouseCursor = false; // 마우스 커서 안 보이게 끄기
+		bool bSkipForcedGameOnly = false;
+		if (const ARSPlayerState* PS = PlayerController->GetPlayerState<ARSPlayerState>())
+		{
+			if (const UGameInstance* GI = GetGameInstance())
+			{
+				if (const auto* StorageSubsystem = GI->GetSubsystem<UDataStorageSubsystem>())
+				{
+					bSkipForcedGameOnly = StorageSubsystem->HasPendingStageResult(PS->GetUniqueId());
+					RS_PRINT_SCREEN(10.f, FColor::Cyan, TEXT("PlayerCharacterBase::BeginPlay - HasPendingStageResult=%s"),
+						bSkipForcedGameOnly ? TEXT("true") : TEXT("false"));
+				}
+			}
+		}
+		else
+		{
+			RS_PRINT_SCREEN(10.f, FColor::Red, TEXT("PlayerCharacterBase::BeginPlay - PlayerState is NULL"));
+		}
+
+		if (!bSkipForcedGameOnly)
+		{
+			RS_PRINT_SCREEN(10.f, FColor::Orange, TEXT("PlayerCharacterBase::BeginPlay - forcing GameOnly+cursor off"));
+			FInputModeGameOnly InputModeData;
+			InputModeData.SetConsumeCaptureMouseDown(true);
+			PlayerController->SetInputMode(InputModeData);
+			PlayerController->bShowMouseCursor = false; // 마우스 커서 안 보이게 끄기
+		}
 
 		if (PlayerController->PlayerCameraManager)
 		{
@@ -438,24 +463,24 @@ void APlayerCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::ShowInventory);
 		EnhancedInput->BindAction(Action, ETriggerEvent::Completed, this, &APlayerCharacterBase::HideInventory);
 	}
-	Action = InputData->FindAction(FInputKeyNames::Cursor);
-	if (Action)
-	{
-		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::CursorKey);
-		EnhancedInput->BindAction(Action, ETriggerEvent::Completed, this, &APlayerCharacterBase::CursorReleaseKey);
-		EnhancedInput->BindAction(Action, ETriggerEvent::Canceled, this, &APlayerCharacterBase::CursorReleaseKey);
-	}
-
 	Action = InputData->FindAction(FInputKeyNames::Interaction);
 	if (Action)
 	{
 		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::OnInteractPressed);
 		EnhancedInput->BindAction(Action, ETriggerEvent::Completed, this, &APlayerCharacterBase::OnInteractReleased);
 	}
+
 	Action = InputData->FindAction(FInputKeyNames::Pause);
 	if (Action)
 	{
 		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::PauseKey);
+	}
+
+	Action = InputData->FindAction(FInputKeyNames::Result);
+	if (Action)
+	{
+		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::OnResultPressed);
+		EnhancedInput->BindAction(Action, ETriggerEvent::Completed, this, &APlayerCharacterBase::OnResultReleased);
 	}
 
 #if !UE_BUILD_SHIPPING
@@ -586,7 +611,7 @@ void APlayerCharacterBase::SetSkeletalMesh(FName TextureName)
 
 	FString TextureNameStr = TextureName.ToString();
 	FString MeshPath = FString::Printf(TEXT("/Game/Player/Meshes/%s"),
-		*TextureNameStr);
+	                                   *TextureNameStr);
 
 	USkeletalMesh* LoadMesh = LoadObject<USkeletalMesh>(nullptr, *MeshPath);
 	if (IsValid(LoadMesh))
@@ -595,6 +620,7 @@ void APlayerCharacterBase::SetSkeletalMesh(FName TextureName)
 		AnimInst = Cast<UPlayerAnimInstance>(GetMesh()->GetAnimInstance());
 	}
 }
+
 void APlayerCharacterBase::SetSubSkillMontage(FName MontageName)
 {
 	FString MontageNameStr = MontageName.ToString();
@@ -603,6 +629,7 @@ void APlayerCharacterBase::SetSubSkillMontage(FName MontageName)
 		AnimInst->SetSubSkillMontage(MontageName);
 	}
 }
+
 void APlayerCharacterBase::MoveKey(const FInputActionValue& Value)
 {
 	FVector2D MovementVector = Value.Get<FVector2D>();
@@ -720,35 +747,6 @@ void APlayerCharacterBase::SpecPrevKey(const FInputActionValue& Value)
 	{
 		PlayerController->SpectatePrev();
 	}
-}
-
-void APlayerCharacterBase::CursorKey(const FInputActionValue& Value)
-{
-	if (AColonyPlayerController* ColonyPC = Cast<AColonyPlayerController>(PlayerController))
-	{
-		ColonyPC->bShowMouseCursor = true;
-		TObjectPtr<UUserWidget> ColonyWidget = ColonyPC->GetColonyWidget();
-		if (IsValid(ColonyWidget))
-		{
-			FInputModeGameAndUI InputMode;
-			InputMode.SetWidgetToFocus(ColonyWidget->TakeWidget());
-			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-			ColonyPC->SetInputMode(InputMode);
-		}
-	}
-
-}
-
-void APlayerCharacterBase::CursorReleaseKey(const FInputActionValue& Value)
-{
-	if (AColonyPlayerController* ColonyPC = Cast<AColonyPlayerController>(PlayerController))
-	{
-		ColonyPC->bShowMouseCursor = false;
-
-		FInputModeGameOnly GameOnlyMode;
-		ColonyPC->SetInputMode(GameOnlyMode);
-	}
-
 }
 
 void APlayerCharacterBase::PauseKey(const FInputActionValue& Value)
@@ -1121,6 +1119,29 @@ void APlayerCharacterBase::DebugKey8(const FInputActionValue& Value)
 {
 	RS_LOG_DEBUG(LogRSCommon, Log, TEXT("DebugKey8"));
 	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("DebugKey8"));
+
+	if (const auto* PS = GetPlayerState<ARSPlayerState>())
+	{
+		if (UInventoryComponent* InvenComp = PS->GetInventoryComponent())
+		{
+			for (const FInventoryEntry& Entry : InvenComp->GetEntries())
+			{
+				if (Entry.IsValid() && !Entry.Item->GetItemRowHandle().RowName.IsNone())
+				{
+					RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| Item: %s"), *LOG_LINE_INFO,
+					             *Entry.Item->GetItemRowHandle().RowName.ToString());
+				}
+			}
+
+			TArray<FItemStorageInfo> NewAchivements = InvenComp->GetNewAchivedItems();
+			RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| NewAchivements Count: %d"), *LOG_LINE_INFO, NewAchivements.Num());
+			for (const FItemStorageInfo& NewItem : NewAchivements)
+			{
+				RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| New Item: %s, Count: %d"), *LOG_LINE_INFO,
+				             *NewItem.RowName.ToString(), NewItem.Count);
+			}
+		}
+	}
 }
 
 void APlayerCharacterBase::DebugKey9(const FInputActionValue& Value)
@@ -1623,11 +1644,12 @@ void APlayerCharacterBase::ApplyFireExplosion(const FVector& Location)
 	TArray<AActor*> IgnoreActors;
 
 	UKismetSystemLibrary::SphereOverlapActors(GetWorld(), Location, FireRadius,
-		{ UEngineTypes::ConvertToObjectType(ECC_GameTraceChannel2) },
-		AZombieBase::StaticClass(), IgnoreActors, OverlappingActors);
+	                                          {UEngineTypes::ConvertToObjectType(ECC_GameTraceChannel2)},
+	                                          AZombieBase::StaticClass(), IgnoreActors, OverlappingActors);
 
 	const float FireDamage = GetAttributeSet()->GetAttackPower() * FireDamageRatio;
-	RS_PRINT_SCREEN(3.f, FColor::Orange, TEXT("[Fire] Damage : %.1f, Targets : %d"), FireDamage, OverlappingActors.Num());
+	RS_PRINT_SCREEN(3.f, FColor::Orange, TEXT("[Fire] Damage : %.1f, Targets : %d"), FireDamage,
+	                OverlappingActors.Num());
 	for (AActor* Actor : OverlappingActors)
 	{
 		Server_ApplyDamage(Actor, FHitResult(), FireDamage);
@@ -1638,6 +1660,7 @@ void APlayerCharacterBase::ApplyFireExplosion(const FVector& Location)
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), FireExplosionVFX, Location);
 	}
 }
+
 void APlayerCharacterBase::ApplyElectricChain(AActor* FirstTarget, const FVector& HitLocation)
 {
 	if (!IsValid(FirstTarget))
@@ -1650,7 +1673,8 @@ void APlayerCharacterBase::ApplyElectricChain(AActor* FirstTarget, const FVector
 	TArray<AActor*> HitTargets;
 	HitTargets.Add(FirstTarget);
 	Server_ApplyDamage(FirstTarget, FHitResult(), ElectricDamage);
-	RS_PRINT_SCREEN(3.f, FColor::Cyan, TEXT("[Electric] Damage : %.1f, Chain #1 : %s"), ElectricDamage, *FirstTarget->GetName());
+	RS_PRINT_SCREEN(3.f, FColor::Cyan, TEXT("[Electric] Damage : %.1f, Chain #1 : %s"), ElectricDamage,
+	                *FirstTarget->GetName());
 
 	AActor* CurrentSource = FirstTarget;
 
@@ -1658,8 +1682,8 @@ void APlayerCharacterBase::ApplyElectricChain(AActor* FirstTarget, const FVector
 	{
 		TArray<AActor*> Candidates;
 		UKismetSystemLibrary::SphereOverlapActors(GetWorld(), CurrentSource->GetActorLocation(), ElectricChainRadius,
-			{ UEngineTypes::ConvertToObjectType(ECC_GameTraceChannel2) },
-			AZombieBase::StaticClass(), HitTargets, Candidates);
+		                                          {UEngineTypes::ConvertToObjectType(ECC_GameTraceChannel2)},
+		                                          AZombieBase::StaticClass(), HitTargets, Candidates);
 
 		AActor* Nearest = nullptr;
 		float NearestDistSq = TNumericLimits<float>::Max();
@@ -1679,7 +1703,8 @@ void APlayerCharacterBase::ApplyElectricChain(AActor* FirstTarget, const FVector
 		}
 
 		Server_ApplyDamage(Nearest, FHitResult(), ElectricDamage);
-		RS_PRINT_SCREEN(3.f, FColor::Cyan, TEXT("[Electric] Damage : %.1f, Chain #%d : %s"), ElectricDamage, i + 1, *Nearest->GetName());
+		RS_PRINT_SCREEN(3.f, FColor::Cyan, TEXT("[Electric] Damage : %.1f, Chain #%d : %s"), ElectricDamage, i + 1,
+		                *Nearest->GetName());
 
 		if (ElectricChainVFXClass)
 		{
@@ -1706,6 +1731,7 @@ void APlayerCharacterBase::ApplyElectricChain(AActor* FirstTarget, const FVector
 		CurrentSource = Nearest;
 	}
 }
+
 void APlayerCharacterBase::ApplyIceSlow(AActor* TargetActor)
 {
 	auto* TargetASC = TargetActor->FindComponentByClass<UAbilitySystemComponent>();
@@ -1751,6 +1777,7 @@ void APlayerCharacterBase::ApplyPoisonDot(AActor* TargetActor)
 
 	ASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
 }
+
 void APlayerCharacterBase::OnRep_TextureName()
 {
 	SetSkeletalMesh(ReplicatedTextureName);
@@ -1828,7 +1855,8 @@ void APlayerCharacterBase::Multicast_ExecuteVisualEffect_Implementation(const FH
 	CueParams.PhysicalMaterial = Hit.PhysMaterial;
 
 	// 타격인지 데칼(벽)인지 태그로 구분하여 실행
-	FGameplayTag Tag = bIsHit  ? FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Damage"))
+	FGameplayTag Tag = bIsHit
+		                   ? FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Damage"))
 		                   : FGameplayTag::RequestGameplayTag(TEXT("GameplayCue.Player.Weapon.Impact"));
 
 	UGameplayCueManager::ExecuteGameplayCue_NonReplicated(this, Tag, CueParams);
@@ -1838,7 +1866,7 @@ void APlayerCharacterBase::Server_ShootAttackRay_Implementation(float RandomX, f
 {
 	// AI가 들을 수 있는 함수
 	FVector MuzzleLocation = WeaponMeshComponent->GetSocketLocation(FName("Muzzle"));
-	UAISense_Hearing::ReportNoiseEvent(GetWorld(), MuzzleLocation, 1, this,3000);
+	UAISense_Hearing::ReportNoiseEvent(GetWorld(), MuzzleLocation, 1, this, 3000);
 
 	// 충돌결과를 받을 구조체
 	FHitResult Hit;
@@ -2025,14 +2053,22 @@ void APlayerCharacterBase::OnPlayerDefaultInfoLoaded()
 					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::MaxAmmo, Info->Ammo);
 					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::CurrentAmmo, Info->Ammo);
 
-					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::FireBulletChance, Info->FireBulletChancePercent);
-					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::FireBulletDamage, Info->FireBulletDamagePercent);
-					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::IceBulletChance, Info->IceBulletChancePercent);
-					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::IceBulletDamage, Info->IceBulletDamagePercent);
-					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::ElectricBulletChance, Info->ElectricBulletChancePercent);
-					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::ElectricBulletDamage, Info->ElectricBulletDamagePercent);
-					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::PoisonBulletChance, Info->PoisonBulletChancePercent);
-					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::PoisonBulletDamage, Info->PoisonBulletDamagePercent);
+					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::FireBulletChance,
+					                                         Info->FireBulletChancePercent);
+					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::FireBulletDamage,
+					                                         Info->FireBulletDamagePercent);
+					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::IceBulletChance,
+					                                         Info->IceBulletChancePercent);
+					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::IceBulletDamage,
+					                                         Info->IceBulletDamagePercent);
+					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::ElectricBulletChance,
+					                                         Info->ElectricBulletChancePercent);
+					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::ElectricBulletDamage,
+					                                         Info->ElectricBulletDamagePercent);
+					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::PoisonBulletChance,
+					                                         Info->PoisonBulletChancePercent);
+					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::PoisonBulletDamage,
+					                                         Info->PoisonBulletDamagePercent);
 
 					ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
 				}
@@ -2043,7 +2079,6 @@ void APlayerCharacterBase::OnPlayerDefaultInfoLoaded()
 	}
 
 	// 여기가 로딩 완료된 시점
-
 }
 
 void APlayerCharacterBase::ShowInventory()
@@ -2079,7 +2114,8 @@ void APlayerCharacterBase::ToggleInventory(bool bShow)
 		return;
 	}
 
-	UInventoryPopupWidget* InventoryPopupWidget = Cast<UInventoryPopupWidget>(UISubsystem->FindWidget(FName(TEXT("inventory_popup"))));
+	UInventoryPopupWidget* InventoryPopupWidget = Cast<UInventoryPopupWidget>(
+		UISubsystem->FindWidget(FName(TEXT("inventory_popup"))));
 	if (!InventoryPopupWidget)
 	{
 		RS_LOG_DEBUG(LogRSInventory, Error, TEXT("%s: Failed to get inventory popup widget"), *LOG_LINE_INFO);
@@ -2280,8 +2316,11 @@ void APlayerCharacterBase::HandleFocusedInteractableChange(bool bHasFocus)
 				RS_PRINT_SCREEN(1.f, FColor::Cyan, TEXT("Before get interaction widget"));
 				if (auto* Interaction = Cast<UInteractionWidget>(UISubsystem->FindWidget(FName(TEXT("interaction")))))
 				{
-					RS_LOG_DEBUG(LogRSInteraction, Log, TEXT("%s: Interaction visibility set to %s"), *LOG_LINE_INFO, bHasFocus ? TEXT("HitTestInvisible") : TEXT("Collapsed"));
-					Interaction->SetVisibility(bHasFocus ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+					RS_LOG_DEBUG(LogRSInteraction, Log, TEXT("%s: Interaction visibility set to %s"), *LOG_LINE_INFO,
+					             bHasFocus ? TEXT("HitTestInvisible") : TEXT("Collapsed"));
+					Interaction->SetVisibility(bHasFocus
+						                           ? ESlateVisibility::HitTestInvisible
+						                           : ESlateVisibility::Collapsed);
 				}
 				else
 				{
@@ -2290,7 +2329,9 @@ void APlayerCharacterBase::HandleFocusedInteractableChange(bool bHasFocus)
 
 				if (auto* Crosshair = Cast<UCrosshairWidget>(UISubsystem->FindWidget(FName(TEXT("crosshair")))))
 				{
-					Crosshair->SetVisibility(bHasFocus ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
+					Crosshair->SetVisibility(bHasFocus
+						                         ? ESlateVisibility::Collapsed
+						                         : ESlateVisibility::HitTestInvisible);
 				}
 			}
 		}
@@ -2300,14 +2341,16 @@ void APlayerCharacterBase::HandleFocusedInteractableChange(bool bHasFocus)
 	{
 		if (CurrentFocusedInteractable.IsValid())
 		{
-			CurrentFocusedInteractable.Get()->OnInteractionProgressChanged.AddDynamic(this, &ThisClass::HandleInteractingTimeElapsed);
+			CurrentFocusedInteractable.Get()->OnInteractionProgressChanged.AddDynamic(
+				this, &ThisClass::HandleInteractingTimeElapsed);
 		}
 	}
 	else
 	{
 		if (CurrentFocusedInteractable.IsValid())
 		{
-			CurrentFocusedInteractable.Get()->OnInteractionProgressChanged.RemoveDynamic(this, &ThisClass::HandleInteractingTimeElapsed);
+			CurrentFocusedInteractable.Get()->OnInteractionProgressChanged.RemoveDynamic(
+				this, &ThisClass::HandleInteractingTimeElapsed);
 		}
 	}
 }
@@ -2330,6 +2373,83 @@ void APlayerCharacterBase::HandleInteractingTimeElapsed(float Elapsed, float Max
 		float Ratio = Max > 0.0f ? Elapsed / Max : 0.0f;
 		Widget->SetProgress(Ratio);
 	}
+}
+
+UStageResultWidget* APlayerCharacterBase::GetCachedStageResultWidget()
+{
+	if (!CachedStageResultWidget.IsValid())
+	{
+		if (const auto* PC = Cast<APlayerController>(GetController()))
+		{
+			if (const auto* UISubsystem = ULocalPlayer::GetSubsystemFromController<UUISubsystem>(PC))
+			{
+				CachedStageResultWidget = Cast<UStageResultWidget>(UISubsystem->FindWidget(FName(TEXT("result"))));
+			}
+		}
+	}
+
+	UStageResultWidget* StageResultWidget = CachedStageResultWidget.Get();
+	if (!IsValid(StageResultWidget))
+	{
+		RS_PRINT_SCREEN(1.f, FColor::Cyan, TEXT("No Stage Result Widget"));
+	}
+
+	return StageResultWidget;
+}
+
+void APlayerCharacterBase::OnResultPressed()
+{
+	RS_PRINT_SCREEN(1.f, FColor::Cyan, TEXT("OnResultPressed"));
+	ToggleResult(true);
+}
+
+void APlayerCharacterBase::OnResultReleased()
+{
+	RS_PRINT_SCREEN(1.f, FColor::Cyan, TEXT("OnResultReleased"));
+	ToggleResult(false);
+}
+
+void APlayerCharacterBase::ToggleResult(bool bShow)
+{
+	UStageResultWidget* ResultWidget = GetCachedStageResultWidget();
+	if (!ResultWidget)
+	{
+		RS_PRINT_SCREEN(1.f, FColor::Cyan, TEXT("%s| No Result Widget"), *LOG_LINE_INFO);
+		return;
+	}
+
+	auto* PC = GetController<APlayerController>();
+	if (!PC)
+	{
+		return;
+	}
+
+	const auto* PS = GetPlayerState<ARSPlayerState>();
+	if (!PS)
+	{
+		return;
+	}
+
+	ResultWidget->SetVisibility(bShow ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+
+	if (bShow)
+	{
+		ResultWidget->Init(PS->GetInventoryComponent());
+
+		PC->SetInputMode(FInputModeGameAndUI());
+	}
+	else
+	{
+		FInputModeGameOnly InputMode{};
+		InputMode.SetConsumeCaptureMouseDown(true);
+		PC->SetInputMode(InputMode);
+	}
+
+	RS_LOG_DEBUG(LogRSUI, Log, TEXT("%s: Inventory popup widget visibility set to %s"), *LOG_LINE_INFO,
+	             bShow ? TEXT("visible") : TEXT("collapsed"));
+
+	PC->bShowMouseCursor = bShow;
+	ToggleCombatWidgets(!bShow);
 }
 
 void APlayerCharacterBase::Server_StartInteraction_Implementation(UInteractableComponent* TargetComp)

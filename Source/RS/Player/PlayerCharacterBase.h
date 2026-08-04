@@ -20,6 +20,7 @@
 #include "Perception/AIPerceptionStimuliSourceComponent.h"
 #include "PlayerCharacterBase.generated.h"
 
+class UStageResultWidget;
 class UInteractionWidget;
 class UInteractableComponent;
 class UDataSubsystem;
@@ -47,6 +48,7 @@ class RS_API APlayerCharacterBase : public ARSCharacter,
 	GENERATED_BODY()
 	friend class AGrenade;
 	friend class AHealPack;
+
 public:
 	// Sets default values for this pawn's properties
 	APlayerCharacterBase();
@@ -136,10 +138,10 @@ protected:
 	float FireDamageRatio = 0.3f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Combat|BulletElement")
-	float FireRadius = 300.f;        
+	float FireRadius = 300.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Combat|BulletElement")
-	TObjectPtr<class UNiagaraSystem> FireExplosionVFX; 
+	TObjectPtr<class UNiagaraSystem> FireExplosionVFX;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Combat|BulletElement")
 	float ElectricDamageRatio = 0.5f;
@@ -273,6 +275,7 @@ public:
 	{
 		return bIsDead;
 	}
+
 	UFUNCTION(BlueprintCallable, Category = "Camera")
 	FRotator GetSpectateViewRotation() const;
 
@@ -287,6 +290,7 @@ public:
 	}
 
 	void CallAttackAbility();
+
 	template <typename T>
 	void ExecuteOrBindOnASCReady(T* Object, void (T::*Callback)())
 	{
@@ -422,12 +426,12 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void Server_SpawnHeal(const FVector& SpawnLocation, const FRotator& HealRotation);
 
-
 public:
 	TSubclassOf<UGameplayAbility> GetDeadAbility()
 	{
 		return DeadAbilityClass;
 	}
+
 	void HitShakeCamera();
 	void SetSkeletalMesh(FName TextureName);
 	void SetSubSkillMontage(FName MontageName);
@@ -447,13 +451,10 @@ private:
 	void SubSkillKey(const FInputActionValue& Value);
 	void SpecNextKey(const FInputActionValue& Value);
 	void SpecPrevKey(const FInputActionValue& Value);
-	void CursorKey(const FInputActionValue& Value);
-	void CursorReleaseKey(const FInputActionValue& Value);
 
 	void PauseKey(const FInputActionValue& Value);
 
 	void RotationMouse(const FInputActionValue& Value);
-
 
 
 	// WeaponSkeleton Attach
@@ -534,13 +535,13 @@ public:
 
 protected:
 	UFUNCTION(Server, Reliable)
-	void Server_ApplyDamage(AActor* TargetActor, FHitResult Hit,float Damage);
+	void Server_ApplyDamage(AActor* TargetActor, FHitResult Hit, float Damage);
 
 	UFUNCTION(Server, Reliable)
 	void Server_ApplyHP(AActor* TargetActor, FHitResult Hit, float Hp);
 
 	UFUNCTION(Server, Reliable)
-	void Server_ShootAttackRay(float RandomX,float RandomY);
+	void Server_ShootAttackRay(float RandomX, float RandomY);
 
 	UFUNCTION()
 	void OnRep_TextureName();
@@ -605,8 +606,8 @@ public:
 	void OnDead();
 
 
-
 #pragma region Inventory
+
 private:
 	void ShowInventory();
 	void HideInventory();
@@ -675,4 +676,20 @@ private:
 	void HandleInteractingTimeElapsed(float Elapsed, float Max);
 
 #pragma endregion Interaction
+
+#pragma region Result
+
+private:
+	UPROPERTY(Transient)
+	TWeakObjectPtr<UStageResultWidget> CachedStageResultWidget;
+
+private:
+	UStageResultWidget* GetCachedStageResultWidget();
+
+	void OnResultPressed();
+	void OnResultReleased();
+
+	void ToggleResult(bool bShow);
+
+#pragma endregion
 };

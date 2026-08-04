@@ -19,8 +19,8 @@ void URSGameInstance::Init()
 	BGMComponent->Play();
 }
 
-void URSGameInstance::LevelLoading(const FName& LevelName, const FString& PackagePath, const FString& Options, bool bListen, bool IsServerTravel, bool
-                                   bStoreInventory)
+void URSGameInstance::LevelLoading(const FName& LevelName, const FString& PackagePath, const FString& Options,
+                                   bool bListen, bool IsServerTravel, bool bStoreData)
 {
 	NextLevelName = LevelName;
 	NextLevelPackagePath = PackagePath;
@@ -30,13 +30,12 @@ void URSGameInstance::LevelLoading(const FName& LevelName, const FString& Packag
 
 	if (IsServerTravel)
 	{
-		RSUtils::ServerTravelWithInventory(GetWorld(), TEXT("Loading"), bStoreInventory, true, false);
+		RSUtils::ServerTravelWithDataStorage(GetWorld(), TEXT("Loading"), bStoreData, true, false);
 	}
 	else
 	{
-		RSUtils::OpenLevelWithInventory(GetWorld(), TEXT("Loading"), bStoreInventory, true, FString(TEXT("")));
+		RSUtils::OpenLevelWithDataStorage(GetWorld(), TEXT("Loading"), bStoreData, true, FString(TEXT("")));
 	}
-
 }
 
 void URSGameInstance::StopBGM()

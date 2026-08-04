@@ -7,6 +7,7 @@
 #include "RS/UI/IconWidgetBase.h"
 #include "InventoryPopupSlotWidget.generated.h"
 
+class UStageResultItemSlotObject;
 class UTextBlock;
 /**
  *
@@ -31,4 +32,6 @@ protected:
 
 private:
 	void SetItemCountText(int32 Count) const;
+
+	void SetResultItemSlot(const UStageResultItemSlotObject* ResultSlotObj);
 };

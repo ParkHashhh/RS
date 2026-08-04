@@ -7,6 +7,9 @@
 #include "RS/Player/PlayerCharacterBase.h"
 #include "RS/GameMode/RSGameInstance.h"
 #include "GameFramework/GameStateBase.h"
+#include "RS/Player/RSPlayerState.h"
+#include "RS/LogCategory.h"
+#include "RS/Data/Subsystem/DataStorageSubsystem.h"
 
 ATravelPortal::ATravelPortal()
 {
@@ -90,6 +93,22 @@ void ATravelPortal::ExecuteTravel()
 {
 	if (URSGameInstance* GI = Cast<URSGameInstance>(GetGameInstance()))
 	{
-		GI->LevelLoading(TargetLevelName, TargetLevelPackagePath, TEXT(""), false, true,true);
+		if (TargetLevelName == FName(TEXT("Colony")))
+		{
+			if (auto* StorageSubsystem = GI->GetSubsystem<UDataStorageSubsystem>())
+			{
+				for (const TWeakObjectPtr<APlayerCharacterBase>& WeakPlayer : ReadyPlayers)
+				{
+					if (APlayerCharacterBase* Player = WeakPlayer.Get())
+					{
+						if (ARSPlayerState* PS = Player->GetPlayerState<ARSPlayerState>())
+						{
+							StorageSubsystem->MarkPendingStageResult(PS->GetUniqueId());
+						}
+					}
+				}
+			}
+		}
+		GI->LevelLoading(TargetLevelName, TargetLevelPackagePath, TEXT(""), false, true, true);
 	}
 }

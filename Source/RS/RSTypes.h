@@ -578,3 +578,27 @@ enum class EStageResultStatType : uint8
 	Kill,
 	Time,
 };
+
+USTRUCT()
+struct RS_API FItemStorageInfo
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	FName RowName;
+
+	UPROPERTY()
+	int32 Count;
+};
+
+USTRUCT()
+struct RS_API FStageResultStatInfo
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	int32 KillCount;
+
+	UPROPERTY()
+	float PlayTime;
+};

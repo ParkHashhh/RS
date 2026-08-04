@@ -8,6 +8,8 @@
 #include "RS/Player/PlayerControllerBase.h"
 #include "RS/Player/RSPlayerState.h"
 #include "RS/Player/Actor/TravelPortal.h"
+#include "RS/Player/ColonyPlayerController.h"
+
 
 ARSInGameMode::ARSInGameMode()
 {
@@ -47,6 +49,17 @@ void ARSInGameMode::HandleStartingNewPlayer_Implementation(APlayerController* Ne
 			if (auto* StorageSubsystem = GI->GetSubsystem<UDataStorageSubsystem>())
 			{
 				StorageSubsystem->RestorePlayerInventory(PC);
+				StorageSubsystem->RestorePlayerStageResultStat(PC);
+				if (const auto* PS = PC->GetPlayerState<ARSPlayerState>())
+				{
+					if (StorageSubsystem->HasPendingStageResult(PS->GetUniqueId()))
+					{
+						if (auto* ColonyPC = Cast<AColonyPlayerController>(NewPlayer))
+						{
+							ColonyPC->Client_ShowStageResultWidget();
+						}
+					}
+				}
 			}
 		}
 	}

@@ -59,9 +59,9 @@ namespace RSUtils
 
 	int32 GetStatPriority(const FGameplayTag& StatTag);
 
-	void OpenLevelWithInventory(const UObject* WorldContextObject, FName LevelName, bool bStoreInventory = true, bool bAbsolute = true, FString Options = FString(TEXT("")));
+	void OpenLevelWithDataStorage(const UObject* WorldContextObject, FName LevelName, bool bStoreData = true, bool bAbsolute = true, FString Options = FString(TEXT("")));
 
-	bool ServerTravelWithInventory(UWorld* World, const FString& InURL, bool bStoreInventory = false,
+	bool ServerTravelWithDataStorage(UWorld* World, const FString& InURL, bool bStoreData = false,
 	                               bool bAbsolute = false, bool bShouldSkipGameNotify = false);
 
 	FORCEINLINE bool CheckChance(float Percent)

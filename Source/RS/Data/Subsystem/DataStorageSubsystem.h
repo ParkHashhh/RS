@@ -3,34 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "RS/RSTypes.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "DataStorageSubsystem.generated.h"
 
 class ARSPlayerController;
-
-USTRUCT()
-struct RS_API FItemStorageInfo
-{
-	GENERATED_BODY()
-
-	UPROPERTY()
-	FName RowName;
-
-	UPROPERTY()
-	int32 Count;
-};
-
-USTRUCT()
-struct RS_API FStageResultInfo
-{
-	GENERATED_BODY()
-
-	UPROPERTY()
-	int32 KillCount;
-
-	UPROPERTY()
-	TArray<FItemStorageInfo> AchievedItems;
-};
 
 /**
  *
@@ -41,15 +18,27 @@ class RS_API UDataStorageSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 	// 임시로 인벤토리 정보를 저장. 간단하게 TableRowName과 Count를 저장
-	TMap<FUniqueNetIdRepl, TArray<FItemStorageInfo>> TempInventoryStorage;
+	TMap<FUniqueNetIdRepl, TArray<FItemStorageInfo>> PreviousInventoryStorage;
 
-	// 플레이어의 이전 스테이지 통계. 현재는 새로 획득한 아이템과 전체 킬수만 보존. AMainGameMode에서 집계하는 것 중 필요한 것만
-	TMap<FUniqueNetIdRepl, FStageResultInfo> StageResultStorage;
+	// 전전스테이지 인벤토리. 직전 스테이지 인벤토리와 비교하여 직전스테이지에서'만' 신규로 획득한 아이템 판별 용
+	TMap<FUniqueNetIdRepl, TArray<FItemStorageInfo>> PrePreviousInventoryStorage;
+
+	TMap<FUniqueNetIdRepl, FStageResultStatInfo> PreviousStageResultStatStorage;
+
+	TSet<FUniqueNetIdRepl> PendingStageResultPlayers;
 
 public:
 	void StoreAllPlayerInventory();
 	void RestorePlayerInventory(const ARSPlayerController* NewPlayer);
 
-	void StoreAllPlayerStageResult();
-	void RestorePlayerStageResult(const ARSPlayerController* NewPlayer);
+	bool TryGetPrePreviousInventoryStorage(const APlayerState* InState, TArray<FItemStorageInfo>& OutStorage) const;
+
+	void StoreAllPlayerStageResultStat();
+	void RestorePlayerStageResultStat(const ARSPlayerController* NewPlayer);
+
+public:
+	void MarkPendingStageResult(const FUniqueNetIdRepl& UID);
+	bool ConsumePendingStageResult(const FUniqueNetIdRepl& UID);
+
+	bool HasPendingStageResult(const FUniqueNetIdRepl& UID) const;
 };

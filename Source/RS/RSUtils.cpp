@@ -80,10 +80,10 @@ int32 RSUtils::GetStatPriority(const FGameplayTag& StatTag)
 	return INT_MAX;
 }
 
-void RSUtils::OpenLevelWithInventory(const UObject* WorldContextObject, FName LevelName, bool bStoreInventory,
+void RSUtils::OpenLevelWithDataStorage(const UObject* WorldContextObject, FName LevelName, bool bStoreData,
 	bool bAbsolute, FString Options)
 {
-	if (bStoreInventory)
+	if (bStoreData)
 	{
 		if (const UWorld* World = GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::LogAndReturnNull))
 		{
@@ -92,6 +92,7 @@ void RSUtils::OpenLevelWithInventory(const UObject* WorldContextObject, FName Le
 				if (auto* StoreSystem = GI->GetSubsystem<UDataStorageSubsystem>())
 				{
 					StoreSystem->StoreAllPlayerInventory();
+					StoreSystem->StoreAllPlayerStageResultStat();
 				}
 			}
 		}
@@ -100,7 +101,7 @@ void RSUtils::OpenLevelWithInventory(const UObject* WorldContextObject, FName Le
 	UGameplayStatics::OpenLevel(WorldContextObject, LevelName, bAbsolute, Options);
 }
 
-bool RSUtils::ServerTravelWithInventory(UWorld* World, const FString& InURL, bool bStoreInventory, bool bAbsolute,
+bool RSUtils::ServerTravelWithDataStorage(UWorld* World, const FString& InURL, bool bStoreData, bool bAbsolute,
                                         bool bShouldSkipGameNotify)
 {
 	if (!World)
@@ -108,13 +109,14 @@ bool RSUtils::ServerTravelWithInventory(UWorld* World, const FString& InURL, boo
 		return false;
 	}
 
-	if (bStoreInventory)
+	if (bStoreData)
 	{
 		if (const UGameInstance* GI = World->GetGameInstance())
 		{
 			if (auto* StoreSystem = GI->GetSubsystem<UDataStorageSubsystem>())
 			{
 				StoreSystem->StoreAllPlayerInventory();
+				StoreSystem->StoreAllPlayerStageResultStat();
 			}
 		}
 	}

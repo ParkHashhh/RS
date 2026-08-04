@@ -44,6 +44,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "NeedProperty")
 	int32			SpawnNumber;
 
+	//무한스폰 타이머 핸들을 보관하기 위한 멤버 변수
 	FTimerHandle		SpawnTimer;
 
 	UPROPERTY(VisibleAnywhere)
@@ -91,6 +92,9 @@ private:
 	UFUNCTION()
 	void PlayerOutArea(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+	void AddPlayerCount(AActor* OtherActor);
+	void CheckStartOverlap();
 
 public:
 	void SpawnZombieByBossTrigger(AActor* Target);

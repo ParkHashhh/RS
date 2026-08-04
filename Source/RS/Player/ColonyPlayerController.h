@@ -7,6 +7,8 @@
 #include "GameFramework/PlayerController.h"
 #include "ColonyPlayerController.generated.h"
 
+class UStageResultWidget;
+
 /**
  * 
  */
@@ -31,6 +33,9 @@ protected:
 
 	TObjectPtr<UUserWidget> MapSelectWidget;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "UI")
+	TSubclassOf<UStageResultWidget> StageResultWidgetClass;
+
 	UPROPERTY(EditDefaultsOnly, Category = "UI|Sound")
 	TObjectPtr<USoundBase> MapSelectOpenSound;
 	UPROPERTY(EditDefaultsOnly, Category = "UI|Sound")
@@ -43,11 +48,17 @@ public:
 	}
 	void ShowMapSelcetWidget();
 	void RemoveMapSelectWidget();
-
+	void ShowStageResultWidget();
 protected:
 	virtual void BeginPlay() override;
 
 public:
 	UFUNCTION(Server, Reliable)
 	void Server_RequestPortal(FName LevelName, const FString& PackagePath);
+
+	UFUNCTION(Client, Reliable)
+	void Client_ShowStageResultWidget();
+
+	UFUNCTION(Server, Reliable)
+	void Server_ClearPendingStageResult();
 };

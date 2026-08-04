@@ -31,6 +31,17 @@ protected:
 	UPROPERTY(ReplicatedUsing = OnRep_SpawnEffectClient)
 	bool bIsPrintClient = false;
 
+	//폭발 직전 연출 중임을 나타내기 위한 변수
+	UPROPERTY(Replicated)
+	bool bIsReadyToExplosion = false;
+
+	float Rate = 1.f;
+
+	float Radian = 0.f;
+
+	//원래 크기를 저장하는 변수
+	FVector OriginScale;
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;

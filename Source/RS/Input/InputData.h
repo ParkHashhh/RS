@@ -32,8 +32,8 @@ struct FInputKeyNames
 	inline static const FName SpecPrev = FName(TEXT("SpecPrev"));
 	inline static const FName Inventory = FName(TEXT("Inventory"));
 	inline static const FName Interaction = FName(TEXT("Interaction"));
-	inline static const FName Cursor = FName(TEXT("Cursor"));
 	inline static const FName Pause = FName(TEXT("Pause"));
+	inline static const FName Result = FName(TEXT("Result"));
 
 	inline static const FName Debug_00 = FName(TEXT("debug_00"));
 	inline static const FName Debug_01 = FName(TEXT("debug_01"));
