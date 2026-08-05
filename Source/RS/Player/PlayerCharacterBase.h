@@ -141,7 +141,7 @@ protected:
 	float FireRadius = 300.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Combat|BulletElement")
-	TObjectPtr<class UNiagaraSystem> FireExplosionVFX;
+	TObjectPtr<class UParticleSystem> FireExplosionVFX;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Combat|BulletElement")
 	float ElectricDamageRatio = 0.5f;

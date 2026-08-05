@@ -1670,7 +1670,7 @@ void APlayerCharacterBase::ApplyFireExplosion(const FVector& Location)
 
 	if (IsValid(FireExplosionVFX))
 	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), FireExplosionVFX, Location);
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), FireExplosionVFX, Location);
 	}
 }
 
