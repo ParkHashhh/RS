@@ -80,10 +80,10 @@ struct RS_API FItemTableInfo : public FTableRowBase
 	FText Name{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TObjectPtr<UTexture2D> IconTexture;
+	TObjectPtr<UTexture2D> IconTexture{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TObjectPtr<UPaperSprite> IconSprite;
+	TObjectPtr<UPaperSprite> IconSprite{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bIsStackable{true};
@@ -99,11 +99,11 @@ struct RS_API FItemTableInfo : public FTableRowBase
 
 	// 모든 아이템 스탯 처리를 일괄 담당할 마스터 GE 클래스 레퍼런스
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item|GAS")
-	TSubclassOf<UGameplayEffect> MasterItemEffectClass;
+	TSubclassOf<UGameplayEffect> MasterItemEffectClass{};
 
 	// 기획자가 3~5개 등 원하는 만큼 자유롭게 넣을 수 있는 아이템 옵션 리스트
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Item|GAS")
-	TArray<FItemOption> ItemOptions;
+	TArray<FItemOption> ItemOptions{};
 };
 
 USTRUCT(BlueprintType)
@@ -163,10 +163,10 @@ struct RS_API FPlayerDefaultInfo : public FTableRowBase
 	float DashSpeed{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Stat|Damage")
-	float AttackPower;
+	float AttackPower{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Stat|Damage")
-	float DefensePower;
+	float DefensePower{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player|Stat|Shot")
 	int32 Ammo{};
@@ -218,79 +218,79 @@ struct RS_API FZombieDefaultInfo : public FTableRowBase
 	float RunSpeed{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Damage")
-	float AttackPower;
+	float AttackPower{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Damage")
-	float DefensePower;
+	float DefensePower{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Range")
-	float AttackDistance;
+	float AttackDistance{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Detect")
-	float DetectRange_Sight;
+	float DetectRange_Sight{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Detect")
-	float DetectRange_Hearing;
+	float DetectRange_Hearing{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|CheckBoss")
-	bool bIsBoss;
+	bool bIsBoss{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Type")
-	float Normal_Rarity;
+	float Normal_Rarity{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Cooldown")
-	float Special_SkillCooldown;
+	float Special_SkillCooldown{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Damage")
-	float Special_SkillDamage;
+	float Special_SkillDamage{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Damage")
-	float Special_SkillDotDamage;
+	float Special_SkillDotDamage{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Damage")
-	float	Boss_Skill1Damage;
+	float	Boss_Skill1Damage{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Cooldown")
-	float	Boss_Skill1Cooldown;
+	float	Boss_Skill1Cooldown{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Damage")
-	float	Boss_Skill2Damage;
+	float	Boss_Skill2Damage{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Cooldown")
-	float	Boss_Skill2Cooldown;
+	float	Boss_Skill2Cooldown{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Damage")
-	float	Boss_Skill3Damage;
+	float	Boss_Skill3Damage{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Cooldown")
-	float	Boss_Skill3Cooldown;
+	float	Boss_Skill3Cooldown{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Damage")
-	float	Boss_Skill4Damage;
+	float	Boss_Skill4Damage{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Cooldown")
-	float	Boss_Skill4Cooldown;
+	float	Boss_Skill4Cooldown{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Damage")
-	float	Boss_Skill5Damage;
+	float	Boss_Skill5Damage{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Cooldown")
-	float	Boss_Skill5Cooldown;
+	float	Boss_Skill5Cooldown{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Damage")
-	float	Boss_Skill6Damage;
+	float	Boss_Skill6Damage{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Cooldown")
-	float	Boss_Skill6Cooldown;
+	float	Boss_Skill6Cooldown{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Range")
-	float	Boss_MeleeAttackDistance;
+	float	Boss_MeleeAttackDistance{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Range")
-	float	Boss_MiddleAttackDistance;
+	float	Boss_MiddleAttackDistance{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Zombie|Stat|Range")
-	float	Boss_RangeAttackDistance;
+	float	Boss_RangeAttackDistance{};
 };
 
 //보스의 스킬은 1~7이 되도록 위치를 고정한다.
@@ -341,17 +341,17 @@ struct RS_API FStatDisplayTableInfo : public FTableRowBase
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere)
-	FText DisplayName;
+	FText DisplayName{};
 
 	UPROPERTY(EditAnywhere)
-	FText DescriptionFormat;
+	FText DescriptionFormat{};
 
 	UPROPERTY(EditAnywhere)
-	TObjectPtr<UPaperSprite> Icon;
+	TObjectPtr<UPaperSprite> Icon{};
 
 	// 값이 0이면 UI에서 숨길지 여부
 	UPROPERTY(EditAnywhere)
-	bool bHiddenIfZero = true;
+	bool bHiddenIfZero{true};
 };
 
 UENUM(BlueprintType)
@@ -371,19 +371,19 @@ struct RS_API FStageObjectiveTableInfo : public FTableRowBase
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	EClearCondition ClearCondition;
+	EClearCondition ClearCondition{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	float Goal;
+	float Goal{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	FText ObjectiveName;
+	FText ObjectiveName{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	FText ObjectiveDescription;
+	FText ObjectiveDescription{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	FName TargetTableRowName;
+	FName TargetTableRowName{};
 };
 
 USTRUCT(BlueprintType)
@@ -392,16 +392,16 @@ struct FStageObjective
 	GENERATED_BODY()
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stage|Objective")
-	FName TableRowName;
+	FName TableRowName{};
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stage|Objective")
-	float Current;
+	float Current{};
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stage|Objective")
-	float Goal;
+	float Goal{};
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stage|Objective")
-	TArray<FDataTableRowHandle> Targets;
+	TArray<FDataTableRowHandle> Targets{};
 
 	bool IsValid() const
 	{
@@ -471,10 +471,10 @@ struct RS_API FStageTableInfo : public FTableRowBase
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	FText DisplayName;
+	FText DisplayName{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TArray<FName> ObjectiveRowNames;
+	TArray<FName> ObjectiveRowNames{};
 };
 
 USTRUCT(BlueprintType)
@@ -483,13 +483,13 @@ struct RS_API FKillInfo
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	FUniqueNetIdRepl UniqueNetId;
+	FUniqueNetIdRepl UniqueNetId{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	FName MonsterRowName;
+	FName MonsterRowName{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	int32 KillCount;
+	int32 KillCount{};
 };
 
 USTRUCT(BlueprintType)
@@ -498,13 +498,13 @@ struct RS_API FStageObjectiveEntry : public FFastArraySerializerItem
 	GENERATED_BODY()
 
 	UPROPERTY()
-	FName TableRowName;
+	FName TableRowName{};
 
 	UPROPERTY()
-	float CurreentProgress;
+	float CurreentProgress{};
 
 	UPROPERTY()
-	int32 DisplayOrder;
+	int32 DisplayOrder{};
 
 	FStageObjectiveEntry() = default;
 	FStageObjectiveEntry(FName TableRowName, float CurrentProgress, int32 DisplayOrder)
@@ -542,15 +542,14 @@ struct RS_API FStageObjectiveList : public FFastArraySerializer
 	friend class ARSGameState;
 
 	UPROPERTY()
-	TArray<FStageObjectiveEntry> Entries;
+	TArray<FStageObjectiveEntry> Entries{};
 
 	UPROPERTY(NotReplicated)
-	TObjectPtr<ARSGameState> Owner = nullptr;
+	TObjectPtr<ARSGameState> Owner{};
 
 private:
 	UPROPERTY(NotReplicated)
-
-	TMap<FName, int32> TableRowNameIndexMap;
+	TMap<FName, int32> TableRowNameIndexMap{};
 
 public:
 	bool NetdeltNetDeltaSerialize(FNetDeltaSerializeInfo& DeltaParams)
@@ -585,10 +584,10 @@ struct RS_API FItemStorageInfo
 	GENERATED_BODY()
 
 	UPROPERTY()
-	FName RowName;
+	FName RowName{};
 
 	UPROPERTY()
-	int32 Count;
+	int32 Count{};
 };
 
 USTRUCT()
@@ -597,8 +596,8 @@ struct RS_API FStageResultStatInfo
 	GENERATED_BODY()
 
 	UPROPERTY()
-	int32 KillCount;
+	int32 KillCount{};
 
 	UPROPERTY()
-	float PlayTime;
+	float PlayTime{};
 };

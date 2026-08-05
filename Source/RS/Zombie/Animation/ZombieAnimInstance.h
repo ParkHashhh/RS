@@ -14,25 +14,25 @@ struct FAnimPreset
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TMap<FName, TObjectPtr<UAnimSequence>> AnimMap;
+	TMap<FName, TObjectPtr<UAnimSequence>> AnimMap{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TMap<FName, TObjectPtr<UBlendSpace>> BlendMap;
+	TMap<FName, TObjectPtr<UBlendSpace>> BlendMap{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TMap<FName, TObjectPtr<UAnimMontage>> AtkMontageMap;
+	TMap<FName, TObjectPtr<UAnimMontage>> AtkMontageMap{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TMap<FName, TObjectPtr<UAnimMontage>> SkillMontageMap;
+	TMap<FName, TObjectPtr<UAnimMontage>> SkillMontageMap{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TMap<FName, TObjectPtr<UAnimMontage>> CommonMontageMap;
+	TMap<FName, TObjectPtr<UAnimMontage>> CommonMontageMap{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	float WalkNativeSpeed;
+	float WalkNativeSpeed{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	float RunNativeSpeed;
+	float RunNativeSpeed{};
 };
 
 UCLASS()

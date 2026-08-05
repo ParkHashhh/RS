@@ -6,6 +6,14 @@
 #include "Engine/DeveloperSettings.h"
 #include "RSDataSettings.generated.h"
 
+class UPlayerDefaultInfoTableAsset;
+class UItemInfoTableAsset;
+class UMiscInfoTableAsset;
+class UStatDisplayInfoTableAsset;
+class UZombieDefaultInfoTableAsset;
+class UStageObjectiveInfoTableAsset;
+class UStageInfoTableAsset;
+
 /**
  * 프로젝트 전체에서 사용되는 데이터 관련 설정입니다.
  * 프로젝트 세팅 -> Game -> RS Data Settings에서 편집할 수 있습니다.
@@ -20,27 +28,27 @@ public:
 
 	// 플레이어 캐릭터의 기본 정보가 담긴 테이블 애셋
 	UPROPERTY(Config, EditAnywhere, Category="Data")
-	FPrimaryAssetId PlayerDefaultInfoTableAsset;
+	TSoftObjectPtr<UPlayerDefaultInfoTableAsset> PlayerDefaultInfoTableAsset;
 
 	// 아이템 정보가 담긴 데이터 테이블 애셋
 	UPROPERTY(Config, EditAnywhere, Category="Data")
-	FPrimaryAssetId ItemInfoTableAsset;
+	TSoftObjectPtr<UItemInfoTableAsset> ItemInfoTableAsset;
 
 	// 기타 데이터 테이블 애셋
 	UPROPERTY(Config, EditAnywhere, Category="Data")
-	FPrimaryAssetId MiscInfoTableAsset;
+	TSoftObjectPtr<UMiscInfoTableAsset> MiscInfoTableAsset;
 
 	// 스탯 설명 테이블 애셋
 	UPROPERTY(Config, EditAnywhere, Category="Data")
-	FPrimaryAssetId StatDisplayInfoTableAsset;
+	TSoftObjectPtr<UStatDisplayInfoTableAsset> StatDisplayInfoTableAsset;
 
 	// 좀비의 기본 정보가 담긴 테이블 애셋
 	UPROPERTY(Config, EditAnywhere, Category = "Data")
-	FPrimaryAssetId ZombieDefaultInfoTableAsset;
+	TSoftObjectPtr<UZombieDefaultInfoTableAsset> ZombieDefaultInfoTableAsset;
 
 	UPROPERTY(Config, EditAnywhere, Category = "Data")
-	FPrimaryAssetId StageObjectiveInfoTableAsset;
+	TSoftObjectPtr<UStageObjectiveInfoTableAsset> StageObjectiveInfoTableAsset;
 
 	UPROPERTY(Config, EditAnywhere, Category = "Data")
-	FPrimaryAssetId StageInfoTableAsset;
+	TSoftObjectPtr<UStageInfoTableAsset> StageInfoTableAsset;
 };

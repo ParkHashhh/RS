@@ -27,10 +27,10 @@ struct FZombieSkeletalMeshSet
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<USkeletalMesh> BodyMesh;
+	TObjectPtr<USkeletalMesh> BodyMesh{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	TArray<TObjectPtr<USkeletalMesh>> ClothMeshArray;
+	TArray<TObjectPtr<USkeletalMesh>> ClothMeshArray{};
 };
 
 UCLASS()

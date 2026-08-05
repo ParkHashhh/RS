@@ -25,7 +25,7 @@ struct FInventoryEntry : public FFastArraySerializerItem
 	GENERATED_BODY()
 
 	UPROPERTY()
-	TObjectPtr<UItemInstance> Item;
+	TObjectPtr<UItemInstance> Item{};
 
 	FInventoryEntry() = default;
 
@@ -67,14 +67,14 @@ struct FInventoryList : public FFastArraySerializer
 	friend class UInventoryComponent;
 
 	UPROPERTY()
-	TArray<FInventoryEntry> Entries;
+	TArray<FInventoryEntry> Entries{};
 
 	UPROPERTY(NotReplicated)
-	TObjectPtr<UInventoryComponent> Owner = nullptr;
+	TObjectPtr<UInventoryComponent> Owner{};
 
 private:
 	UPROPERTY(NotReplicated)
-	TMap<FGuid, int32> GuidIndexMap;
+	TMap<FGuid, int32> GuidIndexMap{};
 
 public:
 	FORCEINLINE bool NetDeltaSerialize(FNetDeltaSerializeInfo& DeltaParams)
@@ -121,9 +121,6 @@ public:
 private:
 	UPROPERTY(Replicated)
 	FInventoryList InventoryList;
-
-	UPROPERTY()
-	TMap<FGameplayTag, float> ItemModifiedStats;
 
 public:
 	FOnItemChanged OnItemAddedDelegate;
@@ -184,11 +181,6 @@ public:
 		return InventoryList.Entries.Num();
 	}
 
-	const TMap<FGameplayTag, float>& GetItemModifiedStats() const
-	{
-		return ItemModifiedStats;
-	}
-
 	TArray<FItemStorageInfo> GetNewAchivedItems() const;
 
 protected:
@@ -200,8 +192,6 @@ private:
 	void OnItemAdded(UItemInstance* Item);
 	void OnItemChanged(UItemInstance* Item);
 	void OnItemRemoved(UItemInstance* Item);
-
-	void CalculateItemModifiedStats();
 
 #pragma endregion
 };

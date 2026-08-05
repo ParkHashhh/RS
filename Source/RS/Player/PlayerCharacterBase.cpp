@@ -145,19 +145,16 @@ void APlayerCharacterBase::BeginPlay()
 				if (const auto* StorageSubsystem = GI->GetSubsystem<UDataStorageSubsystem>())
 				{
 					bSkipForcedGameOnly = StorageSubsystem->HasPendingStageResult(PS->GetUniqueId());
-					RS_PRINT_SCREEN(10.f, FColor::Cyan, TEXT("PlayerCharacterBase::BeginPlay - HasPendingStageResult=%s"),
-						bSkipForcedGameOnly ? TEXT("true") : TEXT("false"));
 				}
 			}
 		}
-		else
 		{
-			RS_PRINT_SCREEN(10.f, FColor::Red, TEXT("PlayerCharacterBase::BeginPlay - PlayerState is NULL"));
+			RS_PRINT_SCREEN(10.f, FColor::Red, TEXT("PlayerCharacterBase BeginPlay - PlayerState is NULL"));
 		}
 
 		if (!bSkipForcedGameOnly)
 		{
-			RS_PRINT_SCREEN(10.f, FColor::Orange, TEXT("PlayerCharacterBase::BeginPlay - forcing GameOnly+cursor off"));
+			RS_PRINT_SCREEN(10.f, FColor::Orange, TEXT("PlayerCharacterBase BeginPlay - forcing GameOnly+cursor off"));
 			FInputModeGameOnly InputModeData;
 			InputModeData.SetConsumeCaptureMouseDown(true);
 			PlayerController->SetInputMode(InputModeData);
@@ -483,6 +480,12 @@ void APlayerCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		EnhancedInput->BindAction(Action, ETriggerEvent::Completed, this, &APlayerCharacterBase::OnResultReleased);
 	}
 
+	Action = InputData->FindAction(FInputKeyNames::MapSelect);
+	if (Action)
+	{
+		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::MapSelectKey);
+	}
+
 #if !UE_BUILD_SHIPPING
 	Action = InputData->FindAction(FInputKeyNames::Debug_00);
 	if (Action)
@@ -802,6 +805,16 @@ void APlayerCharacterBase::PauseKey(const FInputActionValue& Value)
 	PC->bShowMouseCursor = bShow;
 }
 
+void APlayerCharacterBase::MapSelectKey(const FInputActionValue& Value)
+{
+	AColonyPlayerController* CPC = Cast<AColonyPlayerController>(PlayerController);
+
+	if (CPC)
+	{
+		CPC->ShowMapSelcetWidget();
+	}
+}
+
 
 void APlayerCharacterBase::Server_SpawnGrenade_Implementation(const FVector& SpawnLocation,
                                                               const FRotator& GrenadeRotation)
@@ -1107,12 +1120,7 @@ void APlayerCharacterBase::DebugKey7(const FInputActionValue& Value)
 	RS_LOG_DEBUG(LogRSCommon, Log, TEXT("DebugKey7"));
 	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("DebugKey7"));
 
-	AColonyPlayerController* CPC = Cast<AColonyPlayerController>(PlayerController);
 
-	if (CPC)
-	{
-		CPC->ShowMapSelcetWidget();
-	}
 }
 
 void APlayerCharacterBase::DebugKey8(const FInputActionValue& Value)
@@ -1608,12 +1616,17 @@ void APlayerCharacterBase::ExecuteHitEffect(const FHitResult& Hit)
 
 void APlayerCharacterBase::TryApplyBulletElements(AActor* TargetActor, const FHitResult& Hit)
 {
+	RS_PRINT_SCREEN(100.f, FColor::Cyan, TEXT("TryApplyBulletElements"));
+
 	if (!IsValid(ASC))
 	{
 		return;
 	}
 
 	const float FirePercent = ASC->GetNumericAttribute(UPlayerAttributeSet::GetFireBulletChanceAttribute());
+	RS_PRINT_SCREEN(10.f, FColor::Red, TEXT("CheckChance : %d"), RSUtils::CheckChance(FirePercent));
+	RS_PRINT_SCREEN(10.f, FColor::Red, TEXT("FirePercent : %.2f"), FirePercent);
+
 	if (RSUtils::CheckChance(FirePercent))
 	{
 		ApplyFireExplosion(Hit.ImpactPoint);
@@ -1849,6 +1862,8 @@ bool APlayerCharacterBase::CalculateHit(FHitResult& Hit, float RandomX, float Ra
 
 void APlayerCharacterBase::Multicast_ExecuteVisualEffect_Implementation(const FHitResult& Hit, bool bIsHit)
 {
+	RS_PRINT_SCREEN(100.f, FColor::Cyan, TEXT("Multicast_ExecuteVisualEffect_Implementation"));
+
 	FGameplayCueParameters CueParams;
 	CueParams.Location = Hit.ImpactPoint;
 	CueParams.Normal = Hit.ImpactNormal;
@@ -1864,6 +1879,9 @@ void APlayerCharacterBase::Multicast_ExecuteVisualEffect_Implementation(const FH
 
 void APlayerCharacterBase::Server_ShootAttackRay_Implementation(float RandomX, float RandomY)
 {
+
+	RS_PRINT_SCREEN(100.f, FColor::Cyan, TEXT("Server_ShootAttackRay_Implementation"));
+
 	// AI가 들을 수 있는 함수
 	FVector MuzzleLocation = WeaponMeshComponent->GetSocketLocation(FName("Muzzle"));
 	UAISense_Hearing::ReportNoiseEvent(GetWorld(), MuzzleLocation, 1, this, 3000);
@@ -1872,6 +1890,7 @@ void APlayerCharacterBase::Server_ShootAttackRay_Implementation(float RandomX, f
 	FHitResult Hit;
 	if (CalculateHit(Hit, RandomX, RandomY))
 	{
+		RS_PRINT_SCREEN(100.f, FColor::Cyan, TEXT("CalculateHit"));
 		AActor* TargetActor = Hit.GetActor();
 		// 맞은 액터(TargetActor) 가져오기
 		if (!TargetActor)
@@ -1882,6 +1901,7 @@ void APlayerCharacterBase::Server_ShootAttackRay_Implementation(float RandomX, f
 		// 적군인지 확인
 		if (Attitude == ETeamAttitude::Hostile)
 		{
+
 			Server_ApplyDamage(TargetActor, Hit, GetAttributeSet()->GetAttackPower());
 			Multicast_ExecuteVisualEffect(Hit, true);
 			TryApplyBulletElements(TargetActor, Hit);
@@ -1977,6 +1997,8 @@ void APlayerCharacterBase::ShootAttackRay()
 
 void APlayerCharacterBase::Server_ApplyDamage_Implementation(AActor* TargetActor, FHitResult Hit, float Damage)
 {
+	RS_PRINT_SCREEN(100.f, FColor::Cyan, TEXT("Server_ApplyDamage_Implementation"));
+
 	auto* TargetASC = TargetActor->FindComponentByClass<UAbilitySystemComponent>();
 	if (!TargetASC)
 	{
@@ -2055,6 +2077,7 @@ void APlayerCharacterBase::OnPlayerDefaultInfoLoaded()
 
 					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::FireBulletChance,
 					                                         Info->FireBulletChancePercent);
+
 					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::FireBulletDamage,
 					                                         Info->FireBulletDamagePercent);
 					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::IceBulletChance,
@@ -2070,7 +2093,24 @@ void APlayerCharacterBase::OnPlayerDefaultInfoLoaded()
 					SpecHandle.Data->SetSetByCallerMagnitude(RSTags::Common::PoisonBulletDamage,
 					                                         Info->PoisonBulletDamagePercent);
 
+					RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| MaxHP(Table) : %.2f"), *LOG_LINE_INFO, Info->MaxHP);
+					RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| MaxHP(ASC) : %.2f"), *LOG_LINE_INFO, ASC->GetNumericAttribute(UPlayerAttributeSet::GetMaxHPAttribute()));
+
+					RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| FireBulletChance(Table) : %.2f"), *LOG_LINE_INFO, Info->FireBulletChancePercent);
+					RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| FireBulletChance(ASC) : %.2f"), *LOG_LINE_INFO, ASC->GetNumericAttribute(UPlayerAttributeSet::GetFireBulletChanceAttribute()));
+
+					RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| IceBulletChance(Table) : %.2f"), *LOG_LINE_INFO, Info->IceBulletChancePercent);
+					RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| IceBulletChance(ASC) : %.2f"), *LOG_LINE_INFO, ASC->GetNumericAttribute(UPlayerAttributeSet::GetIceBulletChanceAttribute()));
+
 					ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
+
+					RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| MaxHP(ASC) : %.2f"), *LOG_LINE_INFO, ASC->GetNumericAttribute(UPlayerAttributeSet::GetMaxHPAttribute()));
+					RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| FireBulletChance(ASC) : %.2f"), *LOG_LINE_INFO, ASC->GetNumericAttribute(UPlayerAttributeSet::GetFireBulletChanceAttribute()));
+					RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| IceBulletChance(ASC) : %.2f"), *LOG_LINE_INFO, ASC->GetNumericAttribute(UPlayerAttributeSet::GetIceBulletChanceAttribute()));
+
+
+
+
 				}
 
 				NotifyASCReady();

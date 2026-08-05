@@ -6,6 +6,7 @@
 #include "RS/UI/RSUserWidget.h"
 #include "InventoryPopupWidget.generated.h"
 
+class UGameplayEffect;
 struct FGameplayTag;
 class UStatEntryObject;
 class UListView;
@@ -21,6 +22,10 @@ UCLASS()
 class RS_API UInventoryPopupWidget : public URSUserWidget
 {
 	GENERATED_BODY()
+
+private:
+	UPROPERTY(EditDefaultsOnly, meta=(AllowPrivateAccess))
+	TSubclassOf<UGameplayEffect> EquipItemEffectClass;
 
 	UPROPERTY(EditDefaultsOnly, meta=(AllowPrivateAccess=true))
 	int32 MaxSlotCount = 24;
@@ -72,4 +77,6 @@ private:
 	void AddStat(const FGameplayTag& StatTag, const FText& StatName, const FText& StatDescription);
 
 	void OnGameplayReadyChanged(bool bGameplayReady);
+
+	float GetAttributeValueWithTag(const FGameplayTag& TargetTag) const;
 };

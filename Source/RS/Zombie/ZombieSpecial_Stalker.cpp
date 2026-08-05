@@ -329,6 +329,9 @@ void AZombieSpecial_Stalker::SkillStart()
 	{
 		SetStalkerOpacity(1.f);
 	}
+
+	//도약공격 사운드를 재생한다 (기합)
+	PlayZombieSkillSound();
 }
 
 void AZombieSpecial_Stalker::SkillEnd()

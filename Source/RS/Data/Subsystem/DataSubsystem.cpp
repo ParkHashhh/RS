@@ -76,7 +76,7 @@ const FMiscTableInfo* UDataSubsystem::GetMiscTableInfo() const
 		return nullptr;
 	}
 
-	const auto* Row = ItemInfoTable->FindRow<FMiscTableInfo>(DefaultItemRowName, TEXT("MiscInfo"));
+	const auto* Row = MiscInfoTable->FindRow<FMiscTableInfo>(DefaultItemRowName, TEXT("MiscInfo"));
 	if (!Row)
 	{
 		RS_LOG_DEBUG(LogRSData, Warning, TEXT("%s: Failed to find row %s in MiscInfoTable"), *LOG_LINE_INFO,
@@ -250,33 +250,32 @@ bool UDataSubsystem::K2_GetStageTableInfo(FName Name, FStageTableInfo& OutStageI
 void UDataSubsystem::LoadItemInfoTable()
 {
 	const URSDataSettings* Settings = GetDefault<URSDataSettings>();
-	if (!Settings || !Settings->ItemInfoTableAsset.IsValid())
+	if (!Settings || Settings->ItemInfoTableAsset.IsNull())
 	{
 		RS_LOG_DEBUG(LogRSData, Error,
-		             TEXT("%s: ItemInfoTableAssetId is invalid. Check Project Settings -> RS Data Settings."),
+		             TEXT("%s: ItemInfoTableAsset is invalid. Check Project Settings -> RS Data Settings."),
 		             *LOG_LINE_INFO);
 		return;
 	}
 
-	const FPrimaryAssetId& TargetAssetId = Settings->ItemInfoTableAsset;
+	const FSoftObjectPath& TargetPath = Settings->ItemInfoTableAsset.ToSoftObjectPath();
 
 	RS_LOG_DEBUG(LogRSData, Log, TEXT("%s: Starting to load ItemInfoTableAsset (%s)"), *LOG_LINE_INFO,
-	             *TargetAssetId.ToString());
+	             *TargetPath.ToString());
 
 	auto& AssetManager = UAssetManager::Get();
-	AssetManager.LoadPrimaryAsset(TargetAssetId, TArray<FName>{},
-	                              FStreamableDelegate::CreateUObject(
-		                              this, &UDataSubsystem::OnItemInfoTableLoaded, TargetAssetId));
+	AssetManager.GetStreamableManager().RequestAsyncLoad(TargetPath,
+	                                                     FStreamableDelegate::CreateUObject(
+		                                                     this, &UDataSubsystem::OnItemInfoTableLoaded));
 }
 
-void UDataSubsystem::OnItemInfoTableLoaded(FPrimaryAssetId LoadedAssetID)
+void UDataSubsystem::OnItemInfoTableLoaded()
 {
-	const auto& AssetManager = UAssetManager::Get();
-	const auto* DataAsset = AssetManager.GetPrimaryAssetObject<UItemInfoTableAsset>(LoadedAssetID);
+	const URSDataSettings* Settings = GetDefault<URSDataSettings>();
+	const auto* DataAsset = Settings->ItemInfoTableAsset.Get();
 	if (!IsValid(DataAsset))
 	{
-		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to get Primary Asset Object for %s"), *LOG_LINE_INFO,
-		             *LoadedAssetID.ToString());
+		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to get DataAsset for ItemInfoTableAsset"), *LOG_LINE_INFO);
 		return;
 	}
 
@@ -284,7 +283,7 @@ void UDataSubsystem::OnItemInfoTableLoaded(FPrimaryAssetId LoadedAssetID)
 	if (!ItemInfoTable)
 	{
 		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to load DataTable from DataAsset %s"), *LOG_LINE_INFO,
-		             *LoadedAssetID.ToString());
+		             *DataAsset->GetName());
 		return;
 	}
 
@@ -313,7 +312,7 @@ void UDataSubsystem::OnItemInfoTableLoaded(FPrimaryAssetId LoadedAssetID)
 void UDataSubsystem::LoadMiscInfoTable()
 {
 	const URSDataSettings* Settings = GetDefault<URSDataSettings>();
-	if (!Settings || !Settings->MiscInfoTableAsset.IsValid())
+	if (!Settings || Settings->MiscInfoTableAsset.IsNull())
 	{
 		RS_LOG_DEBUG(LogRSData, Error,
 		             TEXT("%s: MiscInfoTableAsset is invalid. Check Project Settings -> RS Data Settings."),
@@ -321,25 +320,24 @@ void UDataSubsystem::LoadMiscInfoTable()
 		return;
 	}
 
-	const FPrimaryAssetId& TargetAssetId = Settings->MiscInfoTableAsset;
+	const FSoftObjectPath& TargetPath = Settings->MiscInfoTableAsset.ToSoftObjectPath();
 
 	RS_LOG_DEBUG(LogRSData, Log, TEXT("%s: Starting to load MiscInfoTableAsset (%s)"), *LOG_LINE_INFO,
-	             *TargetAssetId.ToString());
+	             *TargetPath.ToString());
 
 	auto& AssetManager = UAssetManager::Get();
-	AssetManager.LoadPrimaryAsset(TargetAssetId, TArray<FName>{},
-	                              FStreamableDelegate::CreateUObject(
-		                              this, &UDataSubsystem::OnMiscInfoTableLoaded, TargetAssetId));
+	AssetManager.GetStreamableManager().RequestAsyncLoad(TargetPath,
+	                                                     FStreamableDelegate::CreateUObject(
+		                                                     this, &UDataSubsystem::OnMiscInfoTableLoaded));
 }
 
-void UDataSubsystem::OnMiscInfoTableLoaded(FPrimaryAssetId LoadedAssetID)
+void UDataSubsystem::OnMiscInfoTableLoaded()
 {
-	const auto& AssetManager = UAssetManager::Get();
-	const auto* DataAsset = AssetManager.GetPrimaryAssetObject<UMiscInfoTableAsset>(LoadedAssetID);
+	const URSDataSettings* Settings = GetDefault<URSDataSettings>();
+	const auto* DataAsset = Settings->MiscInfoTableAsset.Get();
 	if (!IsValid(DataAsset))
 	{
-		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to get Primary Asset Object for %s"), *LOG_LINE_INFO,
-		             *LoadedAssetID.ToString());
+		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to get DataAsset for MiscInfoTableAsset"), *LOG_LINE_INFO);
 		return;
 	}
 
@@ -347,7 +345,7 @@ void UDataSubsystem::OnMiscInfoTableLoaded(FPrimaryAssetId LoadedAssetID)
 	if (!MiscInfoTable)
 	{
 		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to load DataTable from DataAsset %s"), *LOG_LINE_INFO,
-		             *LoadedAssetID.ToString());
+		             *DataAsset->GetName());
 		return;
 	}
 
@@ -360,7 +358,7 @@ void UDataSubsystem::OnMiscInfoTableLoaded(FPrimaryAssetId LoadedAssetID)
 void UDataSubsystem::LoadPlayerDefaultInfoTable()
 {
 	const URSDataSettings* Settings = GetDefault<URSDataSettings>();
-	if (!Settings || !Settings->PlayerDefaultInfoTableAsset.IsValid())
+	if (!Settings || Settings->PlayerDefaultInfoTableAsset.IsNull())
 	{
 		RS_LOG_DEBUG(LogRSData, Error,
 		             TEXT("%s: PlayerDefaultInfoTableAsset is invalid. Check Project Settings -> RS Data Settings."),
@@ -368,25 +366,25 @@ void UDataSubsystem::LoadPlayerDefaultInfoTable()
 		return;
 	}
 
-	const FPrimaryAssetId& TargetAssetId = Settings->PlayerDefaultInfoTableAsset;
+	const FSoftObjectPath& TargetPath = Settings->PlayerDefaultInfoTableAsset.ToSoftObjectPath();
 
 	RS_LOG_DEBUG(LogRSData, Log, TEXT("%s: Starting to load PlayerDefaultInfoTableAsset (%s)"), *LOG_LINE_INFO,
-	             *TargetAssetId.ToString());
+	             *TargetPath.ToString());
 
 	auto& AssetManager = UAssetManager::Get();
-	AssetManager.LoadPrimaryAsset(TargetAssetId, TArray<FName>{},
-	                              FStreamableDelegate::CreateUObject(
-		                              this, &UDataSubsystem::OnPlayerDefaultInfoTableLoaded, TargetAssetId));
+	AssetManager.GetStreamableManager().RequestAsyncLoad(TargetPath,
+	                                                     FStreamableDelegate::CreateUObject(
+		                                                     this, &UDataSubsystem::OnPlayerDefaultInfoTableLoaded));
 }
 
-void UDataSubsystem::OnPlayerDefaultInfoTableLoaded(FPrimaryAssetId LoadedAssetID)
+void UDataSubsystem::OnPlayerDefaultInfoTableLoaded()
 {
-	const auto& AssetManager = UAssetManager::Get();
-	const auto* DataAsset = AssetManager.GetPrimaryAssetObject<UPlayerDefaultInfoTableAsset>(LoadedAssetID);
+	const URSDataSettings* Settings = GetDefault<URSDataSettings>();
+	const auto* DataAsset = Settings->PlayerDefaultInfoTableAsset.Get();
 	if (!IsValid(DataAsset))
 	{
-		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to get Primary Asset Object for %s"), *LOG_LINE_INFO,
-		             *LoadedAssetID.ToString());
+		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to get DataAsset for PlayerDefaultInfoTableAsset"),
+		             *LOG_LINE_INFO);
 		return;
 	}
 
@@ -394,7 +392,7 @@ void UDataSubsystem::OnPlayerDefaultInfoTableLoaded(FPrimaryAssetId LoadedAssetI
 	if (!PlayerDefaultInfoTable)
 	{
 		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to load DataTable from DataAsset %s"), *LOG_LINE_INFO,
-		             *LoadedAssetID.ToString());
+		             *DataAsset->GetName());
 		return;
 	}
 
@@ -407,33 +405,33 @@ void UDataSubsystem::OnPlayerDefaultInfoTableLoaded(FPrimaryAssetId LoadedAssetI
 void UDataSubsystem::LoadStatDisplayInfoTable()
 {
 	const URSDataSettings* Settings = GetDefault<URSDataSettings>();
-	if (!Settings || !Settings->StatDisplayInfoTableAsset.IsValid())
+	if (!Settings || Settings->StatDisplayInfoTableAsset.IsNull())
 	{
 		RS_LOG_DEBUG(LogRSData, Error,
-		             TEXT("%s: StatDisplayInfoTableAssetId is invalid. Check Project Settings -> RS Data Settings."),
+		             TEXT("%s: StatDisplayInfoTableAsset is invalid. Check Project Settings -> RS Data Settings."),
 		             *LOG_LINE_INFO);
 		return;
 	}
 
-	const FPrimaryAssetId& TargetAssetId = Settings->StatDisplayInfoTableAsset;
+	const FSoftObjectPath& TargetPath = Settings->StatDisplayInfoTableAsset.ToSoftObjectPath();
 
 	RS_LOG_DEBUG(LogRSData, Log, TEXT("%s: Starting to load StatDisplayInfoTableAsset (%s)"), *LOG_LINE_INFO,
-	             *TargetAssetId.ToString());
+	             *TargetPath.ToString());
 
 	auto& AssetManager = UAssetManager::Get();
-	AssetManager.LoadPrimaryAsset(TargetAssetId, TArray<FName>{},
-	                              FStreamableDelegate::CreateUObject(
-		                              this, &UDataSubsystem::OnStatDisplayInfoTableLoaded, TargetAssetId));
+	AssetManager.GetStreamableManager().RequestAsyncLoad(TargetPath,
+	                                                     FStreamableDelegate::CreateUObject(
+		                                                     this, &UDataSubsystem::OnStatDisplayInfoTableLoaded));
 }
 
-void UDataSubsystem::OnStatDisplayInfoTableLoaded(FPrimaryAssetId LoadedAssetID)
+void UDataSubsystem::OnStatDisplayInfoTableLoaded()
 {
-	const auto& AssetManager = UAssetManager::Get();
-	const auto* DataAsset = AssetManager.GetPrimaryAssetObject<UStatDisplayInfoTableAsset>(LoadedAssetID);
+	const URSDataSettings* Settings = GetDefault<URSDataSettings>();
+	const auto* DataAsset = Settings->StatDisplayInfoTableAsset.Get();
 	if (!IsValid(DataAsset))
 	{
-		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to get Primary Asset Object for %s"), *LOG_LINE_INFO,
-		             *LoadedAssetID.ToString());
+		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to get DataAsset for StatDisplayInfoTableAsset"),
+		             *LOG_LINE_INFO);
 		return;
 	}
 
@@ -441,7 +439,7 @@ void UDataSubsystem::OnStatDisplayInfoTableLoaded(FPrimaryAssetId LoadedAssetID)
 	if (!StatDisplayInfoTable)
 	{
 		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to load DataTable from DataAsset %s"), *LOG_LINE_INFO,
-		             *LoadedAssetID.ToString());
+		             *DataAsset->GetName());
 		return;
 	}
 
@@ -489,7 +487,7 @@ void UDataSubsystem::ValidateItemInfoTable(const UDataTable* Table) const
 void UDataSubsystem::LoadZombieDefaultInfoTable()
 {
 	const URSDataSettings* Settings = GetDefault<URSDataSettings>();
-	if (!Settings || !Settings->ZombieDefaultInfoTableAsset.IsValid())
+	if (!Settings || Settings->ZombieDefaultInfoTableAsset.IsNull())
 	{
 		RS_LOG_DEBUG(LogRSData, Error,
 		             TEXT("%s: ZombieDefaultInfoTableAsset is invalid. Check Project Settings -> RS Data Settings."),
@@ -497,25 +495,25 @@ void UDataSubsystem::LoadZombieDefaultInfoTable()
 		return;
 	}
 
-	const FPrimaryAssetId& TargetAssetId = Settings->ZombieDefaultInfoTableAsset;
+	const FSoftObjectPath& TargetPath = Settings->ZombieDefaultInfoTableAsset.ToSoftObjectPath();
 
 	RS_LOG_DEBUG(LogRSData, Log, TEXT("%s: Starting to load ZombieDefaultInfoTableAsset (%s)"), *LOG_LINE_INFO,
-	             *TargetAssetId.ToString());
+	             *TargetPath.ToString());
 
 	auto& AssetManager = UAssetManager::Get();
-	AssetManager.LoadPrimaryAsset(TargetAssetId, TArray<FName>{},
-	                              FStreamableDelegate::CreateUObject(
-		                              this, &UDataSubsystem::OnZombieDefaultInfoTableLoaded, TargetAssetId));
+	AssetManager.GetStreamableManager().RequestAsyncLoad(TargetPath,
+	                                                     FStreamableDelegate::CreateUObject(
+		                                                     this, &UDataSubsystem::OnZombieDefaultInfoTableLoaded));
 }
 
-void UDataSubsystem::OnZombieDefaultInfoTableLoaded(FPrimaryAssetId LoadedAssetID)
+void UDataSubsystem::OnZombieDefaultInfoTableLoaded()
 {
-	const auto& AssetManager = UAssetManager::Get();
-	const auto* DataAsset = AssetManager.GetPrimaryAssetObject<UZombieDefaultInfoTableAsset>(LoadedAssetID);
+	const URSDataSettings* Settings = GetDefault<URSDataSettings>();
+	const auto* DataAsset = Settings->ZombieDefaultInfoTableAsset.Get();
 	if (!IsValid(DataAsset))
 	{
-		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to get Primary Asset Object for %s"), *LOG_LINE_INFO,
-		             *LoadedAssetID.ToString());
+		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to get DataAsset for ZombieDefaultInfoTableAsset"),
+		             *LOG_LINE_INFO);
 		return;
 	}
 
@@ -523,7 +521,7 @@ void UDataSubsystem::OnZombieDefaultInfoTableLoaded(FPrimaryAssetId LoadedAssetI
 	if (!ZombieDefaultInfoTable)
 	{
 		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to load DataTable from DataAsset %s"), *LOG_LINE_INFO,
-		             *LoadedAssetID.ToString());
+		             *DataAsset->GetName());
 		return;
 	}
 
@@ -536,7 +534,7 @@ void UDataSubsystem::OnZombieDefaultInfoTableLoaded(FPrimaryAssetId LoadedAssetI
 void UDataSubsystem::LoadStageObjectiveInfoTable()
 {
 	const URSDataSettings* Settings = GetDefault<URSDataSettings>();
-	if (!Settings || !Settings->StageObjectiveInfoTableAsset.IsValid())
+	if (!Settings || Settings->StageObjectiveInfoTableAsset.IsNull())
 	{
 		RS_LOG_DEBUG(LogRSData, Error,
 		             TEXT("%s: StageObjectiveInfoTableAsset is invalid. Check Project Settings -> RS Data Settings."),
@@ -544,25 +542,25 @@ void UDataSubsystem::LoadStageObjectiveInfoTable()
 		return;
 	}
 
-	const FPrimaryAssetId& TargetAssetId = Settings->StageObjectiveInfoTableAsset;
+	const FSoftObjectPath& TargetPath = Settings->StageObjectiveInfoTableAsset.ToSoftObjectPath();
 
 	RS_LOG_DEBUG(LogRSData, Log, TEXT("%s: Starting to load StageObjectiveInfoTableAsset (%s)"), *LOG_LINE_INFO,
-	             *TargetAssetId.ToString());
+	             *TargetPath.ToString());
 
 	auto& AssetManager = UAssetManager::Get();
-	AssetManager.LoadPrimaryAsset(TargetAssetId, TArray<FName>{},
-	                              FStreamableDelegate::CreateUObject(
-		                              this, &UDataSubsystem::OnStageObjectiveInfoTableLoaded, TargetAssetId));
+	AssetManager.GetStreamableManager().RequestAsyncLoad(TargetPath,
+	                                                     FStreamableDelegate::CreateUObject(
+		                                                     this, &UDataSubsystem::OnStageObjectiveInfoTableLoaded));
 }
 
-void UDataSubsystem::OnStageObjectiveInfoTableLoaded(FPrimaryAssetId LoadedAssetID)
+void UDataSubsystem::OnStageObjectiveInfoTableLoaded()
 {
-	const auto& AssetManager = UAssetManager::Get();
-	const auto* DataAsset = AssetManager.GetPrimaryAssetObject<UStageObjectiveInfoTableAsset>(LoadedAssetID);
+	const URSDataSettings* Settings = GetDefault<URSDataSettings>();
+	const auto* DataAsset = Settings->StageObjectiveInfoTableAsset.Get();
 	if (!IsValid(DataAsset))
 	{
-		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to get Primary Asset Object for %s"), *LOG_LINE_INFO,
-		             *LoadedAssetID.ToString());
+		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to get DataAsset for StageObjectiveInfoTableAsset"),
+		             *LOG_LINE_INFO);
 		return;
 	}
 
@@ -570,7 +568,7 @@ void UDataSubsystem::OnStageObjectiveInfoTableLoaded(FPrimaryAssetId LoadedAsset
 	if (!StageObjectiveInfoTable)
 	{
 		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to load DataTable from DataAsset %s"), *LOG_LINE_INFO,
-		             *LoadedAssetID.ToString());
+		             *DataAsset->GetName());
 		return;
 	}
 
@@ -583,7 +581,7 @@ void UDataSubsystem::OnStageObjectiveInfoTableLoaded(FPrimaryAssetId LoadedAsset
 void UDataSubsystem::LoadStageInfoTable()
 {
 	const URSDataSettings* Settings = GetDefault<URSDataSettings>();
-	if (!Settings || !Settings->StageInfoTableAsset.IsValid())
+	if (!Settings || Settings->StageInfoTableAsset.IsNull())
 	{
 		RS_LOG_DEBUG(LogRSData, Error,
 		             TEXT("%s: StageInfoTableAsset is invalid. Check Project Settings -> RS Data Settings."),
@@ -591,25 +589,24 @@ void UDataSubsystem::LoadStageInfoTable()
 		return;
 	}
 
-	const FPrimaryAssetId& TargetAssetId = Settings->StageInfoTableAsset;
+	const FSoftObjectPath& TargetPath = Settings->StageInfoTableAsset.ToSoftObjectPath();
 
 	RS_LOG_DEBUG(LogRSData, Log, TEXT("%s: Starting to load StageInfoTableAsset (%s)"), *LOG_LINE_INFO,
-	             *TargetAssetId.ToString());
+	             *TargetPath.ToString());
 
 	auto& AssetManager = UAssetManager::Get();
-	AssetManager.LoadPrimaryAsset(TargetAssetId, TArray<FName>{},
-	                              FStreamableDelegate::CreateUObject(
-		                              this, &UDataSubsystem::OnStageTableInfoLoaded, TargetAssetId));
+	AssetManager.GetStreamableManager().RequestAsyncLoad(TargetPath,
+	                                                     FStreamableDelegate::CreateUObject(
+		                                                     this, &UDataSubsystem::OnStageTableInfoLoaded));
 }
 
-void UDataSubsystem::OnStageTableInfoLoaded(FPrimaryAssetId LoadedAssetID)
+void UDataSubsystem::OnStageTableInfoLoaded()
 {
-	const auto& AssetManager = UAssetManager::Get();
-	const auto* DataAsset = AssetManager.GetPrimaryAssetObject<UStageInfoTableAsset>(LoadedAssetID);
+	const URSDataSettings* Settings = GetDefault<URSDataSettings>();
+	const auto* DataAsset = Settings->StageInfoTableAsset.Get();
 	if (!IsValid(DataAsset))
 	{
-		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to get Primary Asset Object for %s"), *LOG_LINE_INFO,
-		             *LoadedAssetID.ToString());
+		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to get DataAsset for StageInfoTableAsset"), *LOG_LINE_INFO);
 		return;
 	}
 
@@ -617,7 +614,7 @@ void UDataSubsystem::OnStageTableInfoLoaded(FPrimaryAssetId LoadedAssetID)
 	if (!StageInfoTable)
 	{
 		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to load DataTable from DataAsset %s"), *LOG_LINE_INFO,
-		             *LoadedAssetID.ToString());
+		             *DataAsset->GetName());
 		return;
 	}
 

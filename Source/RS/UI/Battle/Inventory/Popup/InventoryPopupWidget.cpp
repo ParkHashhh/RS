@@ -95,7 +95,7 @@ void UInventoryPopupWidget::RefreshStatList()
 
 void UInventoryPopupWidget::AddBasicStats()
 {
-	if (!InventoryComponent || InventoryComponent->GetItemModifiedStats().IsEmpty())
+	if (!InventoryComponent)
 	{
 		return;
 	}
@@ -113,21 +113,19 @@ void UInventoryPopupWidget::AddBasicStats()
 		return;
 	}
 
-	const TMap<FGameplayTag, float>& ModifiedStats = InventoryComponent->GetItemModifiedStats();
 	for (const auto& RowName : StatDisplayInfoTable->GetRowNames())
 	{
 		FGameplayTag Tag = FGameplayTag::RequestGameplayTag(RowName);
-		if (!ModifiedStats.Contains(Tag))
-		{
-			continue;
-		}
 
 		if (const auto* Info = StatDisplayInfoTable->FindRow<FStatDisplayTableInfo>(
 			RowName, TEXT("UInventoryPopupWidget::AddBasicStats")))
 		{
 			UStatEntryObject* StatEntryObject = NewObject<UStatEntryObject>(this);
+
+			float Stat = GetAttributeValueWithTag(Tag);
+
 			StatEntryObject->Initialize(Info->DisplayName,
-			                            RSUtils::GetStatDescription(*Info, {ModifiedStats[Tag]}), Info->Icon);
+			                            RSUtils::GetStatDescription(*Info, {Stat}), Info->Icon);
 			StatObjects.Add(StatEntryObject);
 		}
 	}
@@ -150,4 +148,42 @@ void UInventoryPopupWidget::OnGameplayReadyChanged(bool bGameplayReady)
 			Init(PS->GetInventoryComponent());
 		}
 	}
+}
+
+float UInventoryPopupWidget::GetAttributeValueWithTag(const FGameplayTag& TargetTag) const
+{
+	// 전체 attribute. 일단 EquipItemEffectClass을 사용
+	const UGameplayEffect* GE = EquipItemEffectClass.GetDefaultObject();
+	if (!GE)
+	{
+		return 0.0f;
+	}
+
+	for (const FGameplayModifierInfo& Modifier : GE->Modifiers)
+	{
+		if (Modifier.ModifierMagnitude.GetMagnitudeCalculationType()
+			!= EGameplayEffectMagnitudeCalculation::SetByCaller)
+		{
+			continue;
+		}
+
+		const FSetByCallerFloat& SetByCaller = Modifier.ModifierMagnitude.GetSetByCallerFloat();
+
+		if (SetByCaller.DataTag == TargetTag)
+		{
+			FGameplayAttribute TargetAttribute = Modifier.Attribute;
+
+			if (auto* PlayerCharacter = GetOwningPlayerPawn<APlayerCharacterBase>())
+			{
+				if (UPlayerAttributeSet* AttributeSet = PlayerCharacter->GetAttributeSet())
+				{
+					return TargetAttribute.GetNumericValue(AttributeSet);
+				}
+			}
+
+			return 0.0f;
+		}
+	}
+
+	return 0.0f;
 }

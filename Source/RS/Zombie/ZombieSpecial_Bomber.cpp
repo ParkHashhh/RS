@@ -108,9 +108,6 @@ void AZombieSpecial_Bomber::SkillEnd()
 	//어빌리티를 발동한다.
 	Explosion();
 
-	//폭발 연출을 화면에 출력한다.
-	SpawnEffect();
-
 	//SkillEnd 함수는 서버일 경우에만 노티파이에서 호출되므로 리플리케이트 변수를 한번 바꿔준다.
 	bIsPrintClient = !bIsPrintClient;
 
@@ -143,9 +140,6 @@ void AZombieSpecial_Bomber::Death()
 	{
 		bIsReadyToExplosion = false;
 	}
-
-	//폭발 연출을 화면에 출력한다.
-	SpawnEffect();
 
 	//메쉬를 투명하게 한다.
 	Mesh->SetVisibility(false, true);
@@ -198,9 +192,15 @@ void AZombieSpecial_Bomber::Explosion()
 		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, EventData.EventTag, EventData);
 
 #if WITH_EDITOR
-		DrawDebugSphere(GetWorld(), Loc, 300.f, 32, DebugColor, false, 3.f);
+		DrawDebugSphere(GetWorld(), Loc, 300.f, 8, DebugColor, false, 3.f);
 #endif
 	}
+
+	//폭발 연출을 화면에 출력한다.
+	SpawnEffect();
+
+	//폭발 사운드를 출력한다.
+	PlayZombieSkillSound();
 }
 
 void AZombieSpecial_Bomber::SpawnEffect()

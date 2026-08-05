@@ -11,7 +11,7 @@ USTRUCT()
 struct FReadyToUse
 {
 	GENERATED_BODY()
-	bool IsReady = true;
+	bool IsReady{true};
 };
 
 UCLASS()
@@ -23,14 +23,13 @@ public:
 	UBTTask_BossSkill4();
 
 public:
-	virtual uint16 GetInstanceMemorySize()	const;
+	virtual uint16 GetInstanceMemorySize() const;
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp,
-		uint8* NodeMemory);
-	
+	                                        uint8* NodeMemory);
+
 protected:
 	virtual void TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory,
-		float DeltaSeconds);
+	                      float DeltaSeconds);
 	virtual void OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory,
-		EBTNodeResult::Type TaskResult);
-	
+	                            EBTNodeResult::Type TaskResult);
 };

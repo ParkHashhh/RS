@@ -453,6 +453,7 @@ private:
 	void SpecPrevKey(const FInputActionValue& Value);
 
 	void PauseKey(const FInputActionValue& Value);
+	void MapSelectKey(const FInputActionValue& Value);
 
 	void RotationMouse(const FInputActionValue& Value);
 

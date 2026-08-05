@@ -7,7 +7,7 @@
 #include "GameplayCueNotify_PlayerStatic.generated.h"
 
 /**
- * 
+ *
  */
 USTRUCT(BlueprintType)
 struct FSurfaceEffectData
@@ -15,16 +15,16 @@ struct FSurfaceEffectData
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX")
-	TObjectPtr<UMaterialInterface> DecalMaterial;
+	TObjectPtr<UMaterialInterface> DecalMaterial{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX")
-	TObjectPtr<UMaterialInterface> SplatterMaterial;
+	TObjectPtr<UMaterialInterface> SplatterMaterial{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "FX")
-	TObjectPtr<class UNiagaraSystem> SplatterNiagara;
+	TObjectPtr<UNiagaraSystem> SplatterNiagara{};
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sound")
-	TObjectPtr<class USoundBase> Sound;
+	TObjectPtr<USoundBase> Sound{};
 
 };
 

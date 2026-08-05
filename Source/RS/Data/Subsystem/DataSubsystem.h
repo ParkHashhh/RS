@@ -238,39 +238,39 @@ private:
 	void LoadItemInfoTable();
 
 	UFUNCTION()
-	void OnItemInfoTableLoaded(FPrimaryAssetId LoadedAssetID);
+	void OnItemInfoTableLoaded();
 
 	void LoadMiscInfoTable();
 
 	UFUNCTION()
-	void OnMiscInfoTableLoaded(FPrimaryAssetId LoadedAssetID);
+	void OnMiscInfoTableLoaded();
 
 	void LoadPlayerDefaultInfoTable();
 
 	UFUNCTION()
-	void OnPlayerDefaultInfoTableLoaded(FPrimaryAssetId LoadedAssetID);
+	void OnPlayerDefaultInfoTableLoaded();
 
 	void LoadStatDisplayInfoTable();
 
 	UFUNCTION()
-	void OnStatDisplayInfoTableLoaded(FPrimaryAssetId LoadedAssetID);
+	void OnStatDisplayInfoTableLoaded();
 
 	void ValidateItemInfoTable(const UDataTable* Table) const;
 
 	void LoadZombieDefaultInfoTable();
 
 	UFUNCTION()
-	void OnZombieDefaultInfoTableLoaded(FPrimaryAssetId LoadedAssetID);
+	void OnZombieDefaultInfoTableLoaded();
 
 	void LoadStageObjectiveInfoTable();
 
 	UFUNCTION()
-	void OnStageObjectiveInfoTableLoaded(FPrimaryAssetId LoadedAssetID);
+	void OnStageObjectiveInfoTableLoaded();
 
 	void LoadStageInfoTable();
 
 	UFUNCTION()
-	void OnStageTableInfoLoaded(FPrimaryAssetId LoadedAssetID);
+	void OnStageTableInfoLoaded();
 
 #pragma region Item
 

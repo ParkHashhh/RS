@@ -166,9 +166,6 @@ void UInventoryComponent::BeginPlay()
 	Super::BeginPlay();
 
 	InventoryList.Owner = this;
-
-	OnInventoryChangedDelegate.AddUObject(this, &ThisClass::CalculateItemModifiedStats);
-	CalculateItemModifiedStats();
 }
 
 void UInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -627,31 +624,4 @@ void UInventoryComponent::OnItemRemoved(UItemInstance* Item)
 
 	OnItemRemovedDelegate.Broadcast(Item);
 	OnInventoryChangedDelegate.Broadcast();
-}
-
-void UInventoryComponent::CalculateItemModifiedStats()
-{
-	ItemModifiedStats.Empty();
-
-	for (const FInventoryEntry& Entry : InventoryList.Entries)
-	{
-		if (const UItemInstance* Item = Entry.Item)
-		{
-			if (const auto* ItemInfo = RSUtils::GetTableInfo<FItemTableInfo>(
-				Item->GetItemRowHandle(), TEXT("CalculateItemModifiedStats")))
-			{
-				for (const auto& [OptionTag, Value, bScaleWithStack] : ItemInfo->ItemOptions)
-				{
-					const float Magnitude = bScaleWithStack ? (Value * Item->GetItemCount()) : Value;
-					ItemModifiedStats.FindOrAdd(OptionTag) += Magnitude;
-				}
-			}
-		}
-	}
-
-	// 스탯을 우선순위에 따라 정렬
-	ItemModifiedStats.KeySort([](const FGameplayTag& A, const FGameplayTag& B)
-	{
-		return RSUtils::GetStatPriority(A) < RSUtils::GetStatPriority(B);
-	});
 }

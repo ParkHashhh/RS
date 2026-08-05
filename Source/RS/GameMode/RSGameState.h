@@ -20,10 +20,10 @@ struct RS_API FStageObjectiveDisplayEntry : public FFastArraySerializerItem
 	GENERATED_BODY()
 
 	UPROPERTY()
-	FName TableRowName;
+	FName TableRowName{};
 
 	UPROPERTY()
-	float CurrentProgress;
+	float CurrentProgress{};
 };
 
 /**
