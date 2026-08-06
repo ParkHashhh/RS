@@ -79,6 +79,12 @@ void UDataStorageSubsystem::RestorePlayerInventory(const ARSPlayerController* Ne
 	}
 }
 
+void UDataStorageSubsystem::ClearPlayerInventory(const FUniqueNetIdRepl& UID)
+{
+	PreviousInventoryStorage.Remove(UID);
+	PrePreviousInventoryStorage.Remove(UID);
+}
+
 bool UDataStorageSubsystem::TryGetPrePreviousInventoryStorage(const APlayerState* InState, TArray<FItemStorageInfo>& OutStorage) const
 {
 	const FUniqueNetIdRepl& Key = InState->GetUniqueId();

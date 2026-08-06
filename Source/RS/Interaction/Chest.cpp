@@ -50,8 +50,8 @@ void AChest::OnInteractionCompleted(AActor* Interactor)
 
 		InteractPlayer->OnHeldInteractableChanged.Broadcast(true);
 	}
-
 	// TODO: 플레이어-상자상태(열기전/열었음/획득완료)-확정된 아이템-을 배열로 저장. 모든 플레이어가 획득 완료하면 상자 파괴
+
 }
 
 float AChest::GetInteractionDuration() const

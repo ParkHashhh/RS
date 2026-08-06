@@ -33,6 +33,7 @@
 #include "RS/UI/Colony/Result/StageResultWidget.h"
 #include "RS/Data/Subsystem/DataStorageSubsystem.h"
 #include "RS/UI/RSGameUserSettings.h"
+#include "RS/GameMode/MainGameMode.h"
 
 // Sets default values
 APlayerCharacterBase::APlayerCharacterBase()
@@ -2518,5 +2519,10 @@ void APlayerCharacterBase::OnDead()
 	if (IsValid(PlayerController))
 	{
 		PlayerController->Server_RequestSpectateTargets();
+	}
+
+	if (auto* GM = GetWorld()->GetAuthGameMode<AMainGameMode>())
+	{
+		GM->CheckAllPlayersDead();
 	}
 }

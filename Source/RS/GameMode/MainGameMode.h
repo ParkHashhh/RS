@@ -35,6 +35,9 @@ private:
 	UPROPERTY()
 	bool bStartStage = false;
 
+	UPROPERTY()
+	bool bIsCleared = false;
+
 	FOnKillInfoChanged OnKillInfoChanged;
 	FOnTimeElapsed OnTimeElapsed;
 
@@ -62,7 +65,7 @@ public:
 
 	void OnDead(const APawn* InInstigator, const IKillableInterface* Killed);
 	void OnMonsterDead(const APlayerState* PlayerState, const IKillableInterface* Killable);
-
+	void CheckAllPlayersDead();
 	TObjectPtr<UZombieManager> GetZombieManager();
 	int32 GetPlayerCount() const;
 	float GetScaledGoal(const FStageObjectiveTableInfo* TableInfo) const;
@@ -78,7 +81,7 @@ protected:
 private:
 	void StartStage();
 	void EndStage();
-
+	void HandleAllPlayersDead();
 	void InitializeStageObjective();
 
 #pragma endregion

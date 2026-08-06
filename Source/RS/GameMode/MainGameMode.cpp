@@ -14,6 +14,9 @@
 #include "RS/Player/Actor/TravelPortal.h"
 #include "RS/Zombie/ZombieBase.h"
 #include "RS/Zombie/ZombieManager.h"
+#include "RS/RSUtils.h"
+#include "RS/Data/Subsystem/DataStorageSubsystem.h"
+#include "RS/Player/RSPlayerState.h"
 
 AMainGameMode::AMainGameMode()
 {
@@ -215,6 +218,7 @@ void AMainGameMode::Clear()
 {
 	StageElapsedTime = 0.0f;
 	KillInfos.Empty();
+	bIsCleared = false;
 }
 
 void AMainGameMode::Initialize()
@@ -342,6 +346,11 @@ void AMainGameMode::HandleTimeElapsed(float AccumulatedSec)
 
 void AMainGameMode::HandleAllObjectiveCleared()
 {
+	if (bIsCleared)
+	{
+		return;
+	}
+	bIsCleared = true;
 	//모든 좀비를 죽인다.
 	StageZombieManagerComponent->AllZombieDeath();
 
@@ -363,6 +372,17 @@ void AMainGameMode::CheckAllObjectiveClear()
 	if (!DataSubsystem)
 	{
 		return;
+	}
+
+	for (const FStageObjectiveEntry& Objective : StageObjectiveEntries)
+	{
+		if (const FStageObjectiveTableInfo* Info = DataSubsystem->GetStageObjectiveTableInfo(Objective.TableRowName))
+		{
+			if (Info->ClearCondition == EClearCondition::KillBoss)
+			{
+				return;
+			}
+		}
 	}
 
 	for (const FStageObjectiveEntry& Objective : StageObjectiveEntries)
@@ -430,4 +450,50 @@ void AMainGameMode::ActiveChest()
 			Chest->SetActive(Index < NumToActivate);
 		}
 	}
+}
+
+void AMainGameMode::CheckAllPlayersDead()
+{
+	if (!GameState || GameState->PlayerArray.Num() == 0)
+	{
+		return;
+	}
+
+	for (const APlayerState* PS : GameState->PlayerArray)
+	{
+		if (const APlayerController* PC = PS->GetPlayerController())
+		{
+			if (const auto* Char = PC->GetPawn<APlayerCharacterBase>())
+			{
+				if (!Char->IsDead())
+				{
+					return;   // 살아있는 사람 있으면 아직 전멸 아님
+				}
+			}
+		}
+	}
+
+	HandleAllPlayersDead();
+}
+
+void AMainGameMode::HandleAllPlayersDead()
+{
+	if (const UGameInstance* GI = GetGameInstance())
+	{
+		if (auto* StorageSubsystem = GI->GetSubsystem<UDataStorageSubsystem>())
+		{
+			for (APlayerState* PS : GameState->PlayerArray)
+			{
+				StorageSubsystem->ClearPlayerInventory(PS->GetUniqueId());
+
+				if (auto* RSPS = Cast<ARSPlayerState>(PS))
+				{
+					RSPS->SetTextureName(NAME_None);
+					RSPS->SetSkillName(NAME_None);
+				}
+			}
+		}
+	}
+
+	RSUtils::ServerTravelWithDataStorage(GetWorld(), TEXT("Start"), false);
 }

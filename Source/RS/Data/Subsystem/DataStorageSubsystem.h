@@ -30,7 +30,7 @@ class RS_API UDataStorageSubsystem : public UGameInstanceSubsystem
 public:
 	void StoreAllPlayerInventory();
 	void RestorePlayerInventory(const ARSPlayerController* NewPlayer);
-
+	void ClearPlayerInventory(const FUniqueNetIdRepl& UID);
 	bool TryGetPrePreviousInventoryStorage(const APlayerState* InState, TArray<FItemStorageInfo>& OutStorage) const;
 
 	void StoreAllPlayerStageResultStat();
