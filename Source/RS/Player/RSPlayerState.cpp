@@ -7,6 +7,8 @@
 #include "RS/LogCategory.h"
 #include "RS/RSUtils.h"
 #include "Net/UnrealNetwork.h"
+#include "RS/GameMode/RSGameInstance.h"
+#include "RS/Data/Subsystem/DataStorageSubsystem.h"
 #include "RS/Inventory/InventoryComponent.h"
 
 ARSPlayerState::ARSPlayerState()
@@ -63,9 +65,34 @@ void ARSPlayerState::BeginPlay()
 	InitializePlayerState();
 }
 
+void ARSPlayerState::SaveToDiskIfSinglePlayer()
+{
+	const auto* GI = Cast<URSGameInstance>(GetGameInstance());
+	if (!GI || !GI->IsSinglePlayerMode())
+	{
+		return;
+	}
+
+	if (const UGameInstance* GameInst = GetGameInstance())
+	{
+		if (auto* StorageSubsystem = GameInst->GetSubsystem<UDataStorageSubsystem>())
+		{
+			StorageSubsystem->SavePlayerDataToDisk(this);
+		}
+	}
+}
+
+void ARSPlayerState::OnInventoryChanged()
+{
+	SaveToDiskIfSinglePlayer();
+}
+
 void ARSPlayerState::InitializePlayerState()
 {
+	if (InventoryComponent)
+	{
+		InventoryComponent->OnInventoryChangedDelegate.AddUObject(this, &ThisClass::OnInventoryChanged);
+	}
 	// 실제 PS 초기화
-
 	NotifyPlayerStateReady();
 }

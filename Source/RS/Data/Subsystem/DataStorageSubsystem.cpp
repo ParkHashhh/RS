@@ -9,6 +9,11 @@
 #include "RS/Inventory/InventoryComponent.h"
 #include "RS/Player/RSPlayerController.h"
 #include "RS/Player/RSPlayerState.h"
+#include "Kismet/GameplayStatics.h"
+#include "RS/Save/RSSaveGame.h"
+#include "RS/Inventory/InventoryComponent.h"
+
+const FString UDataStorageSubsystem::SaveSlotName = TEXT("RS_SinglePlayerSave");
 
 void UDataStorageSubsystem::StoreAllPlayerInventory()
 {
@@ -83,7 +88,80 @@ void UDataStorageSubsystem::ClearPlayerInventory(const FUniqueNetIdRepl& UID)
 {
 	PreviousInventoryStorage.Remove(UID);
 	PrePreviousInventoryStorage.Remove(UID);
+
 }
+
+void UDataStorageSubsystem::RestoreTextureSkill(ARSPlayerState* PS)
+{
+	if (!PS)
+	{
+		return;
+	}
+
+	const FUniqueNetIdRepl& UID = PS->GetUniqueId();
+	if (const FName* Texture = PendingTextureRestore.Find(UID))
+	{
+		PS->LoadSavedNames(*Texture, PendingSkillRestore.FindRef(UID));
+		PendingTextureRestore.Remove(UID);
+		PendingSkillRestore.Remove(UID);
+	}
+}
+
+void UDataStorageSubsystem::SavePlayerDataToDisk(const ARSPlayerState* PS)
+{
+	if (!PS)
+	{
+		return;
+	}
+
+	auto* SaveObject = Cast<URSSaveGame>(UGameplayStatics::CreateSaveGameObject(URSSaveGame::StaticClass()));
+	if (!SaveObject)
+	{
+		return;
+	}
+
+	if (const UInventoryComponent* InvenComp = PS->GetInventoryComponent())
+	{
+		for (const FInventoryEntry& Entry : InvenComp->GetEntries())
+		{
+			if (Entry.IsValid())
+			{
+				SaveObject->SavedInventory.Emplace(Entry.Item->GetItemRowHandle().RowName, Entry.Item->GetItemCount());
+			}
+		}
+	}
+
+	SaveObject->SavedTextureName = PS->GetTextureName();
+	SaveObject->SavedSkillName = PS->GetSkillName();
+
+	UGameplayStatics::SaveGameToSlot(SaveObject, SaveSlotName, 0);
+}
+bool UDataStorageSubsystem::LoadPlayerDataFromDisk(ARSPlayerState* PS)
+{
+	if (!PS || !UGameplayStatics::DoesSaveGameExist(SaveSlotName, 0))
+	{
+		return false;
+	}
+
+	auto* SaveObject = Cast<URSSaveGame>(UGameplayStatics::LoadGameFromSlot(SaveSlotName, 0));
+	if (!SaveObject)
+	{
+		return false;
+	}
+
+	const FUniqueNetIdRepl& UID = PS->GetUniqueId();
+	PreviousInventoryStorage.Add(UID, SaveObject->SavedInventory);
+	PendingTextureRestore.Add(UID, SaveObject->SavedTextureName);
+	PendingSkillRestore.Add(UID, SaveObject->SavedSkillName);
+
+	return true;
+}
+
+void UDataStorageSubsystem::DeletePlayerSaveFile()
+{
+	UGameplayStatics::DeleteGameInSlot(SaveSlotName, 0);
+}
+
 
 bool UDataStorageSubsystem::TryGetPrePreviousInventoryStorage(const APlayerState* InState, TArray<FItemStorageInfo>& OutStorage) const
 {

@@ -4,7 +4,7 @@
 #include "ColonyGameMode.h"
 #include "RS/Player/RSPlayerState.h"
 #include "RS/LogCategory.h"
-
+#include "RS/Data/Subsystem/DataStorageSubsystem.h"
 
 AColonyGameMode::AColonyGameMode()
 {
@@ -28,9 +28,22 @@ APlayerController* AColonyGameMode::Login(UPlayer* NewPlayer, ENetRole InRemoteR
 
 	if (ARSPlayerState* PS = Result->GetPlayerState<ARSPlayerState>())
 	{
-		PS->SetTextureName(FName(TextureName));
-		PS->SetSkillName(FName(SkillName));
+		if (!TextureName.IsEmpty())
+		{
+			PS->SetTextureName(FName(TextureName));
+		}
+		if (!SkillName.IsEmpty())
+		{
+			PS->SetSkillName(FName(SkillName));
+		}
+		if (const UGameInstance* GI = GetGameInstance())
+		{
+			if (auto* StorageSubsystem = GI->GetSubsystem<UDataStorageSubsystem>())
+			{
+				StorageSubsystem->RestoreTextureSkill(PS);
+			}
+		}
 	}
-
+	
 	return Result;
 }

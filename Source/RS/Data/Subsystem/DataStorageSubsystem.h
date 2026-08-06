@@ -8,7 +8,7 @@
 #include "DataStorageSubsystem.generated.h"
 
 class ARSPlayerController;
-
+class ARSPlayerState;
 /**
  *
  */
@@ -16,7 +16,11 @@ UCLASS()
 class RS_API UDataStorageSubsystem : public UGameInstanceSubsystem
 {
 	GENERATED_BODY()
+private:
+	static const FString SaveSlotName;
 
+	TMap<FUniqueNetIdRepl, FName> PendingTextureRestore;
+	TMap<FUniqueNetIdRepl, FName> PendingSkillRestore;
 	// 임시로 인벤토리 정보를 저장. 간단하게 TableRowName과 Count를 저장
 	TMap<FUniqueNetIdRepl, TArray<FItemStorageInfo>> PreviousInventoryStorage;
 
@@ -26,11 +30,15 @@ class RS_API UDataStorageSubsystem : public UGameInstanceSubsystem
 	TMap<FUniqueNetIdRepl, FStageResultStatInfo> PreviousStageResultStatStorage;
 
 	TSet<FUniqueNetIdRepl> PendingStageResultPlayers;
-
+public:
+	void RestoreTextureSkill(ARSPlayerState* PS);
 public:
 	void StoreAllPlayerInventory();
 	void RestorePlayerInventory(const ARSPlayerController* NewPlayer);
 	void ClearPlayerInventory(const FUniqueNetIdRepl& UID);
+	void SavePlayerDataToDisk(const ARSPlayerState* PS);
+	bool LoadPlayerDataFromDisk(ARSPlayerState* PS);   // 로드 성공하면 true
+	void DeletePlayerSaveFile();
 	bool TryGetPrePreviousInventoryStorage(const APlayerState* InState, TArray<FItemStorageInfo>& OutStorage) const;
 
 	void StoreAllPlayerStageResultStat();

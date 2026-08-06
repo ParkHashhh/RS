@@ -44,14 +44,17 @@ private:
 public:
 	virtual void CopyProperties(APlayerState* PlayerState) override;
 public:
+
 	void SetTextureName(const FName& Name)
 	{
 		SelectedTextureName = Name;
+		SaveToDiskIfSinglePlayer();
 	}
 
 	void SetSkillName(const FName& Name)
 	{
 		SelectedSkillName = Name;
+		SaveToDiskIfSinglePlayer();
 	}
 	FName GetTextureName() const
 	{
@@ -103,11 +106,19 @@ public:
 	{
 		return GetInventoryComponent();
 	}
-
+	void LoadSavedNames(FName InTextureName, FName InSkillName)
+	{
+		SelectedTextureName = InTextureName;
+		SelectedSkillName = InSkillName;
+	}
 protected:
 	virtual void BeginPlay() override;
 
 private:
+	void SaveToDiskIfSinglePlayer();
+
+	UFUNCTION()
+	void OnInventoryChanged();
 	void InitializePlayerState();
 
 #pragma region StageResult

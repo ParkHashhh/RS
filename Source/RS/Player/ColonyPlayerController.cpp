@@ -21,7 +21,7 @@ AColonyPlayerController::AColonyPlayerController()
 void AColonyPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
-
+	RS_PRINT_SCREEN(15.f, FColor::Green, TEXT("[ColonyPC] BeginPlay, Map: %s"), *GetWorld()->GetMapName());
 	if (IsValid(ColonyWidgetClass))
 	{
 		ColonyWidget = CreateWidget<UUserWidget>(GetWorld(), ColonyWidgetClass);

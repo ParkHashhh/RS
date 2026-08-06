@@ -7,7 +7,7 @@
 #include "RS/GameMode/RSGameInstance.h"
 #include "RS/UI/Subsystem/UISubsystem.h"
 #include "Kismet/GameplayStatics.h"
-
+#include "RS/Player/StartPlayerController.h"
 
 UStartWidget::UStartWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -24,13 +24,27 @@ void UStartWidget::NativeOnInitialized()
 
 void UStartWidget::StartClick()
 {
-	if (auto* GI = GetGameInstance<URSGameInstance>())
+	auto* GI = GetGameInstance<URSGameInstance>();
+	if (!GI)
 	{
-		FString Option = "";
-		GI->LevelLoading(TEXT("Select"),TEXT("/Game/Levels/Select"), Option);
+		return;
+	}
+
+	bool bResumed = false;
+	if (auto* PC = Cast<AStartPlayerController>(GetOwningPlayer()))
+	{
+		bResumed = PC->TryStartSinglePlayer();
+	}
+
+	if (bResumed)
+	{
+		GI->LevelLoading(TEXT("Colony"), TEXT("/Game/Levels/Colony"), TEXT(""));
+	}
+	else
+	{
+		GI->LevelLoading(TEXT("Select"), TEXT("/Game/Levels/Select"), TEXT(""));
 	}
 }
-
 void UStartWidget::ExitClick()
 {
 	UKismetSystemLibrary::QuitGame(GetWorld(), nullptr, EQuitPreference::Quit, false);

@@ -149,6 +149,7 @@ void APlayerCharacterBase::BeginPlay()
 				}
 			}
 		}
+		else
 		{
 			RS_PRINT_SCREEN(10.f, FColor::Red, TEXT("PlayerCharacterBase BeginPlay - PlayerState is NULL"));
 		}

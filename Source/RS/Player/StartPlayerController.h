@@ -17,6 +17,12 @@ class RS_API AStartPlayerController : public APlayerController
 public:
 	AStartPlayerController();
 
+	UFUNCTION(BlueprintCallable, Category = "GameMode")
+	bool TryStartSinglePlayer();   // true면 저장된 데이터로 이어하기 가능
+
+	UFUNCTION(BlueprintCallable, Category = "GameMode")
+	void StartMultiPlayer();
+
 protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "UI")

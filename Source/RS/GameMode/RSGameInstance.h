@@ -17,6 +17,8 @@ class RS_API URSGameInstance : public UGameInstance
 private:
 	FName NextLevelName;
 
+	UPROPERTY()
+	bool bIsSinglePlayerMode = true;
 public:
 	UPROPERTY()
 	FName SelectedTextureName;
@@ -44,6 +46,12 @@ public:
 
 	
 public:
+public:
+	void SetSinglePlayerMode(bool bInSinglePlayer) { bIsSinglePlayerMode = bInSinglePlayer; }
+	bool IsSinglePlayerMode() const
+	{
+		return bIsSinglePlayerMode;
+	}
 	virtual void Init() override;
 
 	void LevelLoading(const FName& LevelName, const FString& PackagePath, const FString& Options, bool bListen = false,

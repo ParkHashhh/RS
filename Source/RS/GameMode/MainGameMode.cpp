@@ -485,11 +485,11 @@ void AMainGameMode::HandleAllPlayersDead()
 			for (APlayerState* PS : GameState->PlayerArray)
 			{
 				StorageSubsystem->ClearPlayerInventory(PS->GetUniqueId());
+				StorageSubsystem->DeletePlayerSaveFile();
 
 				if (auto* RSPS = Cast<ARSPlayerState>(PS))
 				{
-					RSPS->SetTextureName(NAME_None);
-					RSPS->SetSkillName(NAME_None);
+					RSPS->LoadSavedNames(NAME_None, NAME_None);
 				}
 			}
 		}
