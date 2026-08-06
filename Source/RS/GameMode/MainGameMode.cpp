@@ -278,6 +278,12 @@ void AMainGameMode::HandleKillInfoChanged(const FKillInfo* KillInfo)
 				{
 					Entry.CurreentProgress = FMath::Clamp(static_cast<float>(KillInfo->KillCount), 0.0f, TableInfo->Goal);
 					GS->SetProgress(Entry.TableRowName, Entry.CurreentProgress);
+
+					if (Entry.CurreentProgress >= TableInfo->Goal)
+					{
+						OnAllObjectivesCleared.Broadcast();
+						return;
+					}
 				}
 				break;
 			case EClearCondition::KillEnemy:

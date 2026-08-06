@@ -6,6 +6,7 @@
 #include "RS/Zombie/ZombieBoss.h"
 #include "RS/LogCategory.h"
 #include "GameplayEffectExtension.h"
+#include "RS/Utils/KillableInterface.h"
 
 UZombieBossAttributeSet::UZombieBossAttributeSet()
 {
@@ -32,6 +33,15 @@ void UZombieBossAttributeSet::PostGameplayEffectExecute(const FGameplayEffectMod
 	if (Data.EvaluatedData.Attribute == GetCurrentHPAttribute())
 	{
 		OnHPChanged(Instigator, Damage);
+
+		if (GetCurrentHP() <= 0.0f)
+		{
+			AActor* AvatarActor = GetOwningAbilitySystemComponent()->GetAvatarActor();
+			if (const auto* Killable = Cast<IKillableInterface>(AvatarActor))
+			{
+				Killable->OnDead(GetWorld(), Cast<APawn>(Instigator));
+			}
+		}
 	}
 }
 

@@ -203,15 +203,22 @@ void AZombieBoss::CallBackHP(AActor* InstigatorActor, float Damage)
 	//기본 사망처리, 공격받았을 때의 타겟 처리는 해줘야 한다.
 	CallBackHP(InstigatorActor);
 
-	//공격을 받고 살아남았다면 보스는 추가적으로 받은 데미지를 누적해야 한다.
+	////공격을 받고 살아남았다면 보스는 추가적으로 받은 데미지를 누적해야 한다.
+	//if (BossAttributeSet->GetCurrentHP() > 0)
+	//{
+	//	//FindOrAdd : 있다면 값 참조를 반환, 없다면 추가 후 0을 넣어 값 참조를 반환한다.
+	//	Damageboard.FindOrAdd(InstigatorActor) += Damage;
+	//}
+
+	//float* CurrentDamage = Damageboard.Find(InstigatorActor);
+	//RS_PRINT_SCREEN(5.f, FColor::Red, TEXT("Player : %s, Damage : %f"), *InstigatorActor->GetName(), *CurrentDamage);
 	if (BossAttributeSet->GetCurrentHP() > 0)
 	{
-		//FindOrAdd : 있다면 값 참조를 반환, 없다면 추가 후 0을 넣어 값 참조를 반환한다.
-		Damageboard.FindOrAdd(InstigatorActor) += Damage;
-	}
+		float& CurrentDamage = Damageboard.FindOrAdd(InstigatorActor);
+		CurrentDamage += Damage;
 
-	float* CurrentDamage = Damageboard.Find(InstigatorActor);
-	RS_PRINT_SCREEN(5.f, FColor::Red, TEXT("Player : %s, Damage : %f"), *InstigatorActor->GetName(), *CurrentDamage);
+		RS_PRINT_SCREEN(5.f, FColor::Red, TEXT("Player : %s, Damage : %f"), *InstigatorActor->GetName(), CurrentDamage);
+	}
 }
 
 void AZombieBoss::InitAbility()
