@@ -24,7 +24,7 @@ void UZombieManager::BeginPlay()
 	Super::BeginPlay();
 
 	// ...
-	
+
 }
 
 
@@ -96,17 +96,20 @@ void UZombieManager::SetSpawnPointActivation(bool Activate)
 
 void UZombieManager::AllZombieDeath()
 {
-	//좀비 배열을 순회하며 체력을 0으로 바꿔버린다.
-	for (auto Zombie : AllZombieArray)
+	for (int32 i = AllZombieArray.Num() - 1; i >= 0; --i)
 	{
+		const AZombieBase* Zombie = AllZombieArray[i];
 		if (IsValid(Zombie))
 		{
-			UAbilitySystemComponent* ASC = Zombie->GetAbilitySystemComponent();
-			if (ASC && InstantKillGE)
+			if (UAbilitySystemComponent* ASC = Zombie->GetAbilitySystemComponent())
 			{
-				FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
-				Context.AddSourceObject(Zombie);
-				ASC->ApplyGameplayEffectToSelf(InstantKillGE->GetDefaultObject<UGameplayEffect>(), 1.f, Context);
+				if (InstantKillGE)
+				{
+					FGameplayEffectContextHandle Context = ASC->MakeEffectContext();
+					Context.AddSourceObject(Zombie);
+
+					ASC->ApplyGameplayEffectToSelf(InstantKillGE->GetDefaultObject<UGameplayEffect>(), 1.f, Context);
+				}
 			}
 		}
 	}

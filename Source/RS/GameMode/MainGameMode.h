@@ -64,7 +64,8 @@ public:
 	void OnMonsterDead(const APlayerState* PlayerState, const IKillableInterface* Killable);
 
 	TObjectPtr<UZombieManager> GetZombieManager();
-
+	int32 GetPlayerCount() const;
+	float GetScaledGoal(const FStageObjectiveTableInfo* TableInfo) const;
 protected:
 	virtual void BeginPlay() override;
 
@@ -109,4 +110,7 @@ private:
 	ATravelPortal* SpawnPortal(const FTransform& PortalLocation) const;
 
 #pragma endregion
+
+private:
+	void ActiveChest();
 };

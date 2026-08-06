@@ -490,6 +490,9 @@ struct RS_API FKillInfo
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	int32 KillCount{};
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	bool bIsBoss{}; 
 };
 
 USTRUCT(BlueprintType)

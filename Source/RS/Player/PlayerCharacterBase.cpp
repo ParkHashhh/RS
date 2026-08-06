@@ -154,11 +154,8 @@ void APlayerCharacterBase::BeginPlay()
 
 		if (!bSkipForcedGameOnly)
 		{
-			RS_PRINT_SCREEN(10.f, FColor::Orange, TEXT("PlayerCharacterBase BeginPlay - forcing GameOnly+cursor off"));
-			FInputModeGameOnly InputModeData;
-			InputModeData.SetConsumeCaptureMouseDown(true);
-			PlayerController->SetInputMode(InputModeData);
-			PlayerController->bShowMouseCursor = false; // 마우스 커서 안 보이게 끄기
+			RS_PRINT_SCREEN(10.f, FColor::Orange, TEXT("PlayerCharacterBase BeginPlay - ApplyGameplayInputMode"));
+			PlayerController->ApplyGameplayInputMode();
 		}
 
 		if (PlayerController->PlayerCameraManager)
@@ -1616,7 +1613,6 @@ void APlayerCharacterBase::ExecuteHitEffect(const FHitResult& Hit)
 
 void APlayerCharacterBase::TryApplyBulletElements(AActor* TargetActor, const FHitResult& Hit)
 {
-	RS_PRINT_SCREEN(100.f, FColor::Cyan, TEXT("TryApplyBulletElements"));
 
 	if (!IsValid(ASC))
 	{
@@ -1624,8 +1620,6 @@ void APlayerCharacterBase::TryApplyBulletElements(AActor* TargetActor, const FHi
 	}
 
 	const float FirePercent = ASC->GetNumericAttribute(UPlayerAttributeSet::GetFireBulletChanceAttribute());
-	RS_PRINT_SCREEN(10.f, FColor::Red, TEXT("CheckChance : %d"), RSUtils::CheckChance(FirePercent));
-	RS_PRINT_SCREEN(10.f, FColor::Red, TEXT("FirePercent : %.2f"), FirePercent);
 
 	if (RSUtils::CheckChance(FirePercent))
 	{
@@ -1661,8 +1655,6 @@ void APlayerCharacterBase::ApplyFireExplosion(const FVector& Location)
 	                                          AZombieBase::StaticClass(), IgnoreActors, OverlappingActors);
 
 	const float FireDamage = GetAttributeSet()->GetAttackPower() * FireDamageRatio;
-	RS_PRINT_SCREEN(3.f, FColor::Orange, TEXT("[Fire] Damage : %.1f, Targets : %d"), FireDamage,
-	                OverlappingActors.Num());
 	for (AActor* Actor : OverlappingActors)
 	{
 		Server_ApplyDamage(Actor, FHitResult(), FireDamage);
@@ -1686,8 +1678,6 @@ void APlayerCharacterBase::ApplyElectricChain(AActor* FirstTarget, const FVector
 	TArray<AActor*> HitTargets;
 	HitTargets.Add(FirstTarget);
 	Server_ApplyDamage(FirstTarget, FHitResult(), ElectricDamage);
-	RS_PRINT_SCREEN(3.f, FColor::Cyan, TEXT("[Electric] Damage : %.1f, Chain #1 : %s"), ElectricDamage,
-	                *FirstTarget->GetName());
 
 	AActor* CurrentSource = FirstTarget;
 
@@ -1716,8 +1706,6 @@ void APlayerCharacterBase::ApplyElectricChain(AActor* FirstTarget, const FVector
 		}
 
 		Server_ApplyDamage(Nearest, FHitResult(), ElectricDamage);
-		RS_PRINT_SCREEN(3.f, FColor::Cyan, TEXT("[Electric] Damage : %.1f, Chain #%d : %s"), ElectricDamage, i + 1,
-		                *Nearest->GetName());
 
 		if (ElectricChainVFXClass)
 		{
@@ -1862,7 +1850,6 @@ bool APlayerCharacterBase::CalculateHit(FHitResult& Hit, float RandomX, float Ra
 
 void APlayerCharacterBase::Multicast_ExecuteVisualEffect_Implementation(const FHitResult& Hit, bool bIsHit)
 {
-	RS_PRINT_SCREEN(100.f, FColor::Cyan, TEXT("Multicast_ExecuteVisualEffect_Implementation"));
 
 	FGameplayCueParameters CueParams;
 	CueParams.Location = Hit.ImpactPoint;
@@ -1880,7 +1867,6 @@ void APlayerCharacterBase::Multicast_ExecuteVisualEffect_Implementation(const FH
 void APlayerCharacterBase::Server_ShootAttackRay_Implementation(float RandomX, float RandomY)
 {
 
-	RS_PRINT_SCREEN(100.f, FColor::Cyan, TEXT("Server_ShootAttackRay_Implementation"));
 
 	// AI가 들을 수 있는 함수
 	FVector MuzzleLocation = WeaponMeshComponent->GetSocketLocation(FName("Muzzle"));
@@ -1890,7 +1876,6 @@ void APlayerCharacterBase::Server_ShootAttackRay_Implementation(float RandomX, f
 	FHitResult Hit;
 	if (CalculateHit(Hit, RandomX, RandomY))
 	{
-		RS_PRINT_SCREEN(100.f, FColor::Cyan, TEXT("CalculateHit"));
 		AActor* TargetActor = Hit.GetActor();
 		// 맞은 액터(TargetActor) 가져오기
 		if (!TargetActor)
@@ -1901,7 +1886,14 @@ void APlayerCharacterBase::Server_ShootAttackRay_Implementation(float RandomX, f
 		// 적군인지 확인
 		if (Attitude == ETeamAttitude::Hostile)
 		{
-
+			// 기본데미지
+			const float BaseDamage = GetAttributeSet()->GetAttackPower();
+			// 크리티컬 확률
+			const bool bIsCritical = RSUtils::CheckChance(GetAttributeSet()->GetCriticalChance());
+			// 크리티컬 터졌을때 데미지 계산 적용
+			const float FinalDamage = bIsCritical
+				? BaseDamage * (1.0f + GetAttributeSet()->GetCriticalDamage() / 100.0f)
+				: BaseDamage;
 			Server_ApplyDamage(TargetActor, Hit, GetAttributeSet()->GetAttackPower());
 			Multicast_ExecuteVisualEffect(Hit, true);
 			TryApplyBulletElements(TargetActor, Hit);
@@ -1997,8 +1989,6 @@ void APlayerCharacterBase::ShootAttackRay()
 
 void APlayerCharacterBase::Server_ApplyDamage_Implementation(AActor* TargetActor, FHitResult Hit, float Damage)
 {
-	RS_PRINT_SCREEN(100.f, FColor::Cyan, TEXT("Server_ApplyDamage_Implementation"));
-
 	auto* TargetASC = TargetActor->FindComponentByClass<UAbilitySystemComponent>();
 	if (!TargetASC)
 	{
@@ -2271,7 +2261,6 @@ void APlayerCharacterBase::OnInteractPressed()
 {
 	if (CurrentFocusedInteractable.IsValid())
 	{
-		RS_PRINT_SCREEN(1.f, FColor::Cyan, TEXT("Try start interact"));
 
 		Server_StartInteraction(CurrentFocusedInteractable.Get());
 
@@ -2284,7 +2273,6 @@ void APlayerCharacterBase::OnInteractPressed()
 
 void APlayerCharacterBase::OnInteractReleased()
 {
-	RS_PRINT_SCREEN(1.f, FColor::Cyan, TEXT("Try end interact"));
 	Server_CancelInteraction();
 
 	if (UInteractionWidget* Widget = GetInteractionWidget())

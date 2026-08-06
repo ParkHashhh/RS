@@ -56,6 +56,14 @@ void APlayerControllerBase::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
+void APlayerControllerBase::ApplyGameplayInputMode()
+{
+	FInputModeGameOnly InputModeData;
+	InputModeData.SetConsumeCaptureMouseDown(true);
+	SetInputMode(InputModeData);
+	bShowMouseCursor = false;
+}
+
 void APlayerControllerBase::CreateBattleHUD()
 {
 	if (!IsValid(BattleHUDWidgetClass))

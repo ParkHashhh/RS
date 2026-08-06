@@ -59,6 +59,25 @@ float AChest::GetInteractionDuration() const
 	return OpenTime;
 }
 
+void AChest::SetActive(bool bActive)
+{
+	SetActorHiddenInGame(!bActive);
+	SetActorEnableCollision(bActive);
+
+	if (bActive)
+	{
+		Mesh->Activate();
+		Interactable->Activate();
+		Interactable->SetCollisionProfileName(FName("Interaction"));
+	}
+	else
+	{
+		Mesh->Deactivate();
+		Interactable->SetCollisionProfileName(FName("NoCollision"));
+		Interactable->Deactivate();
+	}
+}
+
 void AChest::BeginPlay()
 {
 	Super::BeginPlay();

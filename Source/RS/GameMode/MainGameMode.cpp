@@ -8,6 +8,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "RS/LogCategory.h"
 #include "RS/Data/Subsystem/DataSubsystem.h"
+#include "RS/Interaction/Chest.h"
+#include "RS/Misc/PortalLocation.h"
 #include "RS/Player/PlayerCharacterBase.h"
 #include "RS/Player/Actor/TravelPortal.h"
 #include "RS/Zombie/ZombieBase.h"
@@ -145,11 +147,13 @@ void AMainGameMode::OnMonsterDead(const APlayerState* PlayerState, const IKillab
 
 	if (Found)
 	{
+		Found->bIsBoss = Monster->GetIsBoss();
 		Found->KillCount++;
 	}
 	else
 	{
 		Found = &KillInfos.Emplace_GetRef(FKillInfo(PlayerUID, MonsterRowName, 1));
+		Found->bIsBoss = Monster->GetIsBoss();
 	}
 
 	OnKillInfoChanged.Broadcast(Found);
@@ -160,6 +164,19 @@ TObjectPtr<UZombieManager> AMainGameMode::GetZombieManager()
 	return StageZombieManagerComponent;
 }
 
+int32 AMainGameMode::GetPlayerCount() const
+{
+	return GameState ? FMath::Max(GameState->PlayerArray.Num(), 1) : 1;
+}
+
+float AMainGameMode::GetScaledGoal(const FStageObjectiveTableInfo* TableInfo) const
+{
+	if (TableInfo->ClearCondition == EClearCondition::KillEnemy)
+	{
+		return TableInfo->Goal * GetPlayerCount();
+	}
+	return TableInfo->Goal;
+}
 void AMainGameMode::BeginPlay()
 {
 	Super::BeginPlay();
@@ -257,15 +274,17 @@ void AMainGameMode::HandleKillInfoChanged(const FKillInfo* KillInfo)
 			switch (TableInfo->ClearCondition)
 			{
 			case EClearCondition::KillBoss:
-				// if (KillInfo->bIsBoss)
+				if (KillInfo->bIsBoss)
 				{
-					GS->SetProgress(Entry.TableRowName, KillInfo->KillCount);
+					Entry.CurreentProgress = FMath::Clamp(static_cast<float>(KillInfo->KillCount), 0.0f, TableInfo->Goal);
+					GS->SetProgress(Entry.TableRowName, Entry.CurreentProgress);
 				}
 				break;
 			case EClearCondition::KillEnemy:
 				if (TableInfo->TargetTableRowName == KillInfo->MonsterRowName || TableInfo->TargetTableRowName.IsNone())
 				{
-					Entry.CurreentProgress = FMath::Clamp(KillInfo->KillCount, 0.0f, TableInfo->Goal);
+					const int32 TotalKillCount = GetKillCountAll(KillInfo->MonsterRowName);
+					Entry.CurreentProgress = FMath::Clamp(static_cast<float>(TotalKillCount), 0.0f, GetScaledGoal(TableInfo));
 					GS->SetProgress(Entry.TableRowName, Entry.CurreentProgress);
 				}
 				break;
@@ -302,7 +321,7 @@ void AMainGameMode::HandleTimeElapsed(float AccumulatedSec)
 				if (auto* GS = GetGameState<ARSGameState>())
 				{
 					Entry.CurreentProgress = FMath::Clamp(AccumulatedSec, 0.0f, TableInfo->Goal);
-					GS->SetProgress(Entry.TableRowName, AccumulatedSec);
+					GS->SetProgress(Entry.TableRowName, Entry.CurreentProgress);
 				}
 
 				CheckAllObjectiveClear();
@@ -323,6 +342,8 @@ void AMainGameMode::HandleAllObjectiveCleared()
 	//모든 스폰포인트를 파괴한다.
 	StageZombieManagerComponent->AllSpawnPointDestroy();
 
+	ActiveChest();
+
 	//탈출 포탈이 없다면 생성한다.
 	if (!ActivePortal)
 	{
@@ -342,7 +363,7 @@ void AMainGameMode::CheckAllObjectiveClear()
 	{
 		if (const FStageObjectiveTableInfo* Info = DataSubsystem->GetStageObjectiveTableInfo(Objective.TableRowName))
 		{
-			if (Objective.CurreentProgress < Info->Goal)
+			if (Objective.CurreentProgress < GetScaledGoal(Info))
 			{
 				return;
 			}
@@ -354,26 +375,9 @@ void AMainGameMode::CheckAllObjectiveClear()
 
 FTransform AMainGameMode::GetPortalLocation() const
 {
-	if (!GameState)
+	if (const AActor* PortalLocActor = UGameplayStatics::GetActorOfClass(this, APortalLocation::StaticClass()))
 	{
-		return {};
-	}
-
-	for (const auto& PS : GameState->PlayerArray)
-	{
-		if (PS)
-		{
-			if (const APlayerController* PC = PS->GetPlayerController())
-			{
-				if (const auto* Char = PC->GetPawn<APlayerCharacterBase>())
-				{
-					if (IsValid(Char) && !Char->IsDead())
-					{
-						return Char->GetTransform();
-					}
-				}
-			}
-		}
+		return PortalLocActor->GetTransform();
 	}
 
 	return {};
@@ -405,4 +409,19 @@ ATravelPortal* AMainGameMode::SpawnPortal(const FTransform& PortalLocation) cons
 	}
 
 	return nullptr;
+}
+
+void AMainGameMode::ActiveChest()
+{
+	TArray<AActor*> Actors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AChest::StaticClass(), Actors);
+
+	const int32 NumToActivate = FMath::Min(GetPlayerCount() * 2, Actors.Num());
+	for (int32 Index = 0; Index < Actors.Num(); ++Index)
+	{
+		if (auto* Chest = Cast<AChest>(Actors[Index]))
+		{
+			Chest->SetActive(Index < NumToActivate);
+		}
+	}
 }

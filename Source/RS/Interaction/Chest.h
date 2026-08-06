@@ -46,6 +46,8 @@ public:
 		return OpenTime;
 	}
 
+	void SetActive(bool bActive);
+
 protected:
 	virtual void BeginPlay() override;
 
