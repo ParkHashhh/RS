@@ -26,6 +26,7 @@ struct RS_API FStageObjectiveDisplayEntry : public FFastArraySerializerItem
 	float CurrentProgress{};
 };
 
+class AZombieBoss;
 /**
  *
  */
@@ -43,6 +44,10 @@ private:
 	bool bInitialized = false;
 
 	FOnGameStateReady OnGameStateReadyDelegate;
+
+	//현재 존재하는 보스를 보관할 멤버 변수
+	UPROPERTY(ReplicatedUsing = OnRep_CheckZombieBoss)
+	AZombieBoss* CurrentBoss = nullptr;
 
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -66,6 +71,11 @@ protected:
 	UFUNCTION()
 	void OnRep_Initialized();
 	void InnerOnRepInitialized();
+	UFUNCTION()
+	void OnRep_CheckZombieBoss();
+
+public:
+	void ChangeBossHPBarActivation();
 
 private:
 	UPROPERTY(Replicated)
@@ -108,6 +118,13 @@ public:
 
 		const int32* Found = ObjectiveList.TableRowNameIndexMap.Find(TableRowName);
 		return Found ? &ObjectiveList.Entries[*Found] : nullptr;
+	}
+
+	void RegistBoss(AZombieBoss* Boss);
+	void UnRegistBoss(AZombieBoss* Boss);
+	AZombieBoss* GetCurrentBoss() const
+	{
+		return CurrentBoss;
 	}
 
 private:

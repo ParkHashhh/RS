@@ -41,6 +41,10 @@
 		{
 			"Name": "AnimationSharing",
 			"Enabled": false
+		},
+		{
+			"Name": "OnlineSubsystemSteam",
+			"Enabled": true
 		}
 	]
 }

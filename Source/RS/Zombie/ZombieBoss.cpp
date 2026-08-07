@@ -12,7 +12,9 @@
 #include "RS/Zombie/AI/ZombieAIController.h"
 #include "RS/Zombie/Animation/ZombieAnimInstance.h"
 #include "RS/Player/PlayerCharacterBase.h"
-
+#include "Kismet/GameplayStatics.h"
+#include "RS/GameMode/MainGameMode.h"
+#include "RS/Zombie/ZombieManager.h"
 
 // Sets default values
 AZombieBoss::AZombieBoss()
@@ -50,6 +52,18 @@ void AZombieBoss::BeginPlay()
 		//타겟 변경 함수를 호출하기 위한 타이머를 세팅한다.
 		GetWorld()->GetTimerManager().SetTimer(UpdateTargetTimerHandle,
 			FTimerDelegate::CreateUObject(this, &AZombieBoss::ChangeTarget), UpdateTargetInterval, true);
+
+
+		//좀비 매니저에 보스를 등록하도록 요청한다.
+		AMainGameMode* GameMode = Cast<AMainGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
+		if (GameMode)
+		{
+			UZombieManager* ZombieMgr = GameMode->GetZombieManager();
+			if (ZombieMgr)
+			{
+				ZombieMgr->BossRegister(this);
+			}
+		}
 	}
 
 	//바디 메쉬의 머티리얼을 다이나믹 MI로 전환한다.
@@ -73,6 +87,23 @@ void AZombieBoss::BeginPlay()
 
 	//초기 스탯 지정이 완료되면 이동속도, 감지거리를 넣어준다.
 	ChangeSpeed_Run();
+}
+
+void AZombieBoss::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (HasAuthority())
+	{
+		//보스가 죽으면 등록을 해제해야 한다.
+		AMainGameMode* GameMode = Cast<AMainGameMode>(UGameplayStatics::GetGameMode(GetWorld()));
+		if (GameMode)
+		{
+			UZombieManager* ZombieMgr = GameMode->GetZombieManager();
+			if (ZombieMgr)
+			{
+				ZombieMgr->BossUnRegister(this);
+			}
+		}
+	}
 }
 
 void AZombieBoss::PossessedBy(AController* NewController)
@@ -335,6 +366,41 @@ void AZombieBoss::Skill6End()
 bool AZombieBoss::Skill4Prepared()
 {
 	return true;
+}
+
+void AZombieBoss::PlayBossSkillSound_Implementation(int32 Number)
+{
+	FName Key = *FString::Printf(TEXT("Skill%d"), Number);
+
+	TObjectPtr<USoundBase>* SoundPtr = SoundCueMap.Find(Key);
+	if (SoundPtr)
+	{
+		USoundBase* Sound = *SoundPtr;
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), Sound, GetActorLocation());
+	}
+}
+
+void AZombieBoss::PlayBossSkillEffect_Implementation(int32 Number)
+{
+	FName Key = *FString::Printf(TEXT("Skill%d"), Number);
+	TObjectPtr<UParticleSystem>* ParticlePtr = ParticleMap.Find(Key);
+	TObjectPtr<UNiagaraSystem>* NiagaraPtr = NiagaraParticleMap.Find(Key);
+	if (ParticlePtr)
+	{
+		UParticleSystem* Particle = *ParticlePtr;
+		FVector SpawnLoc = GetActorLocation();;
+		FRotator SpawnRot = GetActorRotation();
+		//FVector Scale = FVector(2.f, 2.f, 2.f);
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), Particle, SpawnLoc, SpawnRot);
+	}
+	else if (NiagaraPtr)
+	{
+		UNiagaraSystem* Niagara = *NiagaraPtr;
+		FVector SpawnLoc = GetActorLocation();
+		FRotator SpawnRot = GetActorRotation();
+		//FVector Scale = FVector(2.f, 2.f, 2.f);
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), Niagara, SpawnLoc, SpawnRot);
+	}
 }
 
 void AZombieBoss::ChangeTarget()

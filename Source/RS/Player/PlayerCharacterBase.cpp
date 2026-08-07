@@ -32,6 +32,7 @@
 #include "NiagaraFunctionLibrary.h"
 #include "RS/UI/Colony/Result/StageResultWidget.h"
 #include "RS/Data/Subsystem/DataStorageSubsystem.h"
+#include "RS/GameMode/SessionSubsystem.h"
 #include "RS/UI/RSGameUserSettings.h"
 #include "RS/GameMode/MainGameMode.h"
 
@@ -108,6 +109,14 @@ void APlayerCharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (auto* C = GetController())
+	{
+		RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| Local=%s, Controller=%s"), *LOG_LINE_INFO,
+		             C->IsLocalController()? TEXT("true"): TEXT("false"), *GetNameSafe(C));
+		RS_PRINT_SCREEN(30.0f, FColor::Cyan, TEXT("%s| Local=%s, Controller=%s"), *LOG_LINE_INFO,
+		                C->IsLocalController()? TEXT("true"): TEXT("false"), *GetNameSafe(C));
+	}
+
 	if (HasAuthority() && AIPerceptionComponent)
 	{
 		AIPerceptionComponent->RegisterWithPerceptionSystem();
@@ -123,49 +132,7 @@ void APlayerCharacterBase::BeginPlay()
 
 	PlayerController = Cast<APlayerControllerBase>(GetController());
 
-	if (IsValid(PlayerController))
-	{
-		UEnhancedInputLocalPlayerSubsystem* SubSystem =
-			ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer());
-
-		// BP_PlayerCharacterBase에 등록되어있는 InputDataClass를 가져와 Mapping한다.
-		if (InputDataClass && SubSystem)
-		{
-			const UInputData* InputData = GetDefault<UInputData>(InputDataClass);
-			if (InputData && InputData->Context)
-			{
-				SubSystem->AddMappingContext(InputData->Context, 0);
-			}
-		}
-
-		bool bSkipForcedGameOnly = false;
-		if (const ARSPlayerState* PS = PlayerController->GetPlayerState<ARSPlayerState>())
-		{
-			if (const UGameInstance* GI = GetGameInstance())
-			{
-				if (const auto* StorageSubsystem = GI->GetSubsystem<UDataStorageSubsystem>())
-				{
-					bSkipForcedGameOnly = StorageSubsystem->HasPendingStageResult(PS->GetUniqueId());
-				}
-			}
-		}
-		else
-		{
-			RS_PRINT_SCREEN(10.f, FColor::Red, TEXT("PlayerCharacterBase BeginPlay - PlayerState is NULL"));
-		}
-
-		if (!bSkipForcedGameOnly)
-		{
-			RS_PRINT_SCREEN(10.f, FColor::Orange, TEXT("PlayerCharacterBase BeginPlay - ApplyGameplayInputMode"));
-			PlayerController->ApplyGameplayInputMode();
-		}
-
-		if (PlayerController->PlayerCameraManager)
-		{
-			PlayerController->PlayerCameraManager->ViewPitchMin = -40.f;
-			PlayerController->PlayerCameraManager->ViewPitchMax = 40.f;
-		}
-	}
+	
 	const float SavedSensitivity = URSGameUserSettings::Get()->GetMouseSensitivity();
 	SetMouseSensitivity(SavedSensitivity, SavedSensitivity);
 	AnimInst = Cast<UPlayerAnimInstance>(GetMesh()->GetAnimInstance());
@@ -202,9 +169,25 @@ void APlayerCharacterBase::OnMovementModeChanged(EMovementMode PrevMovementMode,
 void APlayerCharacterBase::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
+
+	RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| PossessedBy %s"), *LOG_LINE_INFO, *GetNameSafe(NewController));
+	RS_PRINT_SCREEN(30.0f, FColor::Cyan, TEXT("%s| PossessedBy %s"), *LOG_LINE_INFO, *GetNameSafe(NewController));
+
 	PlayerController = Cast<APlayerControllerBase>(NewController);
 	if (IsValid(PlayerController))
 	{
+		UEnhancedInputLocalPlayerSubsystem* SubSystem =
+			ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer());
+
+		// BP_PlayerCharacterBase에 등록되어있는 InputDataClass를 가져와 Mapping한다.
+		if (InputDataClass && SubSystem)
+		{
+			const UInputData* InputData = GetDefault<UInputData>(InputDataClass);
+			if (InputData && InputData->Context)
+			{
+				SubSystem->AddMappingContext(InputData->Context, 0);
+			}
+		}
 		ARSPlayerState* PS = NewController->GetPlayerState<ARSPlayerState>();
 
 		if (IsValid(PS))
@@ -214,6 +197,26 @@ void APlayerCharacterBase::PossessedBy(AController* NewController)
 
 			ReplicatedSkillName = PS->GetSkillName();
 			SetSubSkillMontage(ReplicatedSkillName);
+			// ↓ 여기 새로 추가
+			bool bSkipForcedGameOnly = false;
+			if (const UGameInstance* GI = GetGameInstance())
+			{
+				if (const auto* StorageSubsystem = GI->GetSubsystem<UDataStorageSubsystem>())
+				{
+					bSkipForcedGameOnly = StorageSubsystem->HasPendingStageResult(PS->GetUniqueId());
+				}
+			}
+
+			if (!bSkipForcedGameOnly)
+			{
+				PlayerController->ApplyGameplayInputMode();
+			}
+
+			if (PlayerController->PlayerCameraManager)
+			{
+				PlayerController->PlayerCameraManager->ViewPitchMin = -40.f;
+				PlayerController->PlayerCameraManager->ViewPitchMax = 40.f;
+			}
 		}
 		else
 		{
@@ -351,6 +354,8 @@ void APlayerCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
+	RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| SetupPlayerInputComponent called"), *LOG_LINE_INFO);
+	RS_PRINT_SCREEN(30.0f, FColor::Cyan, TEXT("%s| SetupPlayerInputComponent called"), *LOG_LINE_INFO);
 
 	UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(PlayerInputComponent);
 	if (!EnhancedInput)
@@ -810,7 +815,7 @@ void APlayerCharacterBase::MapSelectKey(const FInputActionValue& Value)
 
 	if (CPC)
 	{
-		CPC->ShowMapSelcetWidget();
+		CPC->ShowMapSelectWidget();
 	}
 }
 
@@ -843,12 +848,14 @@ void APlayerCharacterBase::SetBrightness(float Value)
 	if (Camera)
 	{
 		Camera->PostProcessSettings.bOverride_AutoExposureBias = true;
-		Camera->PostProcessSettings.AutoExposureBias = FMath::GetMappedRangeValueClamped(FVector2D(0.f, 2.f), FVector2D(-2.f, 2.f), Value);
+		Camera->PostProcessSettings.AutoExposureBias = FMath::GetMappedRangeValueClamped(
+			FVector2D(0.f, 2.f), FVector2D(-2.f, 2.f), Value);
 		Camera->PostProcessBlendWeight = 1.0f;
 		Camera->PostProcessSettings.bOverride_ColorGamma = true;
 		Camera->PostProcessSettings.ColorGamma = FVector4(Value, Value, Value, 1.f);
 	}
 }
+
 void APlayerCharacterBase::Server_SpawnHeal_Implementation(const FVector& SpawnLocation, const FRotator& HealRotation)
 {
 	if (HealPackActor)
@@ -1118,8 +1125,6 @@ void APlayerCharacterBase::DebugKey7(const FInputActionValue& Value)
 {
 	RS_LOG_DEBUG(LogRSCommon, Log, TEXT("DebugKey7"));
 	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("DebugKey7"));
-
-
 }
 
 void APlayerCharacterBase::DebugKey8(const FInputActionValue& Value)
@@ -1127,27 +1132,26 @@ void APlayerCharacterBase::DebugKey8(const FInputActionValue& Value)
 	RS_LOG_DEBUG(LogRSCommon, Log, TEXT("DebugKey8"));
 	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("DebugKey8"));
 
-	if (const auto* PS = GetPlayerState<ARSPlayerState>())
+	switch (GetNetMode())
 	{
-		if (UInventoryComponent* InvenComp = PS->GetInventoryComponent())
-		{
-			for (const FInventoryEntry& Entry : InvenComp->GetEntries())
-			{
-				if (Entry.IsValid() && !Entry.Item->GetItemRowHandle().RowName.IsNone())
-				{
-					RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| Item: %s"), *LOG_LINE_INFO,
-					             *Entry.Item->GetItemRowHandle().RowName.ToString());
-				}
-			}
+	case NM_Standalone:
+		RS_LOG_DEBUG(LogRSSession, Log, TEXT("Standalone"));
+		RS_PRINT_SCREEN(30.0f, FColor::Cyan, TEXT("Standalone"));
+		break;
 
-			TArray<FItemStorageInfo> NewAchivements = InvenComp->GetNewAchivedItems();
-			RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| NewAchivements Count: %d"), *LOG_LINE_INFO, NewAchivements.Num());
-			for (const FItemStorageInfo& NewItem : NewAchivements)
-			{
-				RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| New Item: %s, Count: %d"), *LOG_LINE_INFO,
-				             *NewItem.RowName.ToString(), NewItem.Count);
-			}
-		}
+	case NM_ListenServer:
+		RS_LOG_DEBUG(LogRSSession, Log, TEXT("Listen Server"));
+		RS_PRINT_SCREEN(30.0f, FColor::Cyan, TEXT("Listen Server"));
+		break;
+
+	case NM_Client:
+		RS_LOG_DEBUG(LogRSSession, Log, TEXT("Client"));
+		RS_PRINT_SCREEN(30.0f, FColor::Cyan, TEXT("Client"));
+		break;
+	default:
+		RS_LOG_DEBUG(LogRSSession, Error, TEXT("Not expected"));
+		RS_PRINT_SCREEN(30.0f, FColor::Red, TEXT("Not expected"));
+		break;
 	}
 }
 
@@ -1155,6 +1159,11 @@ void APlayerCharacterBase::DebugKey9(const FInputActionValue& Value)
 {
 	RS_LOG_DEBUG(LogRSCommon, Log, TEXT("DebugKey9"));
 	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("DebugKey9"));
+
+	if (auto* SessionSubsystem = GetGameInstance()->GetSubsystem<USessionSubsystem>())
+	{
+		SessionSubsystem->CreateSession();
+	}
 }
 
 void APlayerCharacterBase::AttachWeapon()
@@ -1615,7 +1624,6 @@ void APlayerCharacterBase::ExecuteHitEffect(const FHitResult& Hit)
 
 void APlayerCharacterBase::TryApplyBulletElements(AActor* TargetActor, const FHitResult& Hit)
 {
-
 	if (!IsValid(ASC))
 	{
 		return;
@@ -1720,7 +1728,7 @@ void APlayerCharacterBase::ApplyElectricChain(AActor* FirstTarget, const FVector
 
 			if (VFXActor)
 			{
-				VFXActor->FinishSpawning(FTransform(StartLoc));   // 컴포넌트 재구성 먼저 끝내고
+				VFXActor->FinishSpawning(FTransform(StartLoc)); // 컴포넌트 재구성 먼저 끝내고
 
 				if (USplineComponent* Spline = VFXActor->FindComponentByClass<USplineComponent>())
 				{
@@ -1852,7 +1860,6 @@ bool APlayerCharacterBase::CalculateHit(FHitResult& Hit, float RandomX, float Ra
 
 void APlayerCharacterBase::Multicast_ExecuteVisualEffect_Implementation(const FHitResult& Hit, bool bIsHit)
 {
-
 	FGameplayCueParameters CueParams;
 	CueParams.Location = Hit.ImpactPoint;
 	CueParams.Normal = Hit.ImpactNormal;
@@ -1868,8 +1875,6 @@ void APlayerCharacterBase::Multicast_ExecuteVisualEffect_Implementation(const FH
 
 void APlayerCharacterBase::Server_ShootAttackRay_Implementation(float RandomX, float RandomY)
 {
-
-
 	// AI가 들을 수 있는 함수
 	FVector MuzzleLocation = WeaponMeshComponent->GetSocketLocation(FName("Muzzle"));
 	UAISense_Hearing::ReportNoiseEvent(GetWorld(), MuzzleLocation, 1, this, 3000);
@@ -1894,8 +1899,8 @@ void APlayerCharacterBase::Server_ShootAttackRay_Implementation(float RandomX, f
 			const bool bIsCritical = RSUtils::CheckChance(GetAttributeSet()->GetCriticalChance());
 			// 크리티컬 터졌을때 데미지 계산 적용
 			const float FinalDamage = bIsCritical
-				? BaseDamage * (1.0f + GetAttributeSet()->GetCriticalDamage() / 100.0f)
-				: BaseDamage;
+				                          ? BaseDamage * (1.0f + GetAttributeSet()->GetCriticalDamage() / 100.0f)
+				                          : BaseDamage;
 			Server_ApplyDamage(TargetActor, Hit, GetAttributeSet()->GetAttackPower());
 			Multicast_ExecuteVisualEffect(Hit, true);
 			TryApplyBulletElements(TargetActor, Hit);
@@ -2086,23 +2091,27 @@ void APlayerCharacterBase::OnPlayerDefaultInfoLoaded()
 					                                         Info->PoisonBulletDamagePercent);
 
 					RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| MaxHP(Table) : %.2f"), *LOG_LINE_INFO, Info->MaxHP);
-					RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| MaxHP(ASC) : %.2f"), *LOG_LINE_INFO, ASC->GetNumericAttribute(UPlayerAttributeSet::GetMaxHPAttribute()));
+					RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| MaxHP(ASC) : %.2f"), *LOG_LINE_INFO,
+					             ASC->GetNumericAttribute(UPlayerAttributeSet::GetMaxHPAttribute()));
 
-					RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| FireBulletChance(Table) : %.2f"), *LOG_LINE_INFO, Info->FireBulletChancePercent);
-					RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| FireBulletChance(ASC) : %.2f"), *LOG_LINE_INFO, ASC->GetNumericAttribute(UPlayerAttributeSet::GetFireBulletChanceAttribute()));
+					RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| FireBulletChance(Table) : %.2f"), *LOG_LINE_INFO,
+					             Info->FireBulletChancePercent);
+					RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| FireBulletChance(ASC) : %.2f"), *LOG_LINE_INFO,
+					             ASC->GetNumericAttribute(UPlayerAttributeSet::GetFireBulletChanceAttribute()));
 
-					RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| IceBulletChance(Table) : %.2f"), *LOG_LINE_INFO, Info->IceBulletChancePercent);
-					RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| IceBulletChance(ASC) : %.2f"), *LOG_LINE_INFO, ASC->GetNumericAttribute(UPlayerAttributeSet::GetIceBulletChanceAttribute()));
+					RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| IceBulletChance(Table) : %.2f"), *LOG_LINE_INFO,
+					             Info->IceBulletChancePercent);
+					RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| IceBulletChance(ASC) : %.2f"), *LOG_LINE_INFO,
+					             ASC->GetNumericAttribute(UPlayerAttributeSet::GetIceBulletChanceAttribute()));
 
 					ASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data);
 
-					RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| MaxHP(ASC) : %.2f"), *LOG_LINE_INFO, ASC->GetNumericAttribute(UPlayerAttributeSet::GetMaxHPAttribute()));
-					RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| FireBulletChance(ASC) : %.2f"), *LOG_LINE_INFO, ASC->GetNumericAttribute(UPlayerAttributeSet::GetFireBulletChanceAttribute()));
-					RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| IceBulletChance(ASC) : %.2f"), *LOG_LINE_INFO, ASC->GetNumericAttribute(UPlayerAttributeSet::GetIceBulletChanceAttribute()));
-
-
-
-
+					RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| MaxHP(ASC) : %.2f"), *LOG_LINE_INFO,
+					             ASC->GetNumericAttribute(UPlayerAttributeSet::GetMaxHPAttribute()));
+					RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| FireBulletChance(ASC) : %.2f"), *LOG_LINE_INFO,
+					             ASC->GetNumericAttribute(UPlayerAttributeSet::GetFireBulletChanceAttribute()));
+					RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| IceBulletChance(ASC) : %.2f"), *LOG_LINE_INFO,
+					             ASC->GetNumericAttribute(UPlayerAttributeSet::GetIceBulletChanceAttribute()));
 				}
 
 				NotifyASCReady();
@@ -2263,7 +2272,6 @@ void APlayerCharacterBase::OnInteractPressed()
 {
 	if (CurrentFocusedInteractable.IsValid())
 	{
-
 		Server_StartInteraction(CurrentFocusedInteractable.Get());
 
 		if (UInteractionWidget* Widget = GetInteractionWidget())

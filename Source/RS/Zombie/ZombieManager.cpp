@@ -6,6 +6,7 @@
 #include "RS/Zombie/ZombieSpawnPoint.h"
 #include "RS/LogCategory.h"
 #include "AbilitySystemComponent.h"
+#include "RS/GameMode/RSGameState.h"
 
 // Sets default values for this component's properties
 UZombieManager::UZombieManager()
@@ -68,6 +69,34 @@ void UZombieManager::ZombieUnRegister(AZombieBase* Zombie)
 	if (AllZombieArray.Num() < MaxZombieCount)
 	{
 		SetSpawnPointActivation(true);
+	}
+}
+
+void UZombieManager::BossRegister(AZombieBoss* Boss)
+{
+	if (!Boss)
+	{
+		return;
+	}
+
+	ARSGameState* GameState = GetWorld()->GetGameState<ARSGameState>();
+	if (GameState)
+	{
+		GameState->RegistBoss(Boss);
+	}
+}
+
+void UZombieManager::BossUnRegister(AZombieBoss* Boss)
+{
+	if (!Boss)
+	{
+		return;
+	}
+
+	ARSGameState* GameState = GetWorld()->GetGameState<ARSGameState>();
+	if (GameState)
+	{
+		GameState->UnRegistBoss(Boss);
 	}
 }
 

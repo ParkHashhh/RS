@@ -9,6 +9,8 @@
 #include "RS/Player/RSPlayerState.h"
 #include "RS/LogCategory.h"
 #include "Kismet/GameplayStatics.h"
+#include "RS/Data/Subsystem/DataStorageSubsystem.h"
+#include "RS/GameMode/SessionSubsystem.h"
 
 USelectSlotWidget::USelectSlotWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -27,6 +29,7 @@ void USelectSlotWidget::NativeOnInitialized()
 	SkillRightButton->OnClicked.AddDynamic(this, &USelectSlotWidget::SkillRightButtonClick);
 
 	StartButton->OnClicked.AddDynamic(this, &USelectSlotWidget::StartButtonClick);
+	MultiStartButton->OnClicked.AddDynamic(this, &USelectSlotWidget::MultiStartButtonClick);
 
 }
 
@@ -74,17 +77,41 @@ void USelectSlotWidget::StartButtonClick()
 		return;
 	}
 
-	// if (auto* PlayerController = GetOwningPlayer<ASelectPlayerController>())
+	FName TextureName = CurrentSelectPawn->GetCurrentTextureName();
+	FName SkillName = CurrentSelectPawn->GetCurrentSkillName();
+
+	if (URSGameInstance* GI = GetGameInstance<URSGameInstance>())
 	{
-		FName TextureName = CurrentSelectPawn->GetCurrentTextureName();
-		FName SkillName = CurrentSelectPawn->GetCurrentSkillName();
-
-		FString Option = FString::Printf(TEXT("Texture=%s Skill=%s "),
-			*TextureName.ToString(), *SkillName.ToString());
-
-		if (URSGameInstance* GI = GetGameInstance<URSGameInstance>())
+		if (auto* Storage = GI->GetSubsystem<UDataStorageSubsystem>())
 		{
-			GI->LevelLoading(TEXT("Colony"), TEXT("/Game/Levels/Colony"),Option,true,false, true);
+			Storage->SetSelectedCharacter(TextureName, SkillName);
+		}
+
+		GI->LevelLoading(TEXT("Colony"), TEXT("/Game/Levels/Colony"),TEXT(""),true,false, true);
+	}
+}
+void USelectSlotWidget::MultiStartButtonClick()
+{
+	RS_PRINT_SCREEN(1000.f, FColor::Red, TEXT("MultiStartButtonClick : Session"));
+
+	if (!IsValid(CurrentSelectPawn))
+	{
+		return;
+	}
+
+	FName TextureName = CurrentSelectPawn->GetCurrentTextureName();
+	FName SkillName = CurrentSelectPawn->GetCurrentSkillName();
+
+	if (URSGameInstance* GI = GetGameInstance<URSGameInstance>())
+	{
+		if (auto* Storage = GI->GetSubsystem<UDataStorageSubsystem>())
+		{
+			Storage->SetSelectedCharacter(TextureName, SkillName);
+		}
+
+		if (auto* SessionSubsystem = GI->GetSubsystem<USessionSubsystem>())
+		{
+			SessionSubsystem->CreateSession();
 		}
 	}
 }

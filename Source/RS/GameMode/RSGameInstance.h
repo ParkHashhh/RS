@@ -44,7 +44,11 @@ public:
 	UPROPERTY()
 	TObjectPtr<UAudioComponent> BGMComponent;
 
-	
+	//로딩 레벨에서 한번만 봄버 좀비가 터지게 하기 위한 불리언 변수
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	bool bIsBomberNiagaraLoaded = false;
+
+
 public:
 public:
 	void SetSinglePlayerMode(bool bInSinglePlayer) { bIsSinglePlayerMode = bInSinglePlayer; }
@@ -85,4 +89,6 @@ public:
 	{
 		return NextLevelPackagePath;
 	}
+
+
 };

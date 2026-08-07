@@ -142,8 +142,6 @@ protected:
 	UPROPERTY(Replicated);
 	bool bIsBoss;
 
-
-
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

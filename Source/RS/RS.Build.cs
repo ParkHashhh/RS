@@ -31,6 +31,8 @@ public class RS : ModuleRules
 			"DeveloperSettings",
 			"PhysicsCore",
 			"Paper2D",
+			"OnlineSubsystem",
+			"OnlineSubsystemUtils",
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[]

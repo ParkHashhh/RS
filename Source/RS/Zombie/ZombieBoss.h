@@ -44,6 +44,7 @@ protected:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void PossessedBy(AController* NewController);
 
 public:
@@ -98,4 +99,10 @@ public:
 	virtual bool CanUseMiddleAttack_Implementation();
 	virtual bool CanUseRangeAttack_Implementation();
 	virtual bool CheckOnlyUpperPlay_Implementation();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void PlayBossSkillSound(int32 Number);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void PlayBossSkillEffect(int32 Number);
 };

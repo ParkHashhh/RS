@@ -53,6 +53,7 @@ void AZombieBoss_Behemoth::BeginPlay()
 		{
 			PickupPointActor->CopyPickupPointArray(PickupPointArray);
 		}
+
 	}
 }
 void AZombieBoss_Behemoth::PossessedBy(AController* NewController)
@@ -393,6 +394,14 @@ void AZombieBoss_Behemoth::Skill2()
 #endif
 
 	}
+
+	if (HasAuthority())
+	{
+		//풋 스톰프 : 2번 스킬
+		PlayBossSkillSound(2);
+		PlayBossSkillEffect(2);
+	}
+
 }
 
 void AZombieBoss_Behemoth::Skill2End()
@@ -439,6 +448,13 @@ void AZombieBoss_Behemoth::Skill3()
 	EventData.Instigator = this;
 	EventData.EventTag = FGameplayTag::RequestGameplayTag(TEXT("Zombie.Battle.BZSkill3EarlyCooldown"));
 	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, EventData.EventTag, EventData);
+
+	if (HasAuthority())
+	{
+		//그라운드 슬램 : 3번 스킬
+		PlayBossSkillSound(3);
+		PlayBossSkillEffect(3);
+	}
 }
 
 void AZombieBoss_Behemoth::Skill3End()
@@ -529,6 +545,12 @@ void AZombieBoss_Behemoth::Skill6()
 	EventData.Instigator = this;
 	EventData.EventTag = FGameplayTag::RequestGameplayTag(TEXT("Zombie.Battle.BZSkill6EarlyCooldown"));
 	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, EventData.EventTag, EventData);
+
+	if (HasAuthority())
+	{
+		//좀비 소환 : 6번 스킬
+		PlayBossSkillSound(6);
+	}
 }
 
 void AZombieBoss_Behemoth::Skill6End()
@@ -586,6 +608,10 @@ bool AZombieBoss_Behemoth::Skill4Prepared()
 				Movement->StopMovementImmediately();
 				Movement->Deactivate();
 			}
+
+			//돌을 뽑아드는 사운드를 재생한다.
+			PlayBossSkillSound(4);
+
 			return true;
 		}
 		else
@@ -675,6 +701,13 @@ void AZombieBoss_Behemoth::ApplyLandingAttack()
 		DrawDebugSphere(GetWorld(), Loc, 400.f, 32, DebugColor, false, 3.f);
 #endif
 
+	}
+
+	if (HasAuthority())
+	{
+		//리프 어택 : 5번 스킬
+		PlayBossSkillSound(5);
+		PlayBossSkillEffect(5);
 	}
 }
 

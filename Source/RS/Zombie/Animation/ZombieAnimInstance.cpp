@@ -139,7 +139,7 @@ void UZombieAnimInstance::BehemothThrowingStoneSection()
 void UZombieAnimInstance::AnimNotify_Attack()
 {
 	TObjectPtr<AZombieBase> Zombie = Cast<AZombieBase>(TryGetPawnOwner());
-	if (Zombie->HasAuthority())
+	if (IsValid(Zombie) && Zombie->HasAuthority())
 	{
 		Zombie->Attack();
 	}
@@ -154,7 +154,7 @@ void UZombieAnimInstance::AnimNotify_Attack()
 void UZombieAnimInstance::AnimNotify_AttackEnd()
 {
 	TObjectPtr<AZombieBase> Zombie = Cast<AZombieBase>(TryGetPawnOwner());
-	if (Zombie->HasAuthority())
+	if (IsValid(Zombie) && Zombie->HasAuthority())
 	{
 		//공격이 끝났음을 알리기 위해 블랙보드의 해당 변수 값을 설정한다.
 		TObjectPtr<AAIController> Ctrl = Zombie->GetController<AAIController>();
@@ -203,7 +203,7 @@ void UZombieAnimInstance::AnimNotify_RoarStart()
 void UZombieAnimInstance::AnimNotify_RoarEnd()
 {
 	TObjectPtr<AZombieBase> Zombie = Cast<AZombieBase>(TryGetPawnOwner());
-	if (Zombie->HasAuthority())
+	if (IsValid(Zombie) && Zombie->HasAuthority())
 	{
 		TObjectPtr<AAIController> Ctrl = Zombie->GetController<AAIController>();
 		Ctrl->GetBlackboardComponent()->SetValueAsBool(TEXT("IsRoar"), false);
@@ -231,7 +231,7 @@ void UZombieAnimInstance::AnimNotify_LFootStep()
 void UZombieAnimInstance::AnimNotify_SkillStart()
 {
 	TObjectPtr<AZombieSpecial> Zombie = Cast<AZombieSpecial>(TryGetPawnOwner());
-	if (Zombie->HasAuthority())
+	if (IsValid(Zombie) && Zombie->HasAuthority())
 	{
 		Zombie->SkillStart();
 	}
@@ -240,7 +240,7 @@ void UZombieAnimInstance::AnimNotify_SkillStart()
 void UZombieAnimInstance::AnimNotify_SkillEnd()
 {
 	TObjectPtr<AZombieSpecial> Zombie = Cast<AZombieSpecial>(TryGetPawnOwner());
-	if (Zombie->HasAuthority())
+	if (IsValid(Zombie) && Zombie->HasAuthority())
 	{
 		Zombie->SkillEnd();
 	}
@@ -249,7 +249,7 @@ void UZombieAnimInstance::AnimNotify_SkillEnd()
 void UZombieAnimInstance::AnimNotify_MoveStart()
 {
 	TObjectPtr<AZombieBase> Zombie = Cast<AZombieBase>(TryGetPawnOwner());
-	if (Zombie->HasAuthority())
+	if (IsValid(Zombie) && Zombie->HasAuthority())
 	{
 		AZombieAIController* Ctrl = Zombie->GetController<AZombieAIController>();
 		if (IsValid(Ctrl))
@@ -262,7 +262,7 @@ void UZombieAnimInstance::AnimNotify_MoveStart()
 void UZombieAnimInstance::AnimNotify_BSkill1()
 {
 	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
-	if (Zombie->HasAuthority())
+	if (IsValid(Zombie) && Zombie->HasAuthority())
 	{
 		Zombie->Skill1();
 	}
@@ -271,7 +271,7 @@ void UZombieAnimInstance::AnimNotify_BSkill1()
 void UZombieAnimInstance::AnimNotify_BSkill1End()
 {
 	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
-	if (Zombie->HasAuthority())
+	if (IsValid(Zombie) && Zombie->HasAuthority())
 	{
 		Zombie->Skill1End();
 	}
@@ -280,7 +280,7 @@ void UZombieAnimInstance::AnimNotify_BSkill1End()
 void UZombieAnimInstance::AnimNotify_BSkill2()
 {
 	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
-	if (Zombie->HasAuthority())
+	if (IsValid(Zombie) && Zombie->HasAuthority())
 	{
 		Zombie->Skill2();
 	}
@@ -289,7 +289,7 @@ void UZombieAnimInstance::AnimNotify_BSkill2()
 void UZombieAnimInstance::AnimNotify_BSkill2End()
 {
 	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
-	if (Zombie->HasAuthority())
+	if (IsValid(Zombie) && Zombie->HasAuthority())
 	{
 		Zombie->Skill2End();
 	}
@@ -298,7 +298,7 @@ void UZombieAnimInstance::AnimNotify_BSkill2End()
 void UZombieAnimInstance::AnimNotify_BSkill3()
 {
 	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
-	if (Zombie->HasAuthority())
+	if (IsValid(Zombie) && Zombie->HasAuthority())
 	{
 		Zombie->Skill3();
 	}
@@ -307,7 +307,7 @@ void UZombieAnimInstance::AnimNotify_BSkill3()
 void UZombieAnimInstance::AnimNotify_BSkill3End()
 {
 	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
-	if (Zombie->HasAuthority())
+	if (IsValid(Zombie) && Zombie->HasAuthority())
 	{
 		Zombie->Skill3End();
 	}
@@ -316,7 +316,7 @@ void UZombieAnimInstance::AnimNotify_BSkill3End()
 void UZombieAnimInstance::AnimNotify_BSkill4()
 {
 	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
-	if (Zombie->HasAuthority())
+	if (IsValid(Zombie) && Zombie->HasAuthority())
 	{
 		Zombie->Skill4();
 	}
@@ -325,7 +325,7 @@ void UZombieAnimInstance::AnimNotify_BSkill4()
 void UZombieAnimInstance::AnimNotify_BSkill4End()
 {
 	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
-	if (Zombie->HasAuthority())
+	if (IsValid(Zombie) && Zombie->HasAuthority())
 	{
 		Zombie->Skill4End();
 	}
@@ -334,7 +334,7 @@ void UZombieAnimInstance::AnimNotify_BSkill4End()
 void UZombieAnimInstance::AnimNotify_BSkill5()
 {
 	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
-	if (Zombie->HasAuthority())
+	if (IsValid(Zombie) && Zombie->HasAuthority())
 	{
 		Zombie->Skill5();
 	}
@@ -343,7 +343,7 @@ void UZombieAnimInstance::AnimNotify_BSkill5()
 void UZombieAnimInstance::AnimNotify_BSkill5End()
 {
 	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
-	if (Zombie->HasAuthority())
+	if (IsValid(Zombie) && Zombie->HasAuthority())
 	{
 		Zombie->Skill5End();
 	}
@@ -352,7 +352,7 @@ void UZombieAnimInstance::AnimNotify_BSkill5End()
 void UZombieAnimInstance::AnimNotify_BSkill6()
 {
 	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
-	if (Zombie->HasAuthority())
+	if (IsValid(Zombie) && Zombie->HasAuthority())
 	{
 		Zombie->Skill6();
 	}
@@ -361,7 +361,7 @@ void UZombieAnimInstance::AnimNotify_BSkill6()
 void UZombieAnimInstance::AnimNotify_BSkill6End()
 {
 	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
-	if (Zombie->HasAuthority())
+	if (IsValid(Zombie) && Zombie->HasAuthority())
 	{
 		Zombie->Skill6End();
 	}
@@ -370,7 +370,7 @@ void UZombieAnimInstance::AnimNotify_BSkill6End()
 void UZombieAnimInstance::AnimNotify_BRangeAttack()
 {
 	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
-	if (Zombie->HasAuthority())
+	if (IsValid(Zombie) && Zombie->HasAuthority())
 	{
 		Zombie->RangeAttack();
 	}
@@ -379,7 +379,7 @@ void UZombieAnimInstance::AnimNotify_BRangeAttack()
 void UZombieAnimInstance::AnimNotify_BRangeAttackEnd()
 {
 	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
-	if (Zombie->HasAuthority())
+	if (IsValid(Zombie) && Zombie->HasAuthority())
 	{
 		Zombie->RangeAttackEnd();
 	}
@@ -388,7 +388,7 @@ void UZombieAnimInstance::AnimNotify_BRangeAttackEnd()
 void UZombieAnimInstance::AnimNotify_DecideLoc()
 {
 	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
-	if (Zombie->HasAuthority())
+	if (IsValid(Zombie) && Zombie->HasAuthority())
 	{
 		Zombie->SetLandingLoc();
 	}
@@ -397,7 +397,7 @@ void UZombieAnimInstance::AnimNotify_DecideLoc()
 void UZombieAnimInstance::AnimNotify_LandingAttack()
 {
 	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
-	if (Zombie->HasAuthority())
+	if (IsValid(Zombie) && Zombie->HasAuthority())
 	{
 		Zombie->ApplyLandingAttack();
 	}
@@ -406,7 +406,7 @@ void UZombieAnimInstance::AnimNotify_LandingAttack()
 void UZombieAnimInstance::AnimNotify_Launch()
 {
 	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
-	if (Zombie->HasAuthority())
+	if (IsValid(Zombie) && Zombie->HasAuthority())
 	{
 		Zombie->LaunchProjectile();
 	}
@@ -415,7 +415,7 @@ void UZombieAnimInstance::AnimNotify_Launch()
 void UZombieAnimInstance::AnimNotify_SpawnStone()
 {
 	TObjectPtr<AZombieBoss> Zombie = Cast<AZombieBoss>(TryGetPawnOwner());
-	if (Zombie->HasAuthority())
+	if (IsValid(Zombie) && Zombie->HasAuthority())
 	{
 		Zombie->SpawnStone();
 	}

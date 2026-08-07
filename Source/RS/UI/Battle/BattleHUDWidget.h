@@ -8,6 +8,7 @@
 
 class UInventoryPopupWidget;
 class UCrosshairWidget;
+class UBossHPBarWidget;
 /**
  *
  */
@@ -23,6 +24,9 @@ private:
 	UPROPERTY(meta=(BindWidget, AllowPrivateAccess=true), BlueprintReadOnly, BlueprintGetter=K2_GetCrosshairWidget)
 	TObjectPtr<UCrosshairWidget> CrosshairWidget;
 
+	UPROPERTY(meta = (BindWidget, AllowPrivateAccess = true), BlueprintReadOnly, Category = "BossHPBar|Asset")
+	TObjectPtr<UBossHPBarWidget> BossHPBarWidget;
+
 public:
 	FORCEINLINE UCrosshairWidget* GetCrosshairWidget() const
 	{
@@ -33,6 +37,11 @@ public:
 	UCrosshairWidget* K2_GetCrosshairWidget() const
 	{
 		return GetCrosshairWidget();
+	}
+
+	UBossHPBarWidget* GetBossHPBarWidget() const
+	{
+		return BossHPBarWidget;
 	}
 
 protected:

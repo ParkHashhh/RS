@@ -500,7 +500,7 @@ void AZombieBase::PlayFootStepCue(const FName& FootName)
 	//발바닥 위치와 라인트레이스를 발사할 위치를 구한다.
 	FVector FootLoc = Mesh->GetSocketLocation(FootName);
 	FootLoc.Z += 20.f;
-	FVector EndLoc = FootLoc - FVector(0.0, 0.0, 100.0);
+	FVector EndLoc = FootLoc - FVector(0.0, 0.0, 500.0);
 
 	FHitResult Result;
 	FCollisionQueryParams Params;

@@ -237,3 +237,19 @@ bool UDataStorageSubsystem::HasPendingStageResult(const FUniqueNetIdRepl& UID) c
 {
 	return PendingStageResultPlayers.Contains(UID);
 }
+
+void UDataStorageSubsystem::SetSelectedCharacter(FName Texture, FName Skill)
+{
+	SelectedTextureName = Texture;
+	SelectedSkillName = Skill;
+}
+
+FName UDataStorageSubsystem::GetSelectedTextureName() const
+{
+	return SelectedTextureName;
+}
+
+FName UDataStorageSubsystem::GetSelectedSkillName() const
+{
+	return SelectedSkillName;
+}

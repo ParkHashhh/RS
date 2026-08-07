@@ -11,6 +11,7 @@
 #include "RS/UI/Battle/Reward/RewardPopupWidget.h"
 #include "RS/UI/PauseWidget.h"
 #include "RS/UI/Start/SettingWidget.h"
+#include "RS/GameMode/RSGameState.h"
 
 APlayerControllerBase::APlayerControllerBase()
 {
@@ -80,8 +81,25 @@ void APlayerControllerBase::CreateBattleHUD()
 	}
 
 	RS_LOG_DEBUG(LogRSInit, Log, TEXT("%s: BattleHUDWidget is created"), *LOG_LINE_INFO);
+	RS_PRINT_SCREEN(5.f, FColor::Black, TEXT("HUD Create"));
 
 	BattleHUDWidget->AddToViewport();
+
+	BackupBattleHUDWidget = BattleHUDWidget;
+
+	//HUD 위젯 생성이 보스좀비 포인터 등록보다 늦으므로 이곳에서 보스 체력바 위젯을 제어해야 한다.
+	if (GetWorld())
+	{
+		ARSGameState* GameState = GetWorld()->GetGameState<ARSGameState>();
+		if (GameState)
+		{
+			if (GameState->GetCurrentBoss() != nullptr)
+			{
+				GameState->ChangeBossHPBarActivation();
+				RS_PRINT_SCREEN(5.f, FColor::Black, TEXT("Check BossHPBar Once Again"));
+			}
+		}
+	}
 }
 
 void APlayerControllerBase::CreateEndPopUp()

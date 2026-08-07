@@ -9,6 +9,7 @@
 class AZombieBase;
 class AZombieSpawnPoint;
 class UGameplayEffect;
+class AZombieBoss;
 
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
@@ -51,6 +52,11 @@ public:
 
 	//좀비가 죽을 때 등록 해제하는 함수
 	void ZombieUnRegister(AZombieBase* Zombie);
+
+	//보스좀비를 게임스테이트에 등록하는 함수
+	void BossRegister(AZombieBoss* Boss);
+
+	void BossUnRegister(AZombieBoss* Boss);
 
 	//배치된 스폰 포인트를 등록하는 함수
 	void SpawnPointRegister(AZombieSpawnPoint* SpawnPoint);

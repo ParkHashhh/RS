@@ -30,6 +30,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category="UI")
 	TSubclassOf<UBattleHUDWidget> BattleHUDWidgetClass;
 
+	//생성된 통합 HUD 위젯을 보관할 멤버 변수
+	UPROPERTY()
+	TObjectPtr<UBattleHUDWidget> BackupBattleHUDWidget;
+
 	UPROPERTY()
 	TArray<APlayerCharacterBase*> SpectateTargets;
 
@@ -69,6 +73,11 @@ public:
 	void SetPlayerName(const FString& NewPlayerName)
 	{
 		PlayerName = NewPlayerName;
+	}
+
+	UBattleHUDWidget* GetBattleHUDWidget() const
+	{
+		return BackupBattleHUDWidget;
 	}
 
 	void ShowEndPopUp();
