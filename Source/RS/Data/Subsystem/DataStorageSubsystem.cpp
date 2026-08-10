@@ -153,10 +153,25 @@ bool UDataStorageSubsystem::LoadPlayerDataFromDisk(ARSPlayerState* PS)
 	PreviousInventoryStorage.Add(UID, SaveObject->SavedInventory);
 	PendingTextureRestore.Add(UID, SaveObject->SavedTextureName);
 	PendingSkillRestore.Add(UID, SaveObject->SavedSkillName);
-
 	SetSelectedCharacter(SaveObject->SavedTextureName, SaveObject->SavedSkillName);
 
 	return true;
+}
+
+void UDataStorageSubsystem::SetSelectedCharacter(FName Texture, FName Skill)
+{
+	SelectedTextureName = Texture;
+	SelectedSkillName = Skill;
+}
+
+FName UDataStorageSubsystem::GetSelectedTextureName() const
+{
+	return SelectedTextureName;
+}
+
+FName UDataStorageSubsystem::GetSelectedSkillName() const
+{
+	return SelectedSkillName;
 }
 
 void UDataStorageSubsystem::DeletePlayerSaveFile()
@@ -238,20 +253,4 @@ bool UDataStorageSubsystem::ConsumePendingStageResult(const FUniqueNetIdRepl& UI
 bool UDataStorageSubsystem::HasPendingStageResult(const FUniqueNetIdRepl& UID) const
 {
 	return PendingStageResultPlayers.Contains(UID);
-}
-
-void UDataStorageSubsystem::SetSelectedCharacter(FName Texture, FName Skill)
-{
-	SelectedTextureName = Texture;
-	SelectedSkillName = Skill;
-}
-
-FName UDataStorageSubsystem::GetSelectedTextureName() const
-{
-	return SelectedTextureName;
-}
-
-FName UDataStorageSubsystem::GetSelectedSkillName() const
-{
-	return SelectedSkillName;
 }

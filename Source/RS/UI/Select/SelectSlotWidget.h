@@ -22,10 +22,6 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> StartButton;
 
-
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UButton> MultiStartButton;
-
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> TextureLeftButton;
 
@@ -65,9 +61,6 @@ public:
 
 	UFUNCTION()
 	void StartButtonClick();
-
-	UFUNCTION()
-	void MultiStartButtonClick();
 
 	UFUNCTION()
 	void TestJoinLocalHost();

@@ -6,8 +6,6 @@
 #include "Online.h"
 #include "OnlineSessionSettings.h"
 #include "OnlineSubsystemUtils.h"
-#include "RSGameInstance.h"
-#include "Kismet/GameplayStatics.h"
 #include "RS/LogCategory.h"
 
 void USessionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -83,19 +81,8 @@ void USessionSubsystem::OnCreateSessionCompleted(FName SessionName, bool bWasSuc
 		SessionInterface->ClearOnCreateSessionCompleteDelegate_Handle(CreateSessionCompleteHandle);
 	}
 
-	RS_LOG_DEBUG(LogRSSession, Log, TEXT("%s| Create Session: %s"), *LOG_LINE_INFO,
-	             bWasSuccessful ? TEXT("Success") : TEXT("Failed"));
-	RS_PRINT_SCREEN(30.f, FColor::Cyan, TEXT("%s| Create Session: %s"), *LOG_LINE_INFO,
-	                bWasSuccessful ? TEXT("Success") : TEXT("Failed"));
-
-	//GI->LevelLoading(TargetLevelName, TargetLevelPackagePath, TEXT(""), false, true, true);
-	if (bWasSuccessful)
-	{
-		if (auto* GI = Cast<URSGameInstance>(GetGameInstance()))
-		{
-			GI->LevelLoading(TEXT("Colony"), TEXT("/Game/Levels/Colony"),TEXT("listen"),true,true, true);
-		}
-	}
+	RS_LOG_DEBUG(LogRSSession, Log, TEXT("%s| Create Session: %s"), *LOG_LINE_INFO, bWasSuccessful ? TEXT("Success") : TEXT("Failed"));
+	RS_PRINT_SCREEN(30.f, FColor::Cyan, TEXT("%s| Create Session: %s"), *LOG_LINE_INFO, bWasSuccessful ? TEXT("Success") : TEXT("Failed"));
 
 	OnCreateSessionCompleteEvent.Broadcast(bWasSuccessful);
 }

@@ -3,31 +3,25 @@
 
 #include "ColonyPlayerController.h"
 #include "Blueprint/UserWidget.h"
-#include "Kismet/GameplayStatics.h"
 #include "RS/LogCategory.h"
-#include "RS/Data/Subsystem/DataStorageSubsystem.h"
-#include "RS/GameMode/ColonyGameMode.h"
 #include "RS/GameMode/RSGameInstance.h"
 #include "RS/GameMode/RSInGameMode.h"
-#include "RS/Player/RSPlayerState.h"
+#include "RS/RSUtils.h"
+#include "Kismet/GameplayStatics.h"
 #include "RS/UI/Colony/Result/StageResultWidget.h"
+#include "RS/Data/Subsystem/DataStorageSubsystem.h"
+#include "RS/Player/RSPlayerState.h"
 
 AColonyPlayerController::AColonyPlayerController()
 {
 	bShowMouseCursor = true;
 }
 
+
 void AColonyPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
-
-	if (!IsLocalController())
-	{
-		return;
-	}
-
 	RS_PRINT_SCREEN(15.f, FColor::Green, TEXT("[ColonyPC] BeginPlay, Map: %s"), *GetWorld()->GetMapName());
-
 	if (IsValid(ColonyWidgetClass))
 	{
 		ColonyWidget = CreateWidget<UUserWidget>(GetWorld(), ColonyWidgetClass);
@@ -41,73 +35,44 @@ void AColonyPlayerController::BeginPlay()
 			SetInputMode(InputMode);
 		}
 	}
-
 	if (IsValid(MapSelectWidgetClass))
 	{
 		MapSelectWidget = CreateWidget<UUserWidget>(GetWorld(), MapSelectWidgetClass);
 	}
 
-	if (auto* GI = GetGameInstance<URSGameInstance>())
+	URSGameInstance* GI = Cast<URSGameInstance>(GetGameInstance());
+	if (IsValid(GI))
 	{
 		GI->StopBGM();
-
-		if (const auto* Storage = GI->GetSubsystem<UDataStorageSubsystem>())
-		{
-			Server_SetSelectedCharacterInfo(Storage->GetSelectedTextureName(), Storage->GetSelectedSkillName());
-		}
 	}
+	
 }
 
-void AColonyPlayerController::OnPossess(APawn* aPawn)
+void AColonyPlayerController::ShowMapSelcetWidget()
 {
-	Super::OnPossess(aPawn);
-
-	RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| OnPossess %s"), *LOG_LINE_INFO, *GetNameSafe(aPawn));
-	RS_PRINT_SCREEN(30.0f, FColor::Cyan, TEXT("%s| OnPossess %s"), *LOG_LINE_INFO, *GetNameSafe(aPawn));
-}
-
-void AColonyPlayerController::Server_SetSelectedCharacterInfo_Implementation(FName TextureName, FName SkillName)
-{
-	if (auto* GM = GetWorld()->GetAuthGameMode<AColonyGameMode>())
+	if (IsValid(MapSelectWidget))
 	{
-		GM->OnPlayerCharacterSelected(this, TextureName, SkillName);
+		bShowMouseCursor = true;
+
+		FInputModeUIOnly InputMode;
+		InputMode.SetWidgetToFocus(MapSelectWidget->TakeWidget());
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		SetInputMode(InputMode);		
+		UGameplayStatics::PlaySound2D(this, MapSelectOpenSound);
+		MapSelectWidget->AddToViewport();
 	}
-}
-
-void AColonyPlayerController::ShowMapSelectWidget()
-{
-	if (!IsValid(MapSelectWidget))
-	{
-		return;
-	}
-
-	bShowMouseCursor = true;
-
-	FInputModeUIOnly InputMode;
-	InputMode.SetWidgetToFocus(MapSelectWidget->TakeWidget());
-	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-	SetInputMode(InputMode);
-
-	UGameplayStatics::PlaySound2D(this, MapSelectOpenSound);
-
-	MapSelectWidget->AddToViewport();
 }
 
 void AColonyPlayerController::RemoveMapSelectWidget()
 {
-	if (!IsValid(MapSelectWidget))
+	if (IsValid(MapSelectWidget))
 	{
-		return;
+		bShowMouseCursor = false;
+		FInputModeGameOnly InputMode;
+		SetInputMode(InputMode);
+		UGameplayStatics::PlaySound2D(this, MapSelectCloseSound);
+		MapSelectWidget->RemoveFromParent();
 	}
-
-	bShowMouseCursor = false;
-
-	FInputModeGameOnly InputMode;
-	SetInputMode(InputMode);
-
-	UGameplayStatics::PlaySound2D(this, MapSelectCloseSound);
-
-	MapSelectWidget->RemoveFromParent();
 }
 
 // 1회성이기 때문에 멤버변수로 놓을 필요없음
@@ -119,11 +84,12 @@ void AColonyPlayerController::ShowStageResultWidget()
 		return;
 	}
 
-	auto* Widget = CreateWidget<UStageResultWidget>(this, StageResultWidgetClass);
+	UStageResultWidget* Widget = CreateWidget<UStageResultWidget>(this, StageResultWidgetClass);
 	if (!IsValid(Widget))
 	{
 		return;
 	}
+
 
 	bShowMouseCursor = true;
 	FInputModeUIOnly InputMode;
@@ -132,6 +98,7 @@ void AColonyPlayerController::ShowStageResultWidget()
 	SetInputMode(InputMode);
 
 	Widget->AddToViewport();
+
 }
 
 void AColonyPlayerController::Server_RequestPortal_Implementation(FName LevelName, const FString& PackagePath)

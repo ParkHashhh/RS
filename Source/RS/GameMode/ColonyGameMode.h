@@ -6,7 +6,6 @@
 #include "RSInGameMode.h"
 #include "ColonyGameMode.generated.h"
 
-class AColonyPlayerController;
 /**
  *
  */
@@ -18,12 +17,7 @@ class RS_API AColonyGameMode : public ARSInGameMode
 public:
 	AColonyGameMode();
 
-	virtual void PostLogin(APlayerController* NewPlayer) override;
-
-	void OnPlayerCharacterSelected(AColonyPlayerController* PlayerController, FName TextureName, FName SkillName);
-
 protected:
 	virtual APlayerController* Login(UPlayer* NewPlayer, ENetRole InRemoteRole, const FString& Portal,
 		const FString& Options, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage);
-
 };

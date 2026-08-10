@@ -30,9 +30,21 @@ private:
 	TMap<FUniqueNetIdRepl, FStageResultStatInfo> PreviousStageResultStatStorage;
 
 	TSet<FUniqueNetIdRepl> PendingStageResultPlayers;
+
+	UPROPERTY()
+	FName SelectedTextureName;
+
+	UPROPERTY()
+	FName SelectedSkillName;
 public:
 	void RestoreTextureSkill(ARSPlayerState* PS);
+
 public:
+	void SetSelectedCharacter(FName Texture, FName Skill);
+	FName GetSelectedTextureName() const;
+	FName GetSelectedSkillName() const;
+public:
+
 	void StoreAllPlayerInventory();
 	void RestorePlayerInventory(const ARSPlayerController* NewPlayer);
 	void ClearPlayerInventory(const FUniqueNetIdRepl& UID);
@@ -49,22 +61,4 @@ public:
 	bool ConsumePendingStageResult(const FUniqueNetIdRepl& UID);
 
 	bool HasPendingStageResult(const FUniqueNetIdRepl& UID) const;
-
-#pragma region Character Select
-
-private:
-	UPROPERTY()
-	FName SelectedTextureName;
-
-	UPROPERTY()
-	FName SelectedSkillName;
-
-public:
-	void SetSelectedCharacter(FName Texture, FName Skill);
-
-	FName GetSelectedTextureName() const;
-
-	FName GetSelectedSkillName() const;
-
-#pragma endregion
 };

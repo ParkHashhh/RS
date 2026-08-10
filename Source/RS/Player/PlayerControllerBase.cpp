@@ -63,6 +63,15 @@ void APlayerControllerBase::ApplyGameplayInputMode()
 	InputModeData.SetConsumeCaptureMouseDown(true);
 	SetInputMode(InputModeData);
 	bShowMouseCursor = false;
+
+	if (UGameViewportClient* VC = GetWorld() ? GetWorld()->GetGameViewport() : nullptr)
+	{
+		if (FViewport* Viewport = VC->Viewport)
+		{
+			Viewport->CaptureMouse(true);
+			Viewport->LockMouseToViewport(true);
+		}
+	}
 }
 
 void APlayerControllerBase::CreateBattleHUD()
