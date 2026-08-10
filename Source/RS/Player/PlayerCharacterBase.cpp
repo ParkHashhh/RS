@@ -109,6 +109,8 @@ void APlayerCharacterBase::BeginPlay()
 {
 	Super::BeginPlay();
 
+	RS_PRINT_SCREEN(30.0f, FColor::Cyan, TEXT("%s| Character BeginPlay"), *LOG_LINE_INFO);
+
 	if (auto* C = GetController())
 	{
 		RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| Local=%s, Controller=%s"), *LOG_LINE_INFO,
@@ -132,7 +134,6 @@ void APlayerCharacterBase::BeginPlay()
 
 	PlayerController = Cast<APlayerControllerBase>(GetController());
 
-	
 	const float SavedSensitivity = URSGameUserSettings::Get()->GetMouseSensitivity();
 	SetMouseSensitivity(SavedSensitivity, SavedSensitivity);
 	AnimInst = Cast<UPlayerAnimInstance>(GetMesh()->GetAnimInstance());

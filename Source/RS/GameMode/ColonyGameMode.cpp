@@ -6,6 +6,7 @@
 #include "RS/LogCategory.h"
 #include "RS/Data/Subsystem/DataStorageSubsystem.h"
 #include "RS/Player/ColonyPlayerController.h"
+#include "RS/GameMode/RSGameInstance.h"
 
 AColonyGameMode::AColonyGameMode()
 {
@@ -38,10 +39,17 @@ void AColonyGameMode::OnPlayerCharacterSelected(AColonyPlayerController* PlayerC
 	PS->SetTextureName(TextureName);
 	PS->SetSkillName(SkillName);
 
+	if (APawn* OldPawn = PlayerController->GetPawn())
+	{
+		OldPawn->Destroy();
+	}
+
 	RS_LOG_DEBUG(LogRSSession, Log, TEXT("%s| Character Selected: %s, %s"), *LOG_LINE_INFO, *TextureName.ToString(), *SkillName.ToString());
 
 	RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| Pawn Before=%s"), *LOG_LINE_INFO, *GetNameSafe(PlayerController->GetPawn()));
 	RS_PRINT_SCREEN(30.0f, FColor::Cyan, TEXT("%s| Pawn Before=%s"), *LOG_LINE_INFO, *GetNameSafe(PlayerController->GetPawn()));
+
+	RS_PRINT_SCREEN(30.0f, FColor::Cyan, TEXT("%s| Controller Local=%s"), *LOG_LINE_INFO, PlayerController->IsLocalController()? TEXT("true") : TEXT("false"));
 
 	RestartPlayer(PlayerController);
 
@@ -57,16 +65,19 @@ APlayerController* AColonyGameMode::Login(UPlayer* NewPlayer, ENetRole InRemoteR
 	RS_PRINT_SCREEN(5, FColor::Red, TEXT("Login called! Options: [%s]"), *Options);
 	RS_PRINT_SCREEN(5, FColor::Red, TEXT("HasAuthory %d"), HasAuthority());
 
-	// if (ARSPlayerState* PS = Result->GetPlayerState<ARSPlayerState>())
-	// {
-	// 	if (const UGameInstance* GI = GetGameInstance())
-	// 	{
-	// 		if (auto* StorageSubsystem = GI->GetSubsystem<UDataStorageSubsystem>())
-	// 		{
-	// 			StorageSubsystem->RestoreTextureSkill(PS);
-	// 		}
-	// 	}
-	// }
+	if (const auto* GI = Cast<URSGameInstance>(GetGameInstance()))
+	{
+		if (GI->IsSinglePlayerMode())
+		{
+			if (ARSPlayerState* PS = Result->GetPlayerState<ARSPlayerState>())
+			{
+				if (auto* StorageSubsystem = GI->GetSubsystem<UDataStorageSubsystem>())
+				{
+					StorageSubsystem->RestoreTextureSkill(PS);
+				}
+			}
+		}
+	}
 
 	return Result;
 }

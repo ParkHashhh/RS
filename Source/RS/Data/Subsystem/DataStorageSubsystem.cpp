@@ -154,6 +154,8 @@ bool UDataStorageSubsystem::LoadPlayerDataFromDisk(ARSPlayerState* PS)
 	PendingTextureRestore.Add(UID, SaveObject->SavedTextureName);
 	PendingSkillRestore.Add(UID, SaveObject->SavedSkillName);
 
+	SetSelectedCharacter(SaveObject->SavedTextureName, SaveObject->SavedSkillName);
+
 	return true;
 }
 

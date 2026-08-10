@@ -91,7 +91,10 @@ void USessionSubsystem::OnCreateSessionCompleted(FName SessionName, bool bWasSuc
 	//GI->LevelLoading(TargetLevelName, TargetLevelPackagePath, TEXT(""), false, true, true);
 	if (bWasSuccessful)
 	{
-		UGameplayStatics::OpenLevel(GetWorld(), TEXT("Colony"), true, TEXT("listen"));
+		if (auto* GI = Cast<URSGameInstance>(GetGameInstance()))
+		{
+			GI->LevelLoading(TEXT("Colony"), TEXT("/Game/Levels/Colony"),TEXT("listen"),true,true, true);
+		}
 	}
 
 	OnCreateSessionCompleteEvent.Broadcast(bWasSuccessful);
