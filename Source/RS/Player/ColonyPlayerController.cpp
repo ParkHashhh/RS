@@ -11,6 +11,7 @@
 #include "RS/UI/Colony/Result/StageResultWidget.h"
 #include "RS/Data/Subsystem/DataStorageSubsystem.h"
 #include "RS/Player/RSPlayerState.h"
+#include "RS/GameMode/ColonyGameMode.h"
 
 AColonyPlayerController::AColonyPlayerController()
 {
@@ -44,6 +45,11 @@ void AColonyPlayerController::BeginPlay()
 	if (IsValid(GI))
 	{
 		GI->StopBGM();
+
+		if (const auto* Storage = GI->GetSubsystem<UDataStorageSubsystem>())
+		{
+			Server_SetSelectedCharacterInfo(Storage->GetSelectedTextureName(), Storage->GetSelectedSkillName());
+		}
 	}
 	
 }
@@ -126,5 +132,13 @@ void AColonyPlayerController::Server_ClearPendingStageResult_Implementation()
 				StorageSubsystem->ConsumePendingStageResult(PS->GetUniqueId());
 			}
 		}
+	}
+}
+
+void AColonyPlayerController::Server_SetSelectedCharacterInfo_Implementation(FName TextureName, FName SkillName)
+{
+	if (auto* GM = GetWorld()->GetAuthGameMode<AColonyGameMode>())
+	{
+		GM->OnPlayerCharacterSelected(this, TextureName, SkillName);
 	}
 }

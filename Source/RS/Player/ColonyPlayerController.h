@@ -49,6 +49,9 @@ public:
 	void ShowMapSelcetWidget();
 	void RemoveMapSelectWidget();
 	void ShowStageResultWidget();
+
+	UFUNCTION(Server, Reliable)
+	void Server_SetSelectedCharacterInfo(FName TextureName, FName SkillName);
 protected:
 	virtual void BeginPlay() override;
 

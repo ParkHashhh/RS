@@ -5,10 +5,36 @@
 #include "RS/Player/RSPlayerState.h"
 #include "RS/LogCategory.h"
 #include "RS/Data/Subsystem/DataStorageSubsystem.h"
+#include "RS/Player/ColonyPlayerController.h"
 
 AColonyGameMode::AColonyGameMode()
 {
 	bUseSeamlessTravel = true;
+	bStartPlayersAsSpectators = true;
+}
+
+void AColonyGameMode::OnPlayerCharacterSelected(AColonyPlayerController* PlayerController, FName TextureName, FName SkillName)
+{
+	if (!IsValid(PlayerController))
+	{
+		return;
+	}
+
+	auto* PS = PlayerController->GetPlayerState<ARSPlayerState>();
+	if (!IsValid(PS))
+	{
+		return;
+	}
+
+	PS->SetTextureName(TextureName);
+	PS->SetSkillName(SkillName);
+
+	if (APawn* OldPawn = PlayerController->GetPawn())
+	{
+		OldPawn->Destroy();
+	}
+
+	RestartPlayer(PlayerController);
 }
 
 APlayerController* AColonyGameMode::Login(UPlayer* NewPlayer, ENetRole InRemoteRole, const FString& Portal,
@@ -47,3 +73,4 @@ APlayerController* AColonyGameMode::Login(UPlayer* NewPlayer, ENetRole InRemoteR
 	
 	return Result;
 }
+
