@@ -12,6 +12,7 @@
 #include "RS/UI/PauseWidget.h"
 #include "RS/UI/Start/SettingWidget.h"
 #include "RS/GameMode/RSGameState.h"
+#include "RS/UI/RSGameUserSettings.h"
 
 APlayerControllerBase::APlayerControllerBase()
 {
@@ -39,6 +40,7 @@ void APlayerControllerBase::BeginPlay()
 		CreateEndPopUp();
 		CreatePauseWidget();
 		CreateSettingWidget();
+		CreateControlHelpWidget();
 	}
 }
 
@@ -322,4 +324,24 @@ void APlayerControllerBase::SpectatePrev()
 	{
 		SetViewTargetWithBlend(Actor, 0.5f);
 	}
+}
+
+
+void APlayerControllerBase::CreateControlHelpWidget()
+{
+	if (!IsValid(ControlHelpWidgetClass))
+	{
+		return;
+	}
+
+	auto* ControlHelpWidget = CreateWidget<URSUserWidget>(this, ControlHelpWidgetClass);
+	if (!IsValid(ControlHelpWidget))
+	{
+		return;
+	}
+
+	ControlHelpWidget->AddToViewport();
+
+	const bool bShow = URSGameUserSettings::Get()->GetShowControlsHelp();
+	ControlHelpWidget->SetVisibility(bShow ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 }

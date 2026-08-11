@@ -35,6 +35,9 @@
 #include "RS/GameMode/SessionSubsystem.h"
 #include "RS/UI/RSGameUserSettings.h"
 #include "RS/GameMode/MainGameMode.h"
+#include "RS/UI/Start/SettingWidget.h"
+
+
 
 // Sets default values
 APlayerCharacterBase::APlayerCharacterBase()
@@ -473,6 +476,13 @@ void APlayerCharacterBase::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::MapSelectKey);
 	}
 
+
+	Action = InputData->FindAction(FInputKeyNames::ControlHelp);
+	if (Action)
+	{
+		EnhancedInput->BindAction(Action, ETriggerEvent::Started, this, &APlayerCharacterBase::ControlHelpKey);
+	}
+
 #if !UE_BUILD_SHIPPING
 	Action = InputData->FindAction(FInputKeyNames::Debug_00);
 	if (Action)
@@ -799,6 +809,54 @@ void APlayerCharacterBase::MapSelectKey(const FInputActionValue& Value)
 	if (CPC)
 	{
 		CPC->ShowMapSelcetWidget();
+	}
+}
+
+void APlayerCharacterBase::ControlHelpKey(const FInputActionValue& Value)
+{
+	RS_PRINT_SCREEN(1.f, FColor::Green, TEXT("ControlHelpKey"));
+
+	auto* PC = GetController<APlayerControllerBase>();
+	if (!PC)
+	{
+		return;
+	}
+
+	ULocalPlayer* LP = PC->GetLocalPlayer();
+	if (!LP)
+	{
+		return;
+	}
+
+	auto* UISubsystem = LP->GetSubsystem<UUISubsystem>();
+	if (!UISubsystem)
+	{
+		return;
+	}
+
+	URSUserWidget* ControlHelpWidget = UISubsystem->FindWidget(FName(TEXT("controlhelp")));
+	if (!ControlHelpWidget)
+	{
+		return;
+	}
+
+	const bool bShow = ControlHelpWidget->GetVisibility() != ESlateVisibility::HitTestInvisible;
+	if (bShow)
+	{
+		ControlHelpWidget->SetVisibility(ESlateVisibility::HitTestInvisible);
+	}
+	else
+	{
+		ControlHelpWidget->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	URSGameUserSettings::Get()->SetShowControlsHelp(bShow);
+	if (URSUserWidget* SettingsWidgetBase = UISubsystem->FindWidget(FName(TEXT("settings"))))
+	{
+		if (USettingWidget* SettingsWidget = Cast<USettingWidget>(SettingsWidgetBase))
+		{
+			SettingsWidget->RefreshControlsHelpCheckbox();
+		}
 	}
 }
 

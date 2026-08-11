@@ -8,6 +8,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "RS/Player/PlayerCharacterBase.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Components/CheckBox.h"
+#include "RS/UI/Subsystem/UISubsystem.h"
 
 USettingWidget::USettingWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -86,6 +88,20 @@ void USettingWidget::NativeOnInitialized()
 	{
 		SaveButton->OnClicked.AddDynamic(this, &USettingWidget::HandleSaveClicked);
 	}
+	if (ControlsHelpCheckBox)
+	{
+		ControlsHelpCheckBox->SetIsChecked(Settings->GetShowControlsHelp());
+		ControlsHelpCheckBox->OnCheckStateChanged.AddDynamic(this, &USettingWidget::HandleControlsHelpChanged);
+	}
+	OnNativeVisibilityChanged.AddUObject(this, &USettingWidget::HandleVisibilityChanged);
+}
+
+void USettingWidget::RefreshControlsHelpCheckbox()
+{
+	if (ControlsHelpCheckBox)
+	{
+		ControlsHelpCheckBox->SetIsChecked(URSGameUserSettings::Get()->GetShowControlsHelp());
+	}
 }
 
 void USettingWidget::HandleGraphicsChanged(FString SelectedItem, ESelectInfo::Type SelectType)
@@ -162,5 +178,33 @@ void USettingWidget::HandleResolutionChanged(FString SelectedItem, ESelectInfo::
 		URSGameUserSettings* Settings = URSGameUserSettings::Get();
 		Settings->SetScreenResolution(Resolution);
 		Settings->ApplySettings(false);
+	}
+}
+
+void USettingWidget::HandleControlsHelpChanged(bool bIsChecked)
+{
+	URSGameUserSettings::Get()->SetShowControlsHelp(bIsChecked);
+
+	if (const UUISubsystem* UISubsystem = GetSubsystem<UUISubsystem>())
+	{
+		if (URSUserWidget* ControlHelpWidget = UISubsystem->FindWidget(FName(TEXT("controlhelp"))))
+		{
+			if (bIsChecked)
+			{
+				ControlHelpWidget->SetVisibility(ESlateVisibility::HitTestInvisible);
+			}
+			else
+			{
+				ControlHelpWidget->SetVisibility(ESlateVisibility::Collapsed);
+			}
+		}
+	}
+}
+
+void USettingWidget::HandleVisibilityChanged(ESlateVisibility InVisibility)
+{
+	if (InVisibility == ESlateVisibility::Visible)
+	{
+		RefreshControlsHelpCheckbox();
 	}
 }
