@@ -12,6 +12,7 @@
  */
 
 class UMapSelectCardWidget;
+class UTextBlock;
 
 UCLASS()
 class RS_API UMapSelectWidget : public URSUserWidget
@@ -37,9 +38,13 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> QuitButton;
 
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UTextBlock> DifficultyStageText;
+
 	TObjectPtr<UMapSelectCardWidget> CurrentSelectedCard;
 protected:
 	virtual void NativeOnInitialized() override;
+	virtual void NativeConstruct() override;
 
 	UFUNCTION()
 	void HandleCardClicked(UMapSelectCardWidget* ClickedCard);

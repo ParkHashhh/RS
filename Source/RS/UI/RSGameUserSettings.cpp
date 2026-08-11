@@ -23,3 +23,8 @@ void URSGameUserSettings::SetBrightness(float Value)
 {
 	Brightness = FMath::Clamp(Value, 0.f, 2.f);
 }
+
+void URSGameUserSettings::SetShowControlsHelp(bool bValue)
+{
+	bShowControlsHelp = bValue;
+}

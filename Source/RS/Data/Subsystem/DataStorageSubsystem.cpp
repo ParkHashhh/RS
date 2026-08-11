@@ -12,6 +12,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "RS/Save/RSSaveGame.h"
 #include "RS/Inventory/InventoryComponent.h"
+#include "RS/GameMode/RSGameState.h"
 
 const FString UDataStorageSubsystem::SaveSlotName = TEXT("RS_SinglePlayerSave");
 
@@ -133,11 +134,16 @@ void UDataStorageSubsystem::SavePlayerDataToDisk(const ARSPlayerState* PS)
 
 	SaveObject->SavedTextureName = PS->GetTextureName();
 	SaveObject->SavedSkillName = PS->GetSkillName();
-
+	if (const ARSGameState* GS = PS->GetWorld() ? PS->GetWorld()->GetGameState<ARSGameState>() : nullptr)
+	{
+		SaveObject->SavedDifficultyStage = GS->GetDifficultyStage();
+	}
 	UGameplayStatics::SaveGameToSlot(SaveObject, SaveSlotName, 0);
 }
 bool UDataStorageSubsystem::LoadPlayerDataFromDisk(ARSPlayerState* PS)
 {
+	CurrentDifficultyStage = 1;
+
 	if (!PS || !UGameplayStatics::DoesSaveGameExist(SaveSlotName, 0))
 	{
 		return false;
@@ -153,10 +159,26 @@ bool UDataStorageSubsystem::LoadPlayerDataFromDisk(ARSPlayerState* PS)
 	PreviousInventoryStorage.Add(UID, SaveObject->SavedInventory);
 	PendingTextureRestore.Add(UID, SaveObject->SavedTextureName);
 	PendingSkillRestore.Add(UID, SaveObject->SavedSkillName);
-
+	CurrentDifficultyStage = SaveObject->SavedDifficultyStage;
 	SetSelectedCharacter(SaveObject->SavedTextureName, SaveObject->SavedSkillName);
 
 	return true;
+}
+
+void UDataStorageSubsystem::SetSelectedCharacter(FName Texture, FName Skill)
+{
+	SelectedTextureName = Texture;
+	SelectedSkillName = Skill;
+}
+
+FName UDataStorageSubsystem::GetSelectedTextureName() const
+{
+	return SelectedTextureName;
+}
+
+FName UDataStorageSubsystem::GetSelectedSkillName() const
+{
+	return SelectedSkillName;
 }
 
 void UDataStorageSubsystem::DeletePlayerSaveFile()
@@ -240,18 +262,12 @@ bool UDataStorageSubsystem::HasPendingStageResult(const FUniqueNetIdRepl& UID) c
 	return PendingStageResultPlayers.Contains(UID);
 }
 
-void UDataStorageSubsystem::SetSelectedCharacter(FName Texture, FName Skill)
+void UDataStorageSubsystem::RestoreDifficultyStage(ARSGameState* GS)
 {
-	SelectedTextureName = Texture;
-	SelectedSkillName = Skill;
-}
+	if (!GS)
+	{
+		return;
+	}
 
-FName UDataStorageSubsystem::GetSelectedTextureName() const
-{
-	return SelectedTextureName;
-}
-
-FName UDataStorageSubsystem::GetSelectedSkillName() const
-{
-	return SelectedSkillName;
+	GS->SetDifficultyStage(CurrentDifficultyStage);
 }

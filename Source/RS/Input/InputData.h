@@ -35,6 +35,7 @@ struct FInputKeyNames
 	inline static const FName Pause = FName(TEXT("Pause"));
 	inline static const FName Result = FName(TEXT("Result"));
 	inline static const FName MapSelect = FName(TEXT("MapSelect"));
+	inline static const FName ControlHelp = FName(TEXT("ControlHelp"));
 
 	inline static const FName Debug_00 = FName(TEXT("debug_00"));
 	inline static const FName Debug_01 = FName(TEXT("debug_01"));

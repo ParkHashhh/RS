@@ -5,6 +5,8 @@
 #include "RS/GameMode/RSGameInstance.h"
 #include "../../Player/ColonyPlayerController.h"
 #include "Components/PanelWidget.h"
+#include "Components/TextBlock.h"
+#include "RS/Data/Subsystem/DataStorageSubsystem.h"
 
 UMapSelectWidget::UMapSelectWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -29,6 +31,22 @@ void UMapSelectWidget::NativeOnInitialized()
 	if (QuitButton)
 	{
 		QuitButton->OnClicked.AddDynamic(this, &UMapSelectWidget::HandleQuitClicked);
+	}
+}
+
+void UMapSelectWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	if (DifficultyStageText)
+	{
+		if (const UGameInstance* GI = GetGameInstance())
+		{
+			if (const auto* StorageSubsystem = GI->GetSubsystem<UDataStorageSubsystem>())
+			{
+				DifficultyStageText->SetText(FText::AsNumber(StorageSubsystem->GetCurrentDifficultyStage()));
+			}
+		}
 	}
 }
 
