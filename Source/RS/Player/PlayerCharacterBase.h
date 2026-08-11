@@ -454,7 +454,6 @@ private:
 
 	void PauseKey(const FInputActionValue& Value);
 	void MapSelectKey(const FInputActionValue& Value);
-	void ControlHelpKey(const FInputActionValue& Value);
 
 	void RotationMouse(const FInputActionValue& Value);
 

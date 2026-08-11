@@ -10,7 +10,6 @@
 class UComboBoxString;
 class USlider;
 class UButton;
-class UCheckBox;
 /**
  * 
  */
@@ -49,12 +48,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Sound")
 	TObjectPtr<USoundClass> MasterSoundClass;
 
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UCheckBox> ControlsHelpCheckBox;
-
-public:
-	void RefreshControlsHelpCheckbox();
-
 protected:
 	virtual void NativeOnInitialized() override;
 
@@ -79,11 +72,4 @@ protected:
 
 	UFUNCTION()
 	void HandleWindowModeChanged(FString SelectedItem, ESelectInfo::Type SelectType);
-
-	UFUNCTION()
-	void HandleControlsHelpChanged(bool bIsChecked);
-
-	void HandleVisibilityChanged(ESlateVisibility InVisibility);
-
-
 };

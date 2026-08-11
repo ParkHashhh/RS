@@ -8,6 +8,7 @@
 #include "RS/UI/Subsystem/UISubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "RS/Player/StartPlayerController.h"
+#include "RS/LogCategory.h"
 
 UStartWidget::UStartWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -20,6 +21,7 @@ void UStartWidget::NativeOnInitialized()
 	StartButton->OnClicked.AddDynamic(this, &UStartWidget::StartClick);
 	ExitButton->OnClicked.AddDynamic(this, &UStartWidget::ExitClick);
 	OptionButton->OnClicked.AddDynamic(this, &UStartWidget::OptionClick);
+	MultiStartButton->OnClicked.AddDynamic(this, &UStartWidget::MultiStartClick);
 }
 
 void UStartWidget::StartClick()
@@ -45,6 +47,19 @@ void UStartWidget::StartClick()
 		GI->LevelLoading(TEXT("Select"), TEXT("/Game/Levels/Select"), TEXT(""));
 	}
 }
+
+void UStartWidget::MultiStartClick()
+{
+	RS_PRINT_SCREEN(1000.f, FColor::Red, TEXT("MultiStartClick"));
+
+	auto* GI = GetGameInstance<URSGameInstance>();
+	if (!GI)
+	{
+		return;
+	}
+	GI->LevelLoading(TEXT("Select"), TEXT("/Game/Levels/Select"), TEXT(""));
+}
+
 void UStartWidget::ExitClick()
 {
 	UKismetSystemLibrary::QuitGame(GetWorld(), nullptr, EQuitPreference::Quit, false);

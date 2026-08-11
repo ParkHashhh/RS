@@ -12,7 +12,6 @@
 #include "RS/UI/PauseWidget.h"
 #include "RS/UI/Start/SettingWidget.h"
 #include "RS/GameMode/RSGameState.h"
-#include "RS/UI/RSGameUserSettings.h"
 
 APlayerControllerBase::APlayerControllerBase()
 {
@@ -40,7 +39,6 @@ void APlayerControllerBase::BeginPlay()
 		CreateEndPopUp();
 		CreatePauseWidget();
 		CreateSettingWidget();
-		CreateControlHelpWidget();
 	}
 }
 
@@ -65,15 +63,6 @@ void APlayerControllerBase::ApplyGameplayInputMode()
 	InputModeData.SetConsumeCaptureMouseDown(true);
 	SetInputMode(InputModeData);
 	bShowMouseCursor = false;
-
-	if (UGameViewportClient* VC = GetWorld() ? GetWorld()->GetGameViewport() : nullptr)
-	{
-		if (FViewport* Viewport = VC->Viewport)
-		{
-			Viewport->CaptureMouse(true);
-			Viewport->LockMouseToViewport(true);
-		}
-	}
 }
 
 void APlayerControllerBase::CreateBattleHUD()
@@ -324,24 +313,4 @@ void APlayerControllerBase::SpectatePrev()
 	{
 		SetViewTargetWithBlend(Actor, 0.5f);
 	}
-}
-
-
-void APlayerControllerBase::CreateControlHelpWidget()
-{
-	if (!IsValid(ControlHelpWidgetClass))
-	{
-		return;
-	}
-
-	auto* ControlHelpWidget = CreateWidget<URSUserWidget>(this, ControlHelpWidgetClass);
-	if (!IsValid(ControlHelpWidget))
-	{
-		return;
-	}
-
-	ControlHelpWidget->AddToViewport();
-
-	const bool bShow = URSGameUserSettings::Get()->GetShowControlsHelp();
-	ControlHelpWidget->SetVisibility(bShow ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 }

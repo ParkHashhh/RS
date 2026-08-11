@@ -5,10 +5,11 @@
 #include "CoreMinimal.h"
 #include "../RSUserWidget.h"
 #include "Components/TextBlock.h"
+#include "OnlineSessionSettings.h"
 #include "SelectSlotWidget.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class RS_API USelectSlotWidget : public URSUserWidget
@@ -16,18 +17,22 @@ class RS_API USelectSlotWidget : public URSUserWidget
 	GENERATED_BODY()
 public:
 	USelectSlotWidget(const FObjectInitializer& ObjectInitializer);
-	
+
 protected:
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> StartButton;
+
+
+	UPROPERTY(meta = (BindWidget))
+	TObjectPtr<UButton> MultiStartButton;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> TextureLeftButton;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> TextureRightButton;
-		
+
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> SkillLeftButton;
 
@@ -42,8 +47,14 @@ protected:
 
 	TObjectPtr<class ASelectPawn> CurrentSelectPawn;
 
+	FDelegateHandle FindSessionsCompleteHandle;
+
 protected:
 	virtual void NativeOnInitialized() override;
+	virtual void NativeDestruct() override;
+
+	void OnFindSessionsCompleted(bool bWasSuccessful, const TArray<FOnlineSessionSearchResult>& SearchResults);
+	void ClearFindSessionsDelegate();
 
 
 public:
@@ -61,6 +72,9 @@ public:
 
 	UFUNCTION()
 	void StartButtonClick();
+
+	UFUNCTION()
+	void MultiStartButtonClick();
 
 	UFUNCTION()
 	void TestJoinLocalHost();

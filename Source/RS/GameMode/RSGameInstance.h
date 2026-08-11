@@ -4,7 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
+#include "OnlineSessionSettings.h"
 #include "RSGameInstance.generated.h"
+
+DECLARE_MULTICAST_DELEGATE_OneParam(FRSOnHostSessionLevelLoadingComplete, bool);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FRSOnGameInstanceJoinSessionComplete, bool, const FString&);
+
+class USessionSubsystem;
 
 /**
  *
@@ -38,6 +44,12 @@ public:
 	UPROPERTY()
 	FString NextLevelOptions;
 
+	UPROPERTY()
+	FString PendingClientTravelOptions;
+
+	UPROPERTY()
+	FString PendingClientResolvedConnectString;
+
 	UPROPERTY(EditDefaultsOnly, Category = "Sound")
 	TObjectPtr<USoundBase> BGMSound;
 
@@ -57,12 +69,19 @@ public:
 		return bIsSinglePlayerMode;
 	}
 	virtual void Init() override;
+	virtual void Shutdown() override;
 
 	void LevelLoading(const FName& LevelName, const FString& PackagePath, const FString& Options, bool bListen = false,
 	                  bool IsServerTravel = false, bool
 	                  bStoreData = false);
+	void CreateSessionAndLevelLoading(const FName& LevelName, const FString& PackagePath, const FString& Options,
+	                                  bool bListen = false, bool IsServerTravel = false, bool bStoreData = false,
+	                                  int32 MaxPlayers = 4);
+	void JoinSelectedSession(const FOnlineSessionSearchResult& SearchResult, const FName& TextureName, const FName& SkillName);
 
 public:
+	FRSOnHostSessionLevelLoadingComplete OnHostSessionLevelLoadingCompleteEvent;
+	FRSOnGameInstanceJoinSessionComplete OnJoinSessionCompleteEvent;
 
 	void StopBGM();
 	bool IsListen() const
@@ -90,5 +109,54 @@ public:
 		return NextLevelPackagePath;
 	}
 
+	const FString& GetPendingClientTravelOptions() const
+	{
+		return PendingClientTravelOptions;
+	}
+
+	const FString& GetPendingClientResolvedConnectString() const
+	{
+		return PendingClientResolvedConnectString;
+	}
+
+	bool ConsumePendingClientTravel(FString& OutConnectString, FString& OutOptions);
+
+private:
+	void OnCreateHostSessionCompleted(bool bWasSuccessful);
+	void OnJoinSessionCompleted(bool bWasSuccessful, const FString& ConnectString);
+	void OnSessionUserInviteAccepted(const FOnlineSessionSearchResult& InviteResult);
+
+	void ClearHostSessionDelegate();
+	void ClearJoinSessionDelegate();
+	void ClearSessionUserInviteAcceptedDelegate();
+	void ClearSessionDelegates();
+	void ClearPendingClientTravelState();
+
+	USessionSubsystem* GetSessionSubsystem() const;
+
+private:
+	FName PendingHostLevelName;
+
+	UPROPERTY()
+	FString PendingHostLevelPackagePath;
+
+	UPROPERTY()
+	FString PendingHostLevelOptions;
+
+	UPROPERTY()
+	bool bPendingHostLevelIsListen = false;
+
+	UPROPERTY()
+	bool bPendingHostIsServerTravel = false;
+
+	UPROPERTY()
+	bool bPendingHostStoreData = false;
+
+	UPROPERTY()
+	bool bPendingClientTravel = false;
+
+	FDelegateHandle HostSessionCompleteHandle;
+	FDelegateHandle JoinSessionCompleteHandle;
+	FDelegateHandle SessionUserInviteAcceptedHandle;
 
 };

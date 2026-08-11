@@ -49,9 +49,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<USettingWidget> SettingWidgetClass;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Widget")
-	TSubclassOf<class URSUserWidget> ControlHelpWidgetClass;
-
 	int32 CurrentSpectateIndex = 0;
 
 public:
@@ -119,6 +116,5 @@ private:
 	void CreateRewardPopupWidget(const TArray<FName>& RewardItemRowNames);
 	void CreatePauseWidget();
 	void CreateSettingWidget();
-	void CreateControlHelpWidget();
 #pragma endregion Interaction
 };

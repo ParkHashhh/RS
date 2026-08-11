@@ -24,13 +24,7 @@ protected:
 	UPROPERTY(Config)
 	float Brightness = 1.0f; // 후처리/감마에 적용할 원시값
 
-	UPROPERTY(Config)
-	bool bShowControlsHelp = true;
 public:
-	FORCEINLINE bool GetShowControlsHelp() const
-	{
-		return bShowControlsHelp;
-	}
 	FORCEINLINE float GetSoundVolume() const
 	{
 		return SoundVolume;
@@ -45,13 +39,8 @@ public:
 	}
 	static URSGameUserSettings* Get();
 
-	UFUNCTION()
-	void SetSoundVolume(float V);
-	UFUNCTION()
-	void SetMouseSensitivity(float V);
-	UFUNCTION()
-	void SetBrightness(float V);
+	UFUNCTION() void SetSoundVolume(float V);
+	UFUNCTION() void SetMouseSensitivity(float V);
+	UFUNCTION() void SetBrightness(float V);
 
-	UFUNCTION()
-	void SetShowControlsHelp(bool bValue);
 };
