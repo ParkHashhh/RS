@@ -27,7 +27,8 @@ void URSGameInstance::Init()
 	if (auto* OSS = Online::GetSubsystem(GetWorld()))
 	{
 		RS_LOG_DEBUG(LogRSInit, Log, TEXT("%s| Subsystem: %s"), *LOG_LINE_INFO, *OSS->GetSubsystemName().ToString());
-		RS_PRINT_SCREEN(30.f, FColor::Cyan, TEXT("%s| Subsystem: %s"), *LOG_LINE_INFO, *OSS->GetSubsystemName().ToString());
+		RS_PRINT_SCREEN(30.f, FColor::Cyan, TEXT("%s| Subsystem: %s"), *LOG_LINE_INFO,
+		                *OSS->GetSubsystemName().ToString());
 	}
 	else
 	{
@@ -57,6 +58,13 @@ void URSGameInstance::LevelLoading(const FName& LevelName, const FString& Packag
 	NextLevelOptions = Options;
 	bNextLevelIsListen = bListen;
 	bIsServerTravel = IsServerTravel;
+
+	RS_LOG_DEBUG(LogRSSession, Warning,
+	             TEXT("%s| LevelLoading: LevelName=%s PackagePath=%s Options=%s"),
+	             *LOG_LINE_INFO,
+	             *LevelName.ToString(),
+	             *PackagePath,
+	             *Options);
 
 	if (IsServerTravel)
 	{
@@ -103,7 +111,7 @@ void URSGameInstance::JoinSelectedSession(const FOnlineSessionSearchResult& Sear
 	SelectedTextureName = TextureName;
 	SelectedSkillName = SkillName;
 	PendingClientTravelOptions = FString::Printf(TEXT("Texture=%s Skill=%s "),
-		*TextureName.ToString(), *SkillName.ToString());
+	                                             *TextureName.ToString(), *SkillName.ToString());
 
 	USessionSubsystem* SessionSubsystem = GetSessionSubsystem();
 	if (!SessionSubsystem)
@@ -181,7 +189,7 @@ void URSGameInstance::OnSessionUserInviteAccepted(const FOnlineSessionSearchResu
 	if (!SelectedTextureName.IsNone() && !SelectedSkillName.IsNone())
 	{
 		PendingClientTravelOptions = FString::Printf(TEXT("Texture=%s Skill=%s "),
-			*SelectedTextureName.ToString(), *SelectedSkillName.ToString());
+		                                             *SelectedTextureName.ToString(), *SelectedSkillName.ToString());
 	}
 
 	if (USessionSubsystem* SessionSubsystem = GetSessionSubsystem())

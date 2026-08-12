@@ -99,7 +99,6 @@ void ALoadingPlayerController::BeginPlay()
 
 	if (IsValid(LoadingWidgetClass))
 	{
-
 		LoadingWidget = CreateWidget<ULoadingUserWidget>(GetWorld(), LoadingWidgetClass);
 		if (IsValid(LoadingWidget))
 		{
@@ -125,6 +124,7 @@ void ALoadingPlayerController::BeginPlay()
 		StartAsyncLoading();
 	}
 }
+
 void ALoadingPlayerController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -160,8 +160,10 @@ void ALoadingPlayerController::Tick(float DeltaTime)
 	{
 		LoadingWidget->SetLoadingProgress(1.f);
 	}
+
 	CompleteLoadingAndTravel();
 }
+
 void ALoadingPlayerController::StartAsyncLoading()
 {
 	if (bLoadingStart)
@@ -201,15 +203,46 @@ void ALoadingPlayerController::CompleteLoadingAndTravel()
 	{
 		return;
 	}
+
 	bHasTraveled = true;
 
 	if (URSGameInstance* GI = GetGameInstance<URSGameInstance>())
 	{
+		RS_LOG_DEBUG(LogRSSession, Warning,
+		             TEXT(
+			             "%s| CompleteLoadingAndTravel: NextLevelName=%s LoadingPackagePath=%s NextLevelOptions=%s bIsServerTravel=%s bNextLevelIsListen=%s"
+		             ),
+		             *LOG_LINE_INFO,
+		             *NextLevelName.ToString(),
+		             *LoadingPackagePath,
+		             *NextLevelOptions,
+		             bIsServerTravel ? TEXT("true") : TEXT("false"),
+		             bNextLevelIsListen ? TEXT("true") : TEXT("false"));
+
 		FString ClientConnectString;
 		FString ClientTravelOptions;
-		if (GI->ConsumePendingClientTravel(ClientConnectString, ClientTravelOptions))
+
+		const bool bConsumedPendingClientTravel = GI->ConsumePendingClientTravel(
+			ClientConnectString, ClientTravelOptions);
+
+		RS_LOG_DEBUG(LogRSSession, Warning,
+		             TEXT("%s| ConsumePendingClientTravel: Result=%s ConnectString=%s Options=%s"),
+		             *LOG_LINE_INFO,
+		             bConsumedPendingClientTravel ? TEXT("true") : TEXT("false"),
+		             *ClientConnectString,
+		             *ClientTravelOptions);
+
+		if (bConsumedPendingClientTravel)
 		{
-			ClientTravel(BuildTravelURL(ClientConnectString, ClientTravelOptions), TRAVEL_Absolute);
+			const FString CombinedURL = ClientConnectString + TEXT("/") + NextLevelName.ToString();
+			const FString FinalClientTravelURL = BuildTravelURL(CombinedURL, ClientTravelOptions);
+
+			RS_LOG_DEBUG(LogRSSession, Warning,
+			             TEXT("%s| ClientTravel URL: %s"),
+			             *LOG_LINE_INFO,
+			             *FinalClientTravelURL);
+
+			ClientTravel(FinalClientTravelURL, TRAVEL_Absolute);
 		}
 		else if (bIsServerTravel)
 		{
@@ -221,7 +254,7 @@ void ALoadingPlayerController::CompleteLoadingAndTravel()
 		else
 		{
 			UGameplayStatics::OpenLevel(GetWorld(), NextLevelName, true,
-			                              BuildOpenLevelOptions(NextLevelOptions, bNextLevelIsListen));
+			                            BuildOpenLevelOptions(NextLevelOptions, bNextLevelIsListen));
 		}
 	}
 	else if (bIsServerTravel)
@@ -234,10 +267,11 @@ void ALoadingPlayerController::CompleteLoadingAndTravel()
 	else
 	{
 		UGameplayStatics::OpenLevel(GetWorld(), NextLevelName, true,
-		                              BuildOpenLevelOptions(NextLevelOptions, bNextLevelIsListen));
+		                            BuildOpenLevelOptions(NextLevelOptions, bNextLevelIsListen));
 	}
 
 	RS_PRINT_SCREEN(10.f, FColor::Red, TEXT("MapLoading Succeeded : %s"), *LoadingPackagePath);
+
 	if (LoadingPackage)
 	{
 		LoadingPackage->RemoveFromRoot();
