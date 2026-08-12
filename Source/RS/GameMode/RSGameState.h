@@ -14,6 +14,9 @@ DECLARE_MULTICAST_DELEGATE(FOnGameStateReady)
 DECLARE_MULTICAST_DELEGATE(FOnObjectiveStateChanged);
 DECLARE_MULTICAST_DELEGATE(FOnObjectiveChanged);
 
+//로그인/로그아웃 신호를 받으면 호출될 함수를 연결하는 델리게이트
+DECLARE_MULTICAST_DELEGATE(FOnPartyListChange);
+
 USTRUCT(BlueprintType)
 struct RS_API FStageObjectiveDisplayEntry : public FFastArraySerializerItem
 {
@@ -91,6 +94,9 @@ private:
 public:
 	FOnObjectiveChanged OnObjectiveChangedDelegate;
 
+	//인원 변화를 감지하면 사용할 델리게이트
+	FOnPartyListChange OnPartyListChangeDelegate;
+
 public:
 	FStageObjectiveEntry* AddObjective(FName TableRowName, float CurrentProgress, int32 DisplayOrder);
 
@@ -133,6 +139,9 @@ public:
 	{
 		return CurrentBoss;
 	}
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_PartyListRefresh();
 
 private:
 	void OnObjectiveAdded(const FStageObjectiveEntry& Entry);

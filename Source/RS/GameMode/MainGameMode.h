@@ -69,6 +69,10 @@ public:
 	TObjectPtr<UZombieManager> GetZombieManager();
 	int32 GetPlayerCount() const;
 	float GetScaledGoal(const FStageObjectiveTableInfo* TableInfo) const;
+
+	//플레이어 리스트가 변하는 타이밍 (로그인/로그아웃)
+	virtual void PostLogin(APlayerController* NewPlayer);
+	virtual void Logout(AController* Exiting);
 protected:
 	virtual void BeginPlay() override;
 

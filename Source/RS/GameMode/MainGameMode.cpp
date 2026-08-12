@@ -182,6 +182,33 @@ float AMainGameMode::GetScaledGoal(const FStageObjectiveTableInfo* TableInfo) co
 	}
 	return TableInfo->Goal;
 }
+
+void AMainGameMode::PostLogin(APlayerController* NewPlayer)
+{
+	Super::PostLogin(NewPlayer);
+
+	ARSGameState* GS = GetGameState<ARSGameState>();
+	if(!GS)
+	{
+		return;
+	}
+
+	GS->Multicast_PartyListRefresh();
+}
+
+void AMainGameMode::Logout(AController* Exiting)
+{
+	Super::Logout(Exiting);
+
+	ARSGameState* GS = GetGameState<ARSGameState>();
+	if (!GS)
+	{
+		return;
+	}
+
+	GS->Multicast_PartyListRefresh();
+}
+
 void AMainGameMode::BeginPlay()
 {
 	Super::BeginPlay();

@@ -79,14 +79,18 @@ void ARSGameState::ChangeBossHPBarActivation()
 		return;
 	}
 
-	//포인터 유효성을 체크해 보스체력바 활성화/비활성화를 결정한다.
-	if(CurrentBoss != nullptr)
+	//로컬 플레이어 컨트롤러일 경우에만 위젯에 접근하도록 한다.
+	if (PlayerCtrl->IsLocalPlayerController())
 	{
-		BossHPBarWidget->SetVisibility(ESlateVisibility::Visible);
-	}
-	else
-	{
-		BossHPBarWidget->SetVisibility(ESlateVisibility::Hidden);
+		//포인터 유효성을 체크해 보스체력바 활성화/비활성화를 결정한다.
+		if (CurrentBoss != nullptr)
+		{
+			BossHPBarWidget->SetVisibility(ESlateVisibility::Visible);
+		}
+		else
+		{
+			BossHPBarWidget->SetVisibility(ESlateVisibility::Hidden);
+		}
 	}
 }
 
@@ -217,6 +221,14 @@ void ARSGameState::UnRegistBoss(AZombieBoss* Boss)
 	}
 
 	ChangeBossHPBarActivation();
+}
+
+void ARSGameState::Multicast_PartyListRefresh_Implementation()
+{
+	if (OnPartyListChangeDelegate.IsBound())
+	{
+		OnPartyListChangeDelegate.Broadcast();
+	}
 }
 
 void ARSGameState::OnObjectiveAdded(const FStageObjectiveEntry& Entry)

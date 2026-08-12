@@ -58,6 +58,11 @@ void AColonyPlayerController::ShowMapSelcetWidget()
 {
 	if (IsValid(MapSelectWidget))
 	{
+		if (MapSelectWidget->IsInViewport())
+		{
+			RemoveMapSelectWidget();
+			return;
+		}
 		bShowMouseCursor = true;
 
 		FInputModeUIOnly InputMode;

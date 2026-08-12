@@ -3,7 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "RS/UI/CharacterBoundUserWidget.h"
+#include "RS/UI/RSUserWidget.h"
+#include "RS/RSTypes.h"
 #include "BossHPBarWidget.generated.h"
 
 class UTextBlock;
@@ -12,7 +13,7 @@ struct FOnAttributeChangeData;
 
 
 UCLASS()
-class RS_API UBossHPBarWidget : public UCharacterBoundUserWidget
+class RS_API UBossHPBarWidget : public URSUserWidget
 {
 	GENERATED_BODY()
 
@@ -30,16 +31,22 @@ private:
 	float MaxHP = 1.0f;
 
 protected:
-	virtual void NativeOnInitialized() override;
+	TArray<FAttributeDelegateBinding> AttributeDelegateBindings;
 
-	virtual bool TryBindCharacterDelegates(APlayerCharacterBase* Character) override;
+	virtual void NativeOnInitialized() override;
+	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 
 	UFUNCTION(BlueprintImplementableEvent, DisplayName = "On HP Changed", Category = "HPBar")
 	void K2_OnHPChanged(float HPRatio);
+
+public:
+	virtual void SetVisibility(ESlateVisibility InVisibility) override;
 
 private:
 	void OnCurrHpChanged(const FOnAttributeChangeData& Data);
 	void OnMaxHpChanged(const FOnAttributeChangeData& Data);
 
-	
+private:
+	void SetBossInfo();
 };
