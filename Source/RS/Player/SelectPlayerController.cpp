@@ -8,7 +8,6 @@
 #include "RS/UI/Select/SelectUserWidget.h"
 #include "RS/Player/RSPlayerState.h"
 #include "RS/LogCategory.h"
-#include "RS/Data/Subsystem/DataStorageSubsystem.h"
 
 ASelectPlayerController::ASelectPlayerController()
 {
@@ -117,13 +116,6 @@ void ASelectPlayerController::Server_SetSelectedCharacterInfo_Implementation(FNa
 		PS->SetTextureName(TextureName);
 		PS->SetSkillName(SkillName);
 		UE_LOG(LogTemp, Warning, TEXT("Saved to PlayerState. Now GetTextureName: [%s]"), *PS->GetTextureName().ToString());
-	}
-	if (const UGameInstance* GI = GetGameInstance())
-	{
-		if (auto* StorageSubsystem = GI->GetSubsystem<UDataStorageSubsystem>())
-		{
-			StorageSubsystem->SetSelectedCharacter(TextureName, SkillName);
-		}
 	}
 
 	RSUtils::ServerTravelWithDataStorage(GetWorld(), TEXT("Colony"), true);

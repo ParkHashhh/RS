@@ -13,7 +13,6 @@
 #include "RS/UI/Start/SettingWidget.h"
 #include "RS/GameMode/RSGameState.h"
 #include "RS/UI/RSGameUserSettings.h"
-#include "RS/GameMode/MainGameMode.h"
 
 APlayerControllerBase::APlayerControllerBase()
 {
@@ -36,10 +35,7 @@ void APlayerControllerBase::BeginPlay()
 
 		FInputModeGameAndUI InputMode;
 		SetInputMode(InputMode);
-		if (GetWorld() && GetWorld()->GetAuthGameMode<AMainGameMode>())
-		{
-			Server_RequestBattleRestart();
-		}
+
 		CreateBattleHUD();
 		CreateEndPopUp();
 		CreatePauseWidget();
@@ -165,15 +161,6 @@ void APlayerControllerBase::CloseRewardPopup()
 		}
 	}
 }
-
-void APlayerControllerBase::Server_RequestBattleRestart_Implementation()
-{
-	if (auto* GameMode = GetWorld()->GetAuthGameMode<AMainGameMode>())
-	{
-		GameMode->RestartPlayer(this);
-	}
-}
-
 
 void APlayerControllerBase::CreateRewardPopupWidget(const TArray<FName>& RewardItemRowNames)
 {

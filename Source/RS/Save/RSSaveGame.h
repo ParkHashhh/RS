@@ -24,7 +24,4 @@ public:
 
 	UPROPERTY()
 	FName SavedSkillName;
-
-	UPROPERTY()
-	int32 SavedDifficultyStage = 1;
 };

@@ -113,8 +113,6 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_RequestReward(FName RewardItemRowName);
 
-	UFUNCTION(Server, Reliable)
-	void Server_RequestBattleRestart();
 	void CloseRewardPopup();
 
 private:

@@ -10,7 +10,7 @@
 class UStageResultWidget;
 
 /**
- * 
+ *
  */
 UCLASS()
 class RS_API AColonyPlayerController : public APlayerControllerBase
@@ -21,7 +21,6 @@ public:
 	AColonyPlayerController();
 
 protected:
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "UI")
 	TSubclassOf<UUserWidget> ColonyWidgetClass;
 	UPROPERTY()
@@ -36,9 +35,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "UI")
 	TSubclassOf<UStageResultWidget> StageResultWidgetClass;
 
-	UPROPERTY()
-	TObjectPtr<UStageResultWidget> ActiveStageResultWidget;
-
 	UPROPERTY(EditDefaultsOnly, Category = "UI|Sound")
 	TObjectPtr<USoundBase> MapSelectOpenSound;
 	UPROPERTY(EditDefaultsOnly, Category = "UI|Sound")
@@ -49,14 +45,14 @@ public:
 	{
 		return ColonyWidget;
 	}
-	void ShowMapSelcetWidget();
+
+	void ShowMapSelectWidget();
 	void RemoveMapSelectWidget();
 	void ShowStageResultWidget();
 
-	UFUNCTION(Server, Reliable)
-	void Server_SetSelectedCharacterInfo(FName TextureName, FName SkillName);
 protected:
 	virtual void BeginPlay() override;
+	virtual void OnPossess(APawn* aPawn) override;
 
 public:
 	UFUNCTION(Server, Reliable)
@@ -67,4 +63,7 @@ public:
 
 	UFUNCTION(Server, Reliable)
 	void Server_ClearPendingStageResult();
+
+	UFUNCTION(Server, Reliable)
+	void Server_SetSelectedCharacterInfo(FName TextureName, FName SkillName);
 };

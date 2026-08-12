@@ -12,7 +12,6 @@
 #include "Kismet/GameplayStatics.h"
 #include "RS/Save/RSSaveGame.h"
 #include "RS/Inventory/InventoryComponent.h"
-#include "RS/GameMode/RSGameState.h"
 
 const FString UDataStorageSubsystem::SaveSlotName = TEXT("RS_SinglePlayerSave");
 
@@ -134,16 +133,11 @@ void UDataStorageSubsystem::SavePlayerDataToDisk(const ARSPlayerState* PS)
 
 	SaveObject->SavedTextureName = PS->GetTextureName();
 	SaveObject->SavedSkillName = PS->GetSkillName();
-	if (const ARSGameState* GS = PS->GetWorld() ? PS->GetWorld()->GetGameState<ARSGameState>() : nullptr)
-	{
-		SaveObject->SavedDifficultyStage = GS->GetDifficultyStage();
-	}
+
 	UGameplayStatics::SaveGameToSlot(SaveObject, SaveSlotName, 0);
 }
 bool UDataStorageSubsystem::LoadPlayerDataFromDisk(ARSPlayerState* PS)
 {
-	CurrentDifficultyStage = 1;
-
 	if (!PS || !UGameplayStatics::DoesSaveGameExist(SaveSlotName, 0))
 	{
 		return false;
@@ -159,7 +153,8 @@ bool UDataStorageSubsystem::LoadPlayerDataFromDisk(ARSPlayerState* PS)
 	PreviousInventoryStorage.Add(UID, SaveObject->SavedInventory);
 	PendingTextureRestore.Add(UID, SaveObject->SavedTextureName);
 	PendingSkillRestore.Add(UID, SaveObject->SavedSkillName);
-	CurrentDifficultyStage = SaveObject->SavedDifficultyStage;
+	SetSelectedCharacter(SaveObject->SavedTextureName, SaveObject->SavedSkillName);
+
 	SetSelectedCharacter(SaveObject->SavedTextureName, SaveObject->SavedSkillName);
 
 	return true;
@@ -185,7 +180,6 @@ void UDataStorageSubsystem::DeletePlayerSaveFile()
 {
 	UGameplayStatics::DeleteGameInSlot(SaveSlotName, 0);
 }
-
 
 bool UDataStorageSubsystem::TryGetPrePreviousInventoryStorage(const APlayerState* InState, TArray<FItemStorageInfo>& OutStorage) const
 {
@@ -260,14 +254,4 @@ bool UDataStorageSubsystem::ConsumePendingStageResult(const FUniqueNetIdRepl& UI
 bool UDataStorageSubsystem::HasPendingStageResult(const FUniqueNetIdRepl& UID) const
 {
 	return PendingStageResultPlayers.Contains(UID);
-}
-
-void UDataStorageSubsystem::RestoreDifficultyStage(ARSGameState* GS)
-{
-	if (!GS)
-	{
-		return;
-	}
-
-	GS->SetDifficultyStage(CurrentDifficultyStage);
 }

@@ -18,7 +18,6 @@ void ARSGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(ARSGameState, CurrentBoss);
-	DOREPLIFETIME(ARSGameState, DifficultyStage);
 }
 
 void ARSGameState::Initialize(const TArray<FStageObjectiveEntry>& Objectives)
@@ -47,11 +46,6 @@ void ARSGameState::OnRep_Initialized()
 void ARSGameState::OnRep_CheckZombieBoss()
 {
 	ChangeBossHPBarActivation();
-}
-
-void ARSGameState::SetDifficultyStage(int32 InStage)
-{
-	DifficultyStage = InStage;
 }
 
 void ARSGameState::ChangeBossHPBarActivation()
