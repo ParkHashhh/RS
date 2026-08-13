@@ -11,6 +11,7 @@
 #include "RS/LogCategory.h"
 #include "RS/Zombie/AI/ZombieAIController.h"
 #include "RS/Zombie/Animation/ZombieAnimInstance.h"
+#include "RS/GameMode/RSGameState.h"
 
 AZombieSpecial::AZombieSpecial()
 {
@@ -98,38 +99,72 @@ void AZombieSpecial::InitStatData(const FZombieDefaultInfo* Data)
 		return;
 	}
 
-	//스탠다드 어트리뷰트셋에 데이터를 넣어준다.
-	SpecialAttributeSet->SetAttackPower(Data->AttackPower);
-	SpecialAttributeSet->SetDefensePower(Data->DefensePower);
-	SpecialAttributeSet->SetAttackDistance(Data->AttackDistance);
-	SpecialAttributeSet->SetWalkSpeed(Data->WalkSpeed);
-	SpecialAttributeSet->SetRunSpeed(Data->RunSpeed);
-	SpecialAttributeSet->SetMaxHP(Data->MaxHP);
-	SpecialAttributeSet->SetCurrentHP(Data->MaxHP);
-	SpecialAttributeSet->SetAttackPower(Data->AttackPower);
-	SpecialAttributeSet->SetDetectRange_Sight(Data->DetectRange_Sight);
-	SpecialAttributeSet->SetDetectRange_Hearing(Data->DetectRange_Hearing);
-	SpecialAttributeSet->SetSpecial_SkillCooldown(Data->Special_SkillCooldown);
-	SpecialAttributeSet->SetSpecial_SkillDamage(Data->Special_SkillDamage);
-	SpecialAttributeSet->SetSpecial_SkillDotDamage(Data->Special_SkillDotDamage);
-
-	TObjectPtr<AZombieAIController> Ctrl = GetController<AZombieAIController>();
-	if (IsValid(Ctrl))
+	if (!GetWorld())
 	{
-		Ctrl->SetDetectRange_Sight(SpecialAttributeSet->GetDetectRange_Sight());
-		Ctrl->SetDetectRange_Hearing(SpecialAttributeSet->GetDetectRange_Hearing());
+		return;
 	}
 
-	SetIsBoss(Data->bIsBoss);
-
-	//특수 좀비 또한 공격 사거리가 추적 중단 거리이다.
-	UBlackboardComponent* BB = Ctrl->GetBlackboardComponent();
-	if (IsValid(BB))
+	ARSGameState* GS = GetWorld()->GetGameState<ARSGameState>();
+	if (GS)
 	{
-		BB->SetValueAsFloat(TEXT("TraceEndDistance"), SpecialAttributeSet->GetAttackDistance());
+		int32 DifficultScale = GS->GetDifficultyStage() - 1;
 
-		//스킬 사용 전 사전 준비가 필요한 좀비임을 블랙보드에 등록한다.
-		BB->SetValueAsBool(TEXT("IsNeedPreparation"), bNeedPreparationToSkill);
+		RS_PRINT_SCREEN(5.f, FColor::Yellow, TEXT("DiffcultScale : %d"), DifficultScale);
+
+		//로드한 데이터를 난이도에 따라 값을 추가한다.
+		float AttackPower = Data->AttackPower + (1 * DifficultScale);
+		float DefensePower = Data->DefensePower + (0.5 * DifficultScale);
+		float MaxHP = Data->MaxHP + (30.f * DifficultScale);
+		float SkillDamage = Data->Special_SkillDamage + (2 * DifficultScale);
+		//float SkillCooldown = Data->Special_SkillCooldown - (1.0 * DifficultScale);
+		//if (SkillCooldown < 5.f)
+		//{
+		//	SkillCooldown = 5.f;
+		//}
+		float SkillDotDamage = Data->Special_SkillDotDamage + (0.2 * DifficultScale);
+
+		//스탠다드 어트리뷰트셋에 데이터를 넣어준다.
+		SpecialAttributeSet->SetAttackPower(AttackPower);
+		SpecialAttributeSet->SetDefensePower(DefensePower);
+		SpecialAttributeSet->SetAttackDistance(Data->AttackDistance);
+		SpecialAttributeSet->SetWalkSpeed(Data->WalkSpeed);
+		SpecialAttributeSet->SetRunSpeed(Data->RunSpeed);
+		SpecialAttributeSet->SetMaxHP(MaxHP);
+		SpecialAttributeSet->SetCurrentHP(MaxHP);
+		SpecialAttributeSet->SetDetectRange_Sight(Data->DetectRange_Sight);
+		SpecialAttributeSet->SetDetectRange_Hearing(Data->DetectRange_Hearing);
+		SpecialAttributeSet->SetSpecial_SkillCooldown(Data->Special_SkillCooldown);
+		//SpecialAttributeSet->SetSpecial_SkillCooldown(SkillCooldown);
+		SpecialAttributeSet->SetSpecial_SkillDamage(SkillDamage);
+		SpecialAttributeSet->SetSpecial_SkillDotDamage(SkillDotDamage);
+
+		TObjectPtr<AZombieAIController> Ctrl = GetController<AZombieAIController>();
+		if (IsValid(Ctrl))
+		{
+			Ctrl->SetDetectRange_Sight(SpecialAttributeSet->GetDetectRange_Sight());
+			Ctrl->SetDetectRange_Hearing(SpecialAttributeSet->GetDetectRange_Hearing());
+		}
+
+		SetIsBoss(Data->bIsBoss);
+
+		//특수 좀비 또한 공격 사거리가 추적 중단 거리이다.
+		UBlackboardComponent* BB = IsValid(Ctrl) ? Ctrl->GetBlackboardComponent() : nullptr;
+		if (IsValid(BB))
+		{
+			BB->SetValueAsFloat(TEXT("TraceEndDistance"), SpecialAttributeSet->GetAttackDistance());
+
+			//스킬 사용 전 사전 준비가 필요한 좀비임을 블랙보드에 등록한다.
+			BB->SetValueAsBool(TEXT("IsNeedPreparation"), bNeedPreparationToSkill);
+		}
+	}
+	else
+	{
+		RS_PRINT_SCREEN(5.f, FColor::Red, TEXT("Before GameState Ready"));
+		GetWorld()->GetTimerManager().SetTimer(InitDataTimerHandle, [this, Data]()
+			{
+				InitStatData(Data);
+			}
+		, 0.1f, false);
 	}
 }
 

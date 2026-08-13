@@ -11,6 +11,7 @@
 #include "RS/LogCategory.h"
 #include "RS/Zombie/AI/ZombieAIController.h"
 #include "RS/Zombie/Animation/ZombieAnimInstance.h"
+#include "RS/GameMode/RSGameState.h"
 
 AZombieNormal::AZombieNormal()
 {
@@ -91,33 +92,58 @@ void AZombieNormal::InitStatData(const FZombieDefaultInfo* Data)
 		return;
 	}
 
-	//스탠다드 어트리뷰트셋에 데이터를 넣어준다.
-	NormalAttributeSet->SetAttackPower(Data->AttackPower);
-	NormalAttributeSet->SetDefensePower(Data->DefensePower);
-	NormalAttributeSet->SetAttackDistance(Data->AttackDistance);
-	NormalAttributeSet->SetWalkSpeed(Data->WalkSpeed);
-	NormalAttributeSet->SetRunSpeed(Data->RunSpeed);
-	NormalAttributeSet->SetMaxHP(Data->MaxHP);
-	NormalAttributeSet->SetCurrentHP(Data->MaxHP);
-	NormalAttributeSet->SetAttackPower(Data->AttackPower);
-	NormalAttributeSet->SetDetectRange_Sight(Data->DetectRange_Sight);
-	NormalAttributeSet->SetDetectRange_Hearing(Data->DetectRange_Hearing);
-	NormalAttributeSet->SetNormal_Rarity(Data->Normal_Rarity);
-
-	TObjectPtr<AZombieAIController> Ctrl = GetController<AZombieAIController>();
-	if (IsValid(Ctrl))
+	if (!GetWorld())
 	{
-		Ctrl->SetDetectRange_Sight(NormalAttributeSet->GetDetectRange_Sight());
-		Ctrl->SetDetectRange_Hearing(NormalAttributeSet->GetDetectRange_Hearing());
+		return;
 	}
-
-	SetIsBoss(Data->bIsBoss);
-
-	//일반 좀비는 공격 사거리가 곧 추적 중단 사거리이다.
-	UBlackboardComponent* BB = Ctrl->GetBlackboardComponent();
-	if (IsValid(BB))
+	ARSGameState* GS = GetWorld()->GetGameState<ARSGameState>();
+	if (GS)
 	{
-		BB->SetValueAsFloat(TEXT("TraceEndDistance"), NormalAttributeSet->GetAttackDistance());
+		int32 DifficultScale = GS->GetDifficultyStage() - 1;
+
+		RS_PRINT_SCREEN(5.f, FColor::Red, TEXT("DifficultScale : %d"), DifficultScale);
+
+		//로드한 데이터를 난이도에 따라 값을 추가한다.
+		float AttackPower = Data->AttackPower + (0.5 * DifficultScale);
+		float DefensePower = Data->DefensePower + (0.5 * DifficultScale);
+		float MaxHP = Data->MaxHP + (10.f * DifficultScale);
+
+		//스탠다드 어트리뷰트셋에 데이터를 넣어준다.
+		NormalAttributeSet->SetAttackPower(AttackPower);
+		NormalAttributeSet->SetDefensePower(DefensePower);
+		NormalAttributeSet->SetAttackDistance(Data->AttackDistance);
+		NormalAttributeSet->SetWalkSpeed(Data->WalkSpeed);
+		NormalAttributeSet->SetRunSpeed(Data->RunSpeed);
+		NormalAttributeSet->SetMaxHP(MaxHP);
+		NormalAttributeSet->SetCurrentHP(MaxHP);
+		NormalAttributeSet->SetDetectRange_Sight(Data->DetectRange_Sight);
+		NormalAttributeSet->SetDetectRange_Hearing(Data->DetectRange_Hearing);
+		NormalAttributeSet->SetNormal_Rarity(Data->Normal_Rarity);
+
+		TObjectPtr<AZombieAIController> Ctrl = GetController<AZombieAIController>();
+		if (IsValid(Ctrl))
+		{
+			Ctrl->SetDetectRange_Sight(NormalAttributeSet->GetDetectRange_Sight());
+			Ctrl->SetDetectRange_Hearing(NormalAttributeSet->GetDetectRange_Hearing());
+
+			//일반 좀비는 공격 사거리가 곧 추적 중단 사거리이다.
+			UBlackboardComponent* BB = Ctrl->GetBlackboardComponent();
+			if (IsValid(BB))
+			{
+				BB->SetValueAsFloat(TEXT("TraceEndDistance"), NormalAttributeSet->GetAttackDistance());
+			}
+		}
+
+		SetIsBoss(Data->bIsBoss);
+	}
+	else
+	{
+		RS_PRINT_SCREEN(5.f, FColor::Red, TEXT("Before GameState Ready"));
+		GetWorld()->GetTimerManager().SetTimer(InitDataTimerHandle, [this, Data]()
+			{
+				InitStatData(Data);
+			}
+		, 0.1f, false);
 	}
 }
 

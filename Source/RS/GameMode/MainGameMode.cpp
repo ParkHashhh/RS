@@ -39,11 +39,16 @@ void AMainGameMode::Tick(float DeltaSeconds)
 	}
 }
 
+void AMainGameMode::InitGameState()
+{
+	Super::InitGameState();
+
+	StartStage();
+}
+
 void AMainGameMode::StartPlay()
 {
 	Super::StartPlay();
-
-	StartStage();
 }
 
 int32 AMainGameMode::GetKillCountAll(const FUniqueNetIdRepl& PlayerUID) const

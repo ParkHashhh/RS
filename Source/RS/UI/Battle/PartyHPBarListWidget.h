@@ -31,10 +31,16 @@ private:
 	UPROPERTY()
 	TArray<TObjectPtr<UPartyHPBarWidget>> HPBarArray;
 
+	UPROPERTY()
+	int32 ActivateHPBarCount = 0;
+
 protected:
 	virtual void NativeOnInitialized() override;
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
+
+public:
+	virtual void SetVisibility(ESlateVisibility InVisibility) override;
 
 private:
 	UFUNCTION()

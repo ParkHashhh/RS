@@ -6,6 +6,7 @@
 #include "RS/LogCategory.h"
 #include "RS/Data/Subsystem/DataStorageSubsystem.h"
 #include "RS/Player/ColonyPlayerController.h"
+#include "RS/GameMode/RSGameInstance.h"
 
 AColonyGameMode::AColonyGameMode()
 {
@@ -13,7 +14,16 @@ AColonyGameMode::AColonyGameMode()
 	bStartPlayersAsSpectators = true;
 }
 
-void AColonyGameMode::OnPlayerCharacterSelected(AColonyPlayerController* PlayerController, FName TextureName, FName SkillName)
+void AColonyGameMode::PostLogin(APlayerController* NewPlayer)
+{
+	Super::PostLogin(NewPlayer);
+
+	RS_LOG_DEBUG(LogRSSession, Log, TEXT("%s| PostLogin: %s"), *LOG_LINE_INFO, *GetNameSafe(NewPlayer));
+	RS_PRINT_SCREEN(30.0f, FColor::Cyan, TEXT("%s| PostLogin: %s"), *LOG_LINE_INFO, *GetNameSafe(NewPlayer));
+}
+
+void AColonyGameMode::OnPlayerCharacterSelected(AColonyPlayerController* PlayerController, FName TextureName,
+	FName SkillName)
 {
 	if (!IsValid(PlayerController))
 	{
@@ -34,11 +44,21 @@ void AColonyGameMode::OnPlayerCharacterSelected(AColonyPlayerController* PlayerC
 		OldPawn->Destroy();
 	}
 
+	RS_LOG_DEBUG(LogRSSession, Log, TEXT("%s| Character Selected: %s, %s"), *LOG_LINE_INFO, *TextureName.ToString(), *SkillName.ToString());
+
+	RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| Pawn Before=%s"), *LOG_LINE_INFO, *GetNameSafe(PlayerController->GetPawn()));
+	RS_PRINT_SCREEN(30.0f, FColor::Cyan, TEXT("%s| Pawn Before=%s"), *LOG_LINE_INFO, *GetNameSafe(PlayerController->GetPawn()));
+
+	RS_PRINT_SCREEN(30.0f, FColor::Cyan, TEXT("%s| Controller Local=%s"), *LOG_LINE_INFO, PlayerController->IsLocalController()? TEXT("true") : TEXT("false"));
+
 	RestartPlayer(PlayerController);
+
+	RS_LOG_DEBUG(LogRSCommon, Log, TEXT("%s| Pawn After=%s"), *LOG_LINE_INFO, *GetNameSafe(PlayerController->GetPawn()));
+	RS_PRINT_SCREEN(30.0f, FColor::Cyan, TEXT("%s| Pawn After=%s"), *LOG_LINE_INFO, *GetNameSafe(PlayerController->GetPawn()));
 }
 
 APlayerController* AColonyGameMode::Login(UPlayer* NewPlayer, ENetRole InRemoteRole, const FString& Portal,
-	const FString& Options, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
+                                          const FString& Options, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
 {
 	APlayerController* Result = Super::Login(NewPlayer, InRemoteRole, Portal, Options, UniqueId, ErrorMessage);
 	if (!Result)
@@ -48,7 +68,6 @@ APlayerController* AColonyGameMode::Login(UPlayer* NewPlayer, ENetRole InRemoteR
 
 	RS_PRINT_SCREEN(5, FColor::Red, TEXT("Login called! Options: [%s]"), *Options);
 	RS_PRINT_SCREEN(5, FColor::Red, TEXT("HasAuthority %d"), HasAuthority());
-
 
 	FString TextureName;
 	FString SkillName;
@@ -79,6 +98,6 @@ APlayerController* AColonyGameMode::Login(UPlayer* NewPlayer, ENetRole InRemoteR
 			}
 		}
 	}
+
 	return Result;
 }
-

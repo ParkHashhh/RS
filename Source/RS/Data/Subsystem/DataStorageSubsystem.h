@@ -39,13 +39,16 @@ private:
 
 	UPROPERTY()
 	int32 CurrentDifficultyStage = 1;
+
 public:
 	void RestoreTextureSkill(ARSPlayerState* PS);
 	void RestoreDifficultyStage(class ARSGameState* GS);
+
 public:
 	void SetSelectedCharacter(FName Texture, FName Skill);
 	FName GetSelectedTextureName() const;
 	FName GetSelectedSkillName() const;
+
 	int32 GetCurrentDifficultyStage() const
 	{
 		return CurrentDifficultyStage;
@@ -54,6 +57,7 @@ public:
 	{
 		CurrentDifficultyStage = InStage;
 	}
+
 public:
 
 	void StoreAllPlayerInventory();

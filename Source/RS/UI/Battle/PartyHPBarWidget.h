@@ -34,6 +34,10 @@ private:
 	UPROPERTY()
 	TObjectPtr<APlayerCharacterBase> PartyMember;
 
+	//이 위젯이 파티 리스트에 표시될 순서
+	UPROPERTY()
+	int32 ListOrder = 0;
+
 protected:
 	TArray<FAttributeDelegateBinding> AttributeDelegateBindings;
 
@@ -52,7 +56,7 @@ private:
 	void SetPartyMemberInfo();
 
 public:
-	void SetPlayer(APlayerCharacterBase* Player)
+	void SetPlayer(APlayerCharacterBase* Player, int32 Order)
 	{
 		if (!Player)
 		{
@@ -60,6 +64,8 @@ public:
 		}
 
 		PartyMember = Player;
+
+		ListOrder = Order;
 	}
 	
 };

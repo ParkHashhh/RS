@@ -77,7 +77,6 @@ void UBossHPBarWidget::SetVisibility(ESlateVisibility InVisibility)
 void UBossHPBarWidget::OnCurrHpChanged(const FOnAttributeChangeData& Data)
 {
 	RS_LOG_DEBUG(LogRSBattle, Log, TEXT("%s: 보스 HP가 변경됨! 현재 값: %.2f"), *LOG_LINE_INFO, Data.NewValue);
-	RS_PRINT_SCREEN(5.f, FColor::Black, TEXT("보스 체력 : %.2f"), Data.NewValue);
 	CurrHP = Data.NewValue;
 
 	K2_OnHPChanged(MaxHP != 0 ? CurrHP / MaxHP : 0);
@@ -90,7 +89,6 @@ void UBossHPBarWidget::OnCurrHpChanged(const FOnAttributeChangeData& Data)
 void UBossHPBarWidget::OnMaxHpChanged(const FOnAttributeChangeData& Data)
 {
 	RS_LOG_DEBUG(LogRSBattle, Log, TEXT("%s: 보스 Max HP가 변경됨! 현재 값: %.2f"), *LOG_LINE_INFO, Data.NewValue);
-	RS_PRINT_SCREEN(5.f, FColor::Black, TEXT("보스 최대 체력 : %.2f"), Data.NewValue);
 	MaxHP = Data.NewValue;
 
 	K2_OnHPChanged(MaxHP != 0 ? CurrHP / MaxHP : 0);

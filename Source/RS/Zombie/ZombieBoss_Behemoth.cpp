@@ -151,7 +151,7 @@ void AZombieBoss_Behemoth::Tick(float DeltaTime)
 				{
 					//이동명령은 한번만 수행하도록 한다.
 					bIsMoveStartPickupStone = true;
-					AICtrl->MoveToActor(Target, 10.f, false, true, false);
+					AICtrl->MoveToActor(Target, -1.f, false, true, false);
 				}
 			}
 		}

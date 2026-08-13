@@ -27,6 +27,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "NeedProperty", meta = (AllowPrivateAccess = "true"))
 	bool bNeedPreparationToSkill = false;
 
+	FTimerHandle InitDataTimerHandle;
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void PossessedBy(AController* NewController);

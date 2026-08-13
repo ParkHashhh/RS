@@ -5,10 +5,13 @@
 #include "RS/Player/Actor/SelectPawn.h"
 #include "RS/RSUtils.h"
 #include "RS/GameMode/RSGameInstance.h"
+#include "RS/GameMode/SessionSubsystem.h"
 #include "RS/Player/SelectPlayerController.h"
 #include "RS/Player/RSPlayerState.h"
 #include "RS/LogCategory.h"
 #include "Kismet/GameplayStatics.h"
+#include "RS/Data/Subsystem/DataStorageSubsystem.h"
+#include "RS/GameMode/SessionSubsystem.h"
 
 USelectSlotWidget::USelectSlotWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -27,7 +30,51 @@ void USelectSlotWidget::NativeOnInitialized()
 	SkillRightButton->OnClicked.AddDynamic(this, &USelectSlotWidget::SkillRightButtonClick);
 
 	StartButton->OnClicked.AddDynamic(this, &USelectSlotWidget::StartButtonClick);
+	MultiStartButton->OnClicked.AddDynamic(this, &USelectSlotWidget::MultiStartButtonClick);
 
+}
+
+void USelectSlotWidget::NativeDestruct()
+{
+	ClearFindSessionsDelegate();
+
+	Super::NativeDestruct();
+}
+
+void USelectSlotWidget::OnFindSessionsCompleted(bool bWasSuccessful, const TArray<FOnlineSessionSearchResult>& SearchResults)
+{
+	ClearFindSessionsDelegate();
+
+	if (!bWasSuccessful || SearchResults.IsEmpty() || !IsValid(CurrentSelectPawn))
+	{
+		return;
+	}
+
+	if (URSGameInstance* GI = GetGameInstance<URSGameInstance>())
+	{
+		for (const FOnlineSessionSearchResult& SearchResult : SearchResults)
+		{
+			if (SearchResult.IsValid())
+			{
+				GI->JoinSelectedSession(SearchResult, CurrentSelectPawn->GetCurrentTextureName(),
+				                        CurrentSelectPawn->GetCurrentSkillName());
+				return;
+			}
+		}
+	}
+}
+
+void USelectSlotWidget::ClearFindSessionsDelegate()
+{
+	if (USessionSubsystem* SessionSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<USessionSubsystem>() : nullptr)
+	{
+		if (FindSessionsCompleteHandle.IsValid())
+		{
+			SessionSubsystem->OnFindSessionsCompleteEvent.Remove(FindSessionsCompleteHandle);
+		}
+	}
+
+	FindSessionsCompleteHandle.Reset();
 }
 
 void USelectSlotWidget::TextureLeftButtonClick()
@@ -67,6 +114,7 @@ void USelectSlotWidget::SkillRightButtonClick()
 		SkillText->SetText(FText::FromName((CurrentSelectPawn->GetCurrentSkillName())));
 	}
 }
+
 void USelectSlotWidget::StartButtonClick()
 {
 	if (!IsValid(CurrentSelectPawn))
@@ -74,20 +122,44 @@ void USelectSlotWidget::StartButtonClick()
 		return;
 	}
 
-	// if (auto* PlayerController = GetOwningPlayer<ASelectPlayerController>())
+	FName TextureName = CurrentSelectPawn->GetCurrentTextureName();
+	FName SkillName = CurrentSelectPawn->GetCurrentSkillName();
+
+	if (URSGameInstance* GI = GetGameInstance<URSGameInstance>())
 	{
-		FName TextureName = CurrentSelectPawn->GetCurrentTextureName();
-		FName SkillName = CurrentSelectPawn->GetCurrentSkillName();
-
-		FString Option = FString::Printf(TEXT("Texture=%s Skill=%s "),
-			*TextureName.ToString(), *SkillName.ToString());
-
-		if (URSGameInstance* GI = GetGameInstance<URSGameInstance>())
+		if (auto* Storage = GI->GetSubsystem<UDataStorageSubsystem>())
 		{
-			GI->LevelLoading(TEXT("Colony"), TEXT("/Game/Levels/Colony"),Option,true,false, true);
+			Storage->SetSelectedCharacter(TextureName, SkillName);
 		}
+
+		GI->LevelLoading(TEXT("Colony"), TEXT("/Game/Levels/Colony"),TEXT(""),true,false, true);
 	}
 }
+
+void USelectSlotWidget::MultiStartButtonClick()
+{
+	RS_PRINT_SCREEN(1000.f, FColor::Red, TEXT("MultiStartButtonClick : Session"));
+
+	if (!IsValid(CurrentSelectPawn))
+	{
+		return;
+	}
+
+	FName TextureName = CurrentSelectPawn->GetCurrentTextureName();
+	FName SkillName = CurrentSelectPawn->GetCurrentSkillName();
+
+	if (URSGameInstance* GI = GetGameInstance<URSGameInstance>())
+	{
+		if (auto* Storage = GI->GetSubsystem<UDataStorageSubsystem>())
+		{
+			Storage->SetSelectedCharacter(TextureName, SkillName);
+		}
+
+		GI->CreateSessionAndLevelLoading(TEXT("Colony"), TEXT("/Game/Levels/Colony"), TEXT(""),
+			true, false,true, 4);
+	}
+}
+
 void USelectSlotWidget::PickSelectPawn(ASelectPawn* SelectPawn)
 {
 	// 여기서 텍스쳐 이름 출력
@@ -107,20 +179,19 @@ void USelectSlotWidget::PickSelectPawn(ASelectPawn* SelectPawn)
 
 void USelectSlotWidget::TestJoinLocalHost()
 {
-	APlayerController* PC = GetOwningPlayer();
-	if (PC)
+	if (!IsValid(CurrentSelectPawn))
 	{
-		FName TextureName = CurrentSelectPawn->GetCurrentTextureName();
-		FName SkillName = CurrentSelectPawn->GetCurrentSkillName();
-
-		FString URL = FString::Printf(TEXT("listen?Port=7777?Texture=%s Skill=%s "),
-			*TextureName.ToString(), *SkillName.ToString());
-
-		if (URSGameInstance* GI = GetGameInstance<URSGameInstance>())
-		{
-			RSUtils::OpenLevelWithDataStorage(GetWorld(), TEXT("Colony"), true, true, URL);
-		}
-
-		RS_PRINT_SCREEN(1000.f, FColor::Red, TEXT("URL : %s"),*URL);
+		return;
 	}
+
+	USessionSubsystem* SessionSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<USessionSubsystem>() : nullptr;
+	if (!SessionSubsystem)
+	{
+		return;
+	}
+
+	ClearFindSessionsDelegate();
+	FindSessionsCompleteHandle = SessionSubsystem->OnFindSessionsCompleteEvent.AddUObject(
+		this, &ThisClass::OnFindSessionsCompleted);
+	SessionSubsystem->FindSessions();
 }

@@ -186,7 +186,6 @@ void UDataStorageSubsystem::DeletePlayerSaveFile()
 	UGameplayStatics::DeleteGameInSlot(SaveSlotName, 0);
 }
 
-
 bool UDataStorageSubsystem::TryGetPrePreviousInventoryStorage(const APlayerState* InState, TArray<FItemStorageInfo>& OutStorage) const
 {
 	const FUniqueNetIdRepl& Key = InState->GetUniqueId();

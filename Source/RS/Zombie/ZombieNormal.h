@@ -28,6 +28,8 @@ protected:
 	UPROPERTY(ReplicatedUsing = OnRep_ChangeMesh)
 	int32 MeshIndex = -1;
 
+	FTimerHandle InitDataTimerHandle;
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;

@@ -66,6 +66,29 @@ void UPartyHPBarListWidget::NativeDestruct()
 	Super::NativeDestruct();
 }
 
+void UPartyHPBarListWidget::SetVisibility(ESlateVisibility InVisibility)
+{
+	//화면에 출력하는 옵션인 경우 현재 활성화된 체력바 위젯 개수를 체크해야 한다.
+	if (InVisibility == ESlateVisibility::Visible ||
+		InVisibility == ESlateVisibility::HitTestInvisible ||
+		InVisibility == ESlateVisibility::SelfHitTestInvisible)
+	{
+		if (ActivateHPBarCount == 0)
+		{
+			//만약 0개라면 비활성화를 해야 한다.
+			SetVisibility(ESlateVisibility::Collapsed);
+		}
+		else
+		{
+			Super::SetVisibility(InVisibility);
+		}
+	}
+	else
+	{
+		Super::SetVisibility(InVisibility);
+	}
+}
+
 void UPartyHPBarListWidget::SetPartyList()
 {
 	//게임스테이트로부터 플레이어 배열을 얻어온다.
@@ -110,11 +133,25 @@ void UPartyHPBarListWidget::SetPartyList()
 				HPBarArray[i]->SetVisibility(ESlateVisibility::Collapsed);
 				continue;
 			}
-			HPBarArray[i]->SetPlayer(PartyMember);
+			HPBarArray[i]->SetPlayer(PartyMember, i + 1);
 		}
 		else
 		{
 			HPBarArray[i]->SetVisibility(ESlateVisibility::Collapsed);
 		}
 	}
+
+	//활성화된 체력바 위젯의 개수를 멤버 변수에 넣어준다.
+	int32 Count = 0;
+	for (auto HPBar : HPBarArray)
+	{
+		if (HPBar->GetVisibility() == ESlateVisibility::Visible)
+		{
+			++Count;
+		}
+	}
+	ActivateHPBarCount = Count;
+
+	//인원수 변동을 고려해 파티원 리스트 위젯의 출력을 재설정한다.
+	SetVisibility(GetVisibility());
 }

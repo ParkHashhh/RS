@@ -15,6 +15,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "RS/GameMode/MainGameMode.h"
 #include "RS/Zombie/ZombieManager.h"
+#include "RS/GameMode/RSGameState.h"
 
 // Sets default values
 AZombieBoss::AZombieBoss()
@@ -152,53 +153,110 @@ void AZombieBoss::InitStatData(const FZombieDefaultInfo* Data)
 		return;
 	}
 
-	//보스 어트리뷰트셋에 데이터를 넣어준다.
-	BossAttributeSet->SetAttackPower(Data->AttackPower);
-	BossAttributeSet->SetDefensePower(Data->DefensePower);
-	BossAttributeSet->SetAttackDistance(Data->AttackDistance);
-	BossAttributeSet->SetWalkSpeed(Data->WalkSpeed);
-	BossAttributeSet->SetRunSpeed(Data->RunSpeed);
-	BossAttributeSet->SetMaxHP(Data->MaxHP);
-	BossAttributeSet->SetCurrentHP(Data->MaxHP);
-	BossAttributeSet->SetAttackPower(Data->AttackPower);
-
-	BossAttributeSet->SetDetectRange_Sight(Data->DetectRange_Sight);
-	BossAttributeSet->SetDetectRange_Hearing(Data->DetectRange_Hearing);
-
-	BossAttributeSet->SetBoss_Skill1Damage(Data->Boss_Skill1Damage);
-	BossAttributeSet->SetBoss_Skill1Cooldown(Data->Boss_Skill1Cooldown);
-	BossAttributeSet->SetBoss_Skill2Damage(Data->Boss_Skill2Damage);
-	BossAttributeSet->SetBoss_Skill2Cooldown(Data->Boss_Skill2Cooldown);
-	BossAttributeSet->SetBoss_Skill3Damage(Data->Boss_Skill3Damage);
-	BossAttributeSet->SetBoss_Skill3Cooldown(Data->Boss_Skill3Cooldown);
-	BossAttributeSet->SetBoss_Skill4Damage(Data->Boss_Skill4Damage);
-	BossAttributeSet->SetBoss_Skill4Cooldown(Data->Boss_Skill4Cooldown);
-	BossAttributeSet->SetBoss_Skill5Damage(Data->Boss_Skill5Damage);
-	BossAttributeSet->SetBoss_Skill5Cooldown(Data->Boss_Skill5Cooldown);
-	BossAttributeSet->SetBoss_Skill6Damage(Data->Boss_Skill6Damage);
-	BossAttributeSet->SetBoss_Skill6Cooldown(Data->Boss_Skill6Cooldown);
-
-	BossAttributeSet->SetBoss_MeleeAttackDistance(Data->Boss_MeleeAttackDistance);
-	BossAttributeSet->SetBoss_MiddleAttackDistance(Data->Boss_MiddleAttackDistance);
-	BossAttributeSet->SetBoss_RangeAttackDistance(Data->Boss_RangeAttackDistance);
-
-	TObjectPtr<AZombieAIController> Ctrl = GetController<AZombieAIController>();
-	if (IsValid(Ctrl))
+	ARSGameState* GS = GetWorld()->GetGameState<ARSGameState>();
+	if (GS)
 	{
-		Ctrl->SetDetectRange_Sight(BossAttributeSet->GetDetectRange_Sight());
-		Ctrl->SetDetectRange_Hearing(BossAttributeSet->GetDetectRange_Hearing());
-	}
+		int32 DifficultScale = GS->GetDifficultyStage() - 1;
 
-	TObjectPtr<UBlackboardComponent> BB = Ctrl->GetBlackboardComponent();
-	if (IsValid(BB))
+		RS_PRINT_SCREEN(5.f, FColor::Blue, TEXT("Difficult Scale : %d"), DifficultScale);
+
+		//로드한 데이터를 난이도에 따라 값을 추가한다.
+		float AttackPower = Data->AttackPower + (3 * DifficultScale);
+		float DefensePower = Data->DefensePower + (2 * DifficultScale);
+		float MaxHP = Data->MaxHP + (1000.0 * DifficultScale);
+		float Skill1Damage = Data->Boss_Skill1Damage + (5 * DifficultScale);
+		//float Skill1Cooldown = Data->Boss_Skill1Cooldown - (1.0 * DifficultScale);
+		//if (Skill1Cooldown < 10.f)
+		//{
+		//	Skill1Cooldown = 10.f;
+		//}
+		float Skill2Damage = Data->Boss_Skill2Damage + (5 * DifficultScale);
+		//float Skill2Cooldown = Data->Boss_Skill2Cooldown - (1.0 * DifficultScale);
+		//if (Skill2Cooldown < 10.f)
+		//{
+		//	Skill2Cooldown = 10.f;
+		//}
+		float Skill3Damage = Data->Boss_Skill3Damage + (5 * DifficultScale);
+		//float Skill3Cooldown = Data->Boss_Skill3Cooldown - (1.0 * DifficultScale);
+		//if (Skill3Cooldown < 10.f)
+		//{
+		//	Skill3Cooldown = 10.f;
+		//}
+		float Skill4Damage = Data->Boss_Skill4Damage + (5 * DifficultScale);
+		//float Skill4Cooldown = Data->Boss_Skill4Cooldown - (1.0 * DifficultScale);
+		//if (Skill4Cooldown < 10.f)
+		//{
+		//	Skill4Cooldown = 10.f;
+		//}
+		float Skill5Damage = Data->Boss_Skill5Damage + (5 * DifficultScale);
+		//float Skill5Cooldown = Data->Boss_Skill5Cooldown - (1.0 * DifficultScale);
+		//if (Skill5Cooldown < 10.f)
+		//{
+		//	Skill5Cooldown = 10.f;
+		//}
+		float Skill6Damage = Data->Boss_Skill6Damage + (5 * DifficultScale);
+		//float Skill6Cooldown = Data->Boss_Skill6Cooldown - (1.0 * DifficultScale);
+		//if (Skill6Cooldown < 10.f)
+		//{
+		//	Skill6Cooldown = 10.f;
+		//}
+
+		//보스 어트리뷰트셋에 데이터를 넣어준다.
+		BossAttributeSet->SetAttackPower(AttackPower);
+		BossAttributeSet->SetDefensePower(DefensePower);
+		BossAttributeSet->SetAttackDistance(Data->AttackDistance);
+		BossAttributeSet->SetWalkSpeed(Data->WalkSpeed);
+		BossAttributeSet->SetRunSpeed(Data->RunSpeed);
+		BossAttributeSet->SetMaxHP(MaxHP);
+		BossAttributeSet->SetCurrentHP(MaxHP);
+
+		BossAttributeSet->SetDetectRange_Sight(Data->DetectRange_Sight);
+		BossAttributeSet->SetDetectRange_Hearing(Data->DetectRange_Hearing);
+
+		BossAttributeSet->SetBoss_Skill1Damage(Skill1Damage);
+		BossAttributeSet->SetBoss_Skill1Cooldown(Data->Boss_Skill1Cooldown);
+		BossAttributeSet->SetBoss_Skill2Damage(Skill2Damage);
+		BossAttributeSet->SetBoss_Skill2Cooldown(Data->Boss_Skill2Cooldown);
+		BossAttributeSet->SetBoss_Skill3Damage(Skill3Damage);
+		BossAttributeSet->SetBoss_Skill3Cooldown(Data->Boss_Skill3Cooldown);
+		BossAttributeSet->SetBoss_Skill4Damage(Skill4Damage);
+		BossAttributeSet->SetBoss_Skill4Cooldown(Data->Boss_Skill4Cooldown);
+		BossAttributeSet->SetBoss_Skill5Damage(Skill5Damage);
+		BossAttributeSet->SetBoss_Skill5Cooldown(Data->Boss_Skill5Cooldown);
+		BossAttributeSet->SetBoss_Skill6Damage(Skill6Damage);
+		BossAttributeSet->SetBoss_Skill6Cooldown(Data->Boss_Skill6Cooldown);
+
+		BossAttributeSet->SetBoss_MeleeAttackDistance(Data->Boss_MeleeAttackDistance);
+		BossAttributeSet->SetBoss_MiddleAttackDistance(Data->Boss_MiddleAttackDistance);
+		BossAttributeSet->SetBoss_RangeAttackDistance(Data->Boss_RangeAttackDistance);
+
+		TObjectPtr<AZombieAIController> Ctrl = GetController<AZombieAIController>();
+		if (IsValid(Ctrl))
+		{
+			Ctrl->SetDetectRange_Sight(BossAttributeSet->GetDetectRange_Sight());
+			Ctrl->SetDetectRange_Hearing(BossAttributeSet->GetDetectRange_Hearing());
+
+			TObjectPtr<UBlackboardComponent> BB = Ctrl->GetBlackboardComponent();
+			if (IsValid(BB))
+			{
+				BB->SetValueAsFloat(TEXT("NAttackDistance"), BossAttributeSet->GetAttackDistance());
+				BB->SetValueAsFloat(TEXT("MeleeDistance"), BossAttributeSet->GetBoss_MeleeAttackDistance());
+				BB->SetValueAsFloat(TEXT("MiddleDistance"), BossAttributeSet->GetBoss_MiddleAttackDistance());
+				BB->SetValueAsFloat(TEXT("RangeDistance"), BossAttributeSet->GetBoss_RangeAttackDistance());
+			}
+		}
+
+		SetIsBoss(Data->bIsBoss);
+	}
+	else
 	{
-		BB->SetValueAsFloat(TEXT("NAttackDistance"), BossAttributeSet->GetAttackDistance());
-		BB->SetValueAsFloat(TEXT("MeleeDistance"), BossAttributeSet->GetBoss_MeleeAttackDistance());
-		BB->SetValueAsFloat(TEXT("MiddleDistance"), BossAttributeSet->GetBoss_MiddleAttackDistance());
-		BB->SetValueAsFloat(TEXT("RangeDistance"), BossAttributeSet->GetBoss_RangeAttackDistance());
+		RS_PRINT_SCREEN(5.f, FColor::Red, TEXT("Before GameState Ready"));
+		GetWorld()->GetTimerManager().SetTimer(InitDataTimerHandle, [this, Data]()
+			{
+				InitStatData(Data);
+			}
+		, 0.1f, false);
 	}
-
-	SetIsBoss(Data->bIsBoss);
 }
 
 void AZombieBoss::UseAnimMontage(EZombieAnimType Type, EZombieAnimType BeforeType)

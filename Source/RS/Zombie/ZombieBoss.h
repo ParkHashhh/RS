@@ -41,6 +41,10 @@ protected:
 	//타겟 업데이트 함수를 호출하기 위한 타이머
 	FTimerHandle UpdateTargetTimerHandle;
 
+	//보스는 필드에 미리 배치된 상태로 시작함
+	//게임스테이트가 준비될 때 까지 데이터 설정을 미루기 위한 타이머 핸들
+	FTimerHandle InitDataTimerHandle;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

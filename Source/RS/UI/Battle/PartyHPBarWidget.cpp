@@ -11,6 +11,7 @@
 #include "RS/GameMode/RSGameState.h"
 #include "Components/TextBlock.h"
 #include "RS/GameMode/GameplaySubsystem.h"
+#include "GameFramework/PlayerState.h"
 
 UPartyHPBarWidget::UPartyHPBarWidget(const FObjectInitializer& ObjectInitializer)
 	: URSUserWidget(ObjectInitializer)
@@ -111,10 +112,40 @@ void UPartyHPBarWidget::SetPartyMemberInfo()
 	OnMaxHpChanged(InitialData);
 
 	// 이름
-	// 플레이어의 스팀 닉네임을 얻어온 후 첫 글자와 숫자를 조합해 파티원 체력바에 표시할 이름을 만들어야 한다.
-	//FName BZName = Boss->GetTableRowName();
-	//FText BZName_Text = FText::FromName(BZName);
-	//BossName->SetText(BZName_Text);
+	FName PMName = NAME_None;
+	if (const APlayerState* PartyMemberPS = PartyMember->GetPlayerState<APlayerState>())
+	{
+		PMName = FName(*PartyMemberPS->GetPlayerName());
+	}
+	if (PMName.IsNone())
+	{
+		PMName = TEXT("Player");
+	}
+
+	//이름 첫 글자를 대문자로 변환한다.
+	FString PMName_Str = PMName.ToString();
+	FString PMName_First = PMName_Str.Left(1);
+	FString PMName_Upper = PMName_First.ToUpper();
+
+	//첫 글자가 알파벳인지 확인한다.
+	FString FinalFirstLetter;
+	if (FChar::IsAlpha(PMName_Upper[0]))
+	{
+		FinalFirstLetter = PMName_Upper;
+	}
+	else
+	{
+		FinalFirstLetter = FString(TEXT("P"));
+	}
+
+	//번호를 가져운다.
+	FString PMNumber_Str = FString::FromInt(ListOrder);
+
+	//첫 영문자와 번호를 조합한다.
+	FString FinalName = FinalFirstLetter + PMNumber_Str;
+
+	FText FinalName_Text = FText::FromString(FinalName);
+	PartyMemberName->SetText(FinalName_Text);
 }	
 
 

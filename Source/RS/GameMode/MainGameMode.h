@@ -52,6 +52,8 @@ public:
 
 	virtual void Tick(float DeltaSeconds) override;
 
+	virtual void InitGameState();
+
 	virtual void StartPlay() override;
 
 	int32 GetKillCountAll(const FUniqueNetIdRepl& PlayerUID) const;
