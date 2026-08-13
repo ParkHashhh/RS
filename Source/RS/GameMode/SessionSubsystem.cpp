@@ -131,6 +131,26 @@ void USessionSubsystem::JoinSession(const FOnlineSessionSearchResult& SearchResu
 		return;
 	}
 
+	if (SessionInterface->GetNamedSession(NAME_GameSession))
+	{
+		ClearDestroySessionCompleteDelegate();
+
+		bJoinSessionAfterDestroy = true;
+		PendingJoinSearchResult = SearchResult;
+
+		DestroySessionCompleteHandle = SessionInterface->AddOnDestroySessionCompleteDelegate_Handle(
+			DestroySessionCompleteDelegate);
+
+		if (!SessionInterface->DestroySession(NAME_GameSession))
+		{
+			bJoinSessionAfterDestroy = false;
+			ClearDestroySessionCompleteDelegate();
+			OnJoinSessionCompleteEvent.Broadcast(false, FString());
+		}
+
+		return;
+	}
+
 	JoinSessionCompleteHandle = SessionInterface->AddOnJoinSessionCompleteDelegate_Handle(
 		JoinSessionCompleteDelegate);
 
@@ -237,6 +257,20 @@ void USessionSubsystem::OnDestroySessionCompleted(FName SessionName, bool bWasSu
 
 	RS_LOG_DEBUG(LogRSSession, Log, TEXT("%s| Destroy Session: %s"), *LOG_LINE_INFO, bWasSuccessful ? TEXT("Success") : TEXT("Failed"));
 	RS_PRINT_SCREEN(30.f, FColor::Cyan, TEXT("%s| Destroy Session: %s"), *LOG_LINE_INFO, bWasSuccessful ? TEXT("Success") : TEXT("Failed"));
+
+	if (bJoinSessionAfterDestroy)                                
+	{
+		bJoinSessionAfterDestroy = false;
+
+		if (!bWasSuccessful)
+		{
+			OnJoinSessionCompleteEvent.Broadcast(false, FString());
+			return;
+		}
+
+		JoinSession(PendingJoinSearchResult);
+		return;
+	}
 
 	if (!bCreateSessionAfterDestroy)
 	{

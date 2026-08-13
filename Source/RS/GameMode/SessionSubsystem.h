@@ -59,6 +59,9 @@ private:
 	int32 PendingMaxPlayers = 4;
 	bool bCreateSessionAfterDestroy = false;
 
+	bool bJoinSessionAfterDestroy = false;
+	FOnlineSessionSearchResult PendingJoinSearchResult;
+
 	FDelegateHandle CreateSessionCompleteHandle;
 	FDelegateHandle DestroySessionCompleteHandle;
 	FDelegateHandle FindSessionsCompleteHandle;
