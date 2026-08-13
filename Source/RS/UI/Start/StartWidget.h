@@ -22,9 +22,6 @@ protected:
 	TObjectPtr<UButton> StartButton;
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UButton> MultiStartButton;
-
-	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> OptionButton;
 
 	UPROPERTY(meta = (BindWidget))
@@ -37,8 +34,6 @@ public:
 	UFUNCTION()
 	void StartClick();
 
-	UFUNCTION()
-	void MultiStartClick();
 	UFUNCTION()
 	void ExitClick();
 	UFUNCTION()

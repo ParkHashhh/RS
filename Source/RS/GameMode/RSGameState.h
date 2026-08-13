@@ -52,7 +52,14 @@ private:
 	UPROPERTY(ReplicatedUsing = OnRep_CheckZombieBoss)
 	AZombieBoss* CurrentBoss = nullptr;
 
+	UPROPERTY(Replicated)
+	int32 DifficultyStage = 1;
+
 public:
+	int32 GetDifficultyStage() const
+	{
+		return DifficultyStage;
+	}
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	template <typename T>
@@ -69,7 +76,7 @@ public:
 	}
 
 	void Initialize(const TArray<FStageObjectiveEntry>& Objectives);
-
+	void SetDifficultyStage(int32 InStage);
 protected:
 	UFUNCTION()
 	void OnRep_Initialized();

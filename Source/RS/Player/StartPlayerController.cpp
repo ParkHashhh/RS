@@ -60,6 +60,10 @@ void AStartPlayerController::BeginPlay()
 		}
 	}
 	CreateSettingWidget();
+	if (auto* GI = Cast<URSGameInstance>(GetGameInstance()))
+	{
+		GI->PlayBGM();
+	}
 }
 
 void AStartPlayerController::CreateSettingWidget()

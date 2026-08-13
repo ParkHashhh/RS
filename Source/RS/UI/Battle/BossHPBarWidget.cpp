@@ -43,6 +43,37 @@ void UBossHPBarWidget::NativeDestruct()
 	Super::NativeDestruct();
 }
 
+void UBossHPBarWidget::SetVisibility(ESlateVisibility InVisibility)
+{
+	//보스 체력바 위젯을 화면에 띄워야 하는 경우에
+	//보스 존재 여부 불리언을 추가로 확인한 후에 화면에 띄워야 한다.
+	if (InVisibility == ESlateVisibility::Visible ||
+		InVisibility == ESlateVisibility::HitTestInvisible ||
+		InVisibility == ESlateVisibility::SelfHitTestInvisible)
+	{
+		if (GetWorld())
+		{
+			ARSGameState* GS = GetWorld()->GetGameState<ARSGameState>();
+			if (GS)
+			{
+				AZombieBoss* CurrentBossPtr = GS->GetCurrentBoss();
+				if (CurrentBossPtr != nullptr)
+				{
+					Super::SetVisibility(InVisibility);
+				}
+				else
+				{
+					Super::SetVisibility(ESlateVisibility::Collapsed);
+				}
+			}
+		}
+	}
+	else
+	{
+		Super::SetVisibility(InVisibility);
+	}
+}
+
 void UBossHPBarWidget::OnCurrHpChanged(const FOnAttributeChangeData& Data)
 {
 	RS_LOG_DEBUG(LogRSBattle, Log, TEXT("%s: 보스 HP가 변경됨! 현재 값: %.2f"), *LOG_LINE_INFO, Data.NewValue);

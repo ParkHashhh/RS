@@ -8,85 +8,6 @@
 #include "RS/LogCategory.h"
 #include "ShaderCompiler.h"
 
-namespace
-{
-	void AddTravelOptionTokens(const FString& Options, TArray<FString>& OutOptions)
-	{
-		const FString TrimmedOptions = Options.TrimStartAndEnd();
-		if (TrimmedOptions.IsEmpty())
-		{
-			return;
-		}
-
-		TArray<FString> SpaceSeparatedOptions;
-		TrimmedOptions.ParseIntoArrayWS(SpaceSeparatedOptions);
-		for (const FString& SpaceSeparatedOption : SpaceSeparatedOptions)
-		{
-			TArray<FString> QuestionSeparatedOptions;
-			SpaceSeparatedOption.ParseIntoArray(QuestionSeparatedOptions, TEXT("?"), true);
-			for (const FString& Option : QuestionSeparatedOptions)
-			{
-				const FString TrimmedOption = Option.TrimStartAndEnd();
-				if (!TrimmedOption.IsEmpty())
-				{
-					OutOptions.Add(TrimmedOption);
-				}
-			}
-		}
-	}
-
-	bool ContainsTravelOption(const TArray<FString>& Options, const FString& OptionName)
-	{
-		for (const FString& Option : Options)
-		{
-			if (Option.Equals(OptionName, ESearchCase::IgnoreCase))
-			{
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	FString JoinTravelOptions(const TArray<FString>& Options)
-	{
-		return FString::Join(Options, TEXT("?"));
-	}
-
-	FString NormalizeTravelOptions(const FString& Options)
-	{
-		TArray<FString> OptionTokens;
-		AddTravelOptionTokens(Options, OptionTokens);
-		return JoinTravelOptions(OptionTokens);
-	}
-
-	FString BuildOpenLevelOptions(const FString& Options, bool bListen)
-	{
-		TArray<FString> OptionTokens;
-		AddTravelOptionTokens(Options, OptionTokens);
-		if (bListen && !ContainsTravelOption(OptionTokens, TEXT("listen")))
-		{
-			OptionTokens.Insert(TEXT("listen"), 0);
-		}
-
-		return JoinTravelOptions(OptionTokens);
-	}
-
-	FString BuildTravelURL(const FString& BaseURL, const FString& Options)
-	{
-		const FString TrimmedBaseURL = BaseURL.TrimStartAndEnd();
-		const FString NormalizedOptions = NormalizeTravelOptions(Options);
-		if (NormalizedOptions.IsEmpty())
-		{
-			return TrimmedBaseURL;
-		}
-
-		return TrimmedBaseURL.EndsWith(TEXT("?"))
-			       ? TrimmedBaseURL + NormalizedOptions
-			       : TrimmedBaseURL + TEXT("?") + NormalizedOptions;
-	}
-}
-
 ALoadingPlayerController::ALoadingPlayerController()
 {
 	bShowMouseCursor = false;
@@ -99,6 +20,7 @@ void ALoadingPlayerController::BeginPlay()
 
 	if (IsValid(LoadingWidgetClass))
 	{
+
 		LoadingWidget = CreateWidget<ULoadingUserWidget>(GetWorld(), LoadingWidgetClass);
 		if (IsValid(LoadingWidget))
 		{
@@ -124,7 +46,6 @@ void ALoadingPlayerController::BeginPlay()
 		StartAsyncLoading();
 	}
 }
-
 void ALoadingPlayerController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -160,10 +81,8 @@ void ALoadingPlayerController::Tick(float DeltaTime)
 	{
 		LoadingWidget->SetLoadingProgress(1.f);
 	}
-
 	CompleteLoadingAndTravel();
 }
-
 void ALoadingPlayerController::StartAsyncLoading()
 {
 	if (bLoadingStart)
@@ -203,75 +122,29 @@ void ALoadingPlayerController::CompleteLoadingAndTravel()
 	{
 		return;
 	}
-
 	bHasTraveled = true;
 
-	if (URSGameInstance* GI = GetGameInstance<URSGameInstance>())
+	FString FinalOptions = NextLevelOptions;
+	int32 RandomPort = FMath::RandRange(7000, 7999);
+	if (bNextLevelIsListen)
 	{
-		RS_LOG_DEBUG(LogRSSession, Warning,
-		             TEXT(
-			             "%s| CompleteLoadingAndTravel: NextLevelName=%s LoadingPackagePath=%s NextLevelOptions=%s bIsServerTravel=%s bNextLevelIsListen=%s"
-		             ),
-		             *LOG_LINE_INFO,
-		             *NextLevelName.ToString(),
-		             *LoadingPackagePath,
-		             *NextLevelOptions,
-		             bIsServerTravel ? TEXT("true") : TEXT("false"),
-		             bNextLevelIsListen ? TEXT("true") : TEXT("false"));
-
-		FString ClientConnectString;
-		FString ClientTravelOptions;
-
-		const bool bConsumedPendingClientTravel = GI->ConsumePendingClientTravel(
-			ClientConnectString, ClientTravelOptions);
-
-		RS_LOG_DEBUG(LogRSSession, Warning,
-		             TEXT("%s| ConsumePendingClientTravel: Result=%s ConnectString=%s Options=%s"),
-		             *LOG_LINE_INFO,
-		             bConsumedPendingClientTravel ? TEXT("true") : TEXT("false"),
-		             *ClientConnectString,
-		             *ClientTravelOptions);
-
-		if (bConsumedPendingClientTravel)
-		{
-			const FString CombinedURL = ClientConnectString + TEXT("/") + NextLevelName.ToString();
-			const FString FinalClientTravelURL = BuildTravelURL(CombinedURL, ClientTravelOptions);
-
-			RS_LOG_DEBUG(LogRSSession, Warning,
-			             TEXT("%s| ClientTravel URL: %s"),
-			             *LOG_LINE_INFO,
-			             *FinalClientTravelURL);
-
-			ClientTravel(FinalClientTravelURL, TRAVEL_Absolute);
-		}
-		else if (bIsServerTravel)
-		{
-			if (HasAuthority())
-			{
-				GetWorld()->ServerTravel(BuildTravelURL(NextLevelName.ToString(), NextLevelOptions));
-			}
-		}
-		else if (HasAuthority())
-		{
-			UGameplayStatics::OpenLevel(GetWorld(), NextLevelName, true,
-			                            BuildOpenLevelOptions(NextLevelOptions, bNextLevelIsListen));
-		}
+		FinalOptions = FString::Printf(TEXT("listen Port=%d "), RandomPort) + NextLevelOptions;
 	}
-	else if (bIsServerTravel)
+
+	if (bIsServerTravel)
 	{
 		if (HasAuthority())
 		{
-			GetWorld()->ServerTravel(BuildTravelURL(NextLevelName.ToString(), NextLevelOptions));
+			GetWorld()->ServerTravel(NextLevelName.ToString() + FinalOptions);
 		}
 	}
-	else if (HasAuthority())
+
+	else
 	{
-		UGameplayStatics::OpenLevel(GetWorld(), NextLevelName, true,
-		                            BuildOpenLevelOptions(NextLevelOptions, bNextLevelIsListen));
+		UGameplayStatics::OpenLevel(GetWorld(), NextLevelName, true, FinalOptions);
 	}
 
 	RS_PRINT_SCREEN(10.f, FColor::Red, TEXT("MapLoading Succeeded : %s"), *LoadingPackagePath);
-
 	if (LoadingPackage)
 	{
 		LoadingPackage->RemoveFromRoot();

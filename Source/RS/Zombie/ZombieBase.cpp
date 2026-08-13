@@ -506,6 +506,7 @@ void AZombieBase::PlayFootStepCue(const FName& FootName)
 	FCollisionQueryParams Params;
 	//피지컬 머티리얼을 히트 구조체에 담기 위한 설정
 	Params.bReturnPhysicalMaterial = true;
+	Params.bTraceComplex = true;
 	//발 소켓에서 발사한 라인이 내 발바닥 표면에 충돌하는 것을 막는다.
 	Params.AddIgnoredActor(this);
 

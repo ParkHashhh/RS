@@ -40,6 +40,9 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent, DisplayName = "On HP Changed", Category = "HPBar")
 	void K2_OnHPChanged(float HPRatio);
 
+public:
+	virtual void SetVisibility(ESlateVisibility InVisibility) override;
+
 private:
 	void OnCurrHpChanged(const FOnAttributeChangeData& Data);
 	void OnMaxHpChanged(const FOnAttributeChangeData& Data);

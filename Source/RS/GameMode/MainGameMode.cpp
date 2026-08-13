@@ -17,12 +17,14 @@
 #include "RS/RSUtils.h"
 #include "RS/Data/Subsystem/DataStorageSubsystem.h"
 #include "RS/Player/RSPlayerState.h"
+#include "RS/GameMode/RSGameInstance.h"
+
 
 AMainGameMode::AMainGameMode()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	bUseSeamlessTravel = true;
-
+	bStartPlayersAsSpectators = true;
 	StageZombieManagerComponent = CreateDefaultSubobject<UZombieManager>(TEXT("ZombieManager"));
 }
 
@@ -233,6 +235,14 @@ void AMainGameMode::StartStage()
 	if (auto* GS = GetGameState<ARSGameState>())
 	{
 		GS->Initialize(StageObjectiveEntries);
+
+		if (const UGameInstance* GI = GetGameInstance())
+		{
+			if (auto* StorageSubsystem = GI->GetSubsystem<UDataStorageSubsystem>())
+			{
+				StorageSubsystem->RestoreDifficultyStage(GS);
+			}
+		}
 	}
 }
 
@@ -312,9 +322,37 @@ void AMainGameMode::HandleKillInfoChanged(const FKillInfo* KillInfo)
 
 					if (Entry.CurreentProgress >= TableInfo->Goal)
 					{
+						if (bIsCleared)
+						{
+							return;
+						}
+						GS->SetDifficultyStage(GS->GetDifficultyStage() + 1);
+
+						if (const UGameInstance* GI = GetGameInstance())
+						{
+							if (const auto* RSGI = Cast<URSGameInstance>(GI))
+							{
+								if (RSGI->IsSinglePlayerMode())
+								{
+									if (auto* StorageSubsystem = GI->GetSubsystem<UDataStorageSubsystem>())
+									{
+										if (GameState->PlayerArray.IsValidIndex(0))
+										{
+											if (auto* PS = Cast<ARSPlayerState>(GameState->PlayerArray[0]))
+											{
+												StorageSubsystem->SavePlayerDataToDisk(PS);
+												StorageSubsystem->SetCurrentDifficultyStage(GS->GetDifficultyStage());
+											}
+										}
+									}
+								}
+							}
+						}
+
 						OnAllObjectivesCleared.Broadcast();
 						return;
 					}
+
 				}
 				break;
 			case EClearCondition::KillEnemy:
