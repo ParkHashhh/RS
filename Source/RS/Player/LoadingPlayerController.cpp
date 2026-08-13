@@ -251,7 +251,7 @@ void ALoadingPlayerController::CompleteLoadingAndTravel()
 				GetWorld()->ServerTravel(BuildTravelURL(NextLevelName.ToString(), NextLevelOptions));
 			}
 		}
-		else
+		else if (HasAuthority())
 		{
 			UGameplayStatics::OpenLevel(GetWorld(), NextLevelName, true,
 			                            BuildOpenLevelOptions(NextLevelOptions, bNextLevelIsListen));
@@ -264,7 +264,7 @@ void ALoadingPlayerController::CompleteLoadingAndTravel()
 			GetWorld()->ServerTravel(BuildTravelURL(NextLevelName.ToString(), NextLevelOptions));
 		}
 	}
-	else
+	else if (HasAuthority())
 	{
 		UGameplayStatics::OpenLevel(GetWorld(), NextLevelName, true,
 		                            BuildOpenLevelOptions(NextLevelOptions, bNextLevelIsListen));
