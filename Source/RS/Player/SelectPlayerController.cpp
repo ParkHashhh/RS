@@ -55,11 +55,15 @@ void ASelectPlayerController::BeginPlay()
 	TArray<AActor*> TaggedCameras;
 	UGameplayStatics::GetAllActorsOfClassWithTag(GetWorld(), ACameraActor::StaticClass(), FName("MainCamera"), TaggedCameras);
 
+	if (TaggedCameras.Num() > 0)
+	{
+		SelectCamera = Cast<ACameraActor>(TaggedCameras[0]);
+	}
+
 	if (SelectCamera)
 	{
 		SetViewTarget(SelectCamera);
 	}
-
 
 	if (IsValid(SelectWidgetClass))
 	{
