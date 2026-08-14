@@ -52,7 +52,8 @@ void ASelectPlayerController::BeginPlay()
 	FInputModeGameAndUI InputMode;
 	SetInputMode(InputMode);
 
-	SelectCamera = UGameplayStatics::GetActorOfClass(GetWorld(), ACameraActor::StaticClass());
+	TArray<AActor*> TaggedCameras;
+	UGameplayStatics::GetAllActorsOfClassWithTag(GetWorld(), ACameraActor::StaticClass(), FName("MainCamera"), TaggedCameras);
 
 	if (SelectCamera)
 	{
