@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "../RSUserWidget.h"
+#include "RS/UI/Core/RSUserWidget.h"
 #include "Components/Button.h"
 #include "Components/Border.h"
 #include "MapSelectCardWidget.generated.h"

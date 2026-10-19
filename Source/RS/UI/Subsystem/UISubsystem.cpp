@@ -2,7 +2,7 @@
 
 
 #include "UISubsystem.h"
-#include "RS/UI/RSUserWidget.h"
+#include "RS/UI/Core/RSUserWidget.h"
 
 void UUISubsystem::AddWidget(const FName WidgetName, URSUserWidget* Widget)
 {

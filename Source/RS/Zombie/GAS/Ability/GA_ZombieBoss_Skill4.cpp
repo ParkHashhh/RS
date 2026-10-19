@@ -4,8 +4,8 @@
 #include "GA_ZombieBoss_Skill4.h"
 #include "RS/Zombie/GAS/ZombieBossAttributeSet.h"
 #include "AbilitySystemBlueprintLibrary.h"
-#include "RS/Zombie/ZombieBoss.h"
-#include "RS/LogCategory.h"
+#include "RS/Zombie/Boss/ZombieBoss.h"
+#include "RS/Core/LogCategory.h"
 
 UGA_ZombieBoss_Skill4::UGA_ZombieBoss_Skill4()
 {

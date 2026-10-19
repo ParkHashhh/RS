@@ -3,14 +3,15 @@
 
 #include "BTTask_TraceNoneBoss.h"
 #include "AIController.h"
+#include "RS/Zombie/AI/ZombieAIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Navigation/PathFollowingComponent.h"
 #include "../ZombieBase.h"
 #include "Components/CapsuleComponent.h"
 #include "RS/GAS/BaseAttributeSet.h"
-#include "RS/RSTypes.h"
+#include "RS/Core/RSTypes.h"
 #include "NavigationSystem.h"
-#include "RS/Player/PlayerCharacterBase.h"
+#include "RS/Player/Character/PlayerCharacterBase.h"
 
 UBTTask_TraceNoneBoss::UBTTask_TraceNoneBoss()
 {
@@ -72,7 +73,7 @@ EBTNodeResult::Type UBTTask_TraceNoneBoss::ExecuteTask(UBehaviorTreeComponent& O
 	{
 		return EBTNodeResult::Failed;
 	}
-		
+
 	//좀비를 이동시킨다.
 	EPathFollowingRequestResult::Type MoveRequestResult = Ctrl->MoveToActor(Target, -1.f, false, true, false);
 	if (MoveRequestResult == EPathFollowingRequestResult::Failed)
@@ -136,8 +137,15 @@ void UBTTask_TraceNoneBoss::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* N
 	}
 
 	//좀비가 내비링크를 사용 중이라면 사용을 종료할때까지 기다린다.
+	AZombieAIController* ZombieCtrl = Cast<AZombieAIController>(Ctrl);
+	if (!Ctrl)
+	{
+		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+		return;
+	}
 	bool bIsUsingNavLink = BlackboardComp->GetValueAsBool(TEXT("IsUsingNavLink"));
-	if (bIsUsingNavLink)
+	bool bIsJumpEnd = ZombieCtrl->GetIsJumpEndNow();
+	if (bIsUsingNavLink || bIsJumpEnd)
 	{
 		return;
 	}
@@ -161,14 +169,6 @@ void UBTTask_TraceNoneBoss::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* N
 		if (Distance <= TraceEndRange)
 		{
 			BlackboardComp->SetValueAsBool(TEXT("AttackPossible"), true);
-			FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
-			return;
-		}
-
-		//좀비가 타겟에 도착해 이동 함수가 종료되었을 때 공격 태스크로 진입한다.
-		EPathFollowingStatus::Type MoveResult = Ctrl->GetMoveStatus();
-		if (MoveResult == EPathFollowingStatus::Idle)
-		{
 			FinishLatentTask(OwnerComp, EBTNodeResult::Failed);
 			return;
 		}

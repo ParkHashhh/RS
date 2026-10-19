@@ -4,9 +4,9 @@
 #include "HPBarWidget.h"
 
 #include "Components/ProgressBar.h"
-#include "RS/LogCategory.h"
-#include "RS/Player/PlayerCharacterBase.h"
-#include "RS/Player/Attribute/PlayerAttributeSet.h"
+#include "RS/Core/LogCategory.h"
+#include "RS/Player/Character/PlayerCharacterBase.h"
+#include "RS/Player/GAS/Attribute/PlayerAttributeSet.h"
 
 UHPBarWidget::UHPBarWidget(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)

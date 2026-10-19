@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "ActiveGameplayEffectHandle.h"
 #include "UObject/Object.h"
-#include "RS/RSTypes.h"
+#include "RS/Core/RSTypes.h"
 #include "ItemInstance.generated.h"
 
 class UInventoryComponent;
@@ -24,20 +24,38 @@ private:
 	UPROPERTY(Transient)
 	TWeakObjectPtr<UInventoryComponent> OwnerInventory;
 
-	UPROPERTY(Transient, VisibleAnywhere, BlueprintReadOnly, BlueprintGetter=K2_GetItemGUID, meta=(AllowPrivateAccess=true))
+	UPROPERTY(Replicated, Transient, VisibleAnywhere, BlueprintReadOnly, BlueprintGetter = K2_GetItemGUID, meta = (AllowPrivateAccess = true))
 	FGuid ItemGUID;
 
-	UPROPERTY(Transient, VisibleAnywhere, BlueprintReadOnly, BlueprintGetter=K2_GetItemRowHandle, meta=(AllowPrivateAccess=true))
+	UPROPERTY(ReplicatedUsing = OnRep_ItemRowHandle, Transient, VisibleAnywhere, BlueprintReadOnly, BlueprintGetter = K2_GetItemRowHandle, meta = (AllowPrivateAccess = true))
 	FDataTableRowHandle ItemRowHandle;
 
-	UPROPERTY(Transient, VisibleAnywhere, BlueprintReadOnly, BlueprintGetter=K2_GetItemCount, meta=(AllowPrivateAccess=true))
+	UPROPERTY(ReplicatedUsing = OnRep_ItemCount, Transient, VisibleAnywhere, BlueprintReadOnly, BlueprintGetter = K2_GetItemCount, meta = (AllowPrivateAccess = true))
 	int32 ItemCount;
 
 	UPROPERTY(Transient)
 	FActiveGameplayEffectHandle ActiveGameplayEffectHandle;
 
 public:
+	virtual bool IsSupportedForNetworking() const override
+	{
+		return true;
+	}
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 	void Initialize(UInventoryComponent* InOwner, const FGuid& InItemGUID, const FDataTableRowHandle& InItemRowHandle, int32 InItemCount);
+
+private:
+	// 서브오브젝트 프로퍼티는 소유 배열(FInventoryEntry)과 별개의 타이밍으로 복제되기 때문에,
+	// 슬롯 위젯이 먼저 그려진 뒤 뒤늦게 도착해도 UI가 다시 갱신되도록 알려준다.
+	UFUNCTION()
+	void OnRep_ItemRowHandle();
+
+	UFUNCTION()
+	void OnRep_ItemCount();
+
+public:
 
 	FORCEINLINE const FGuid& GetItemGUID() const
 	{

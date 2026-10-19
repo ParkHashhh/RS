@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "RS/RSUtils.h"
+#include "RS/Core/RSUtils.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "DataSubsystem.generated.h"
 
@@ -275,10 +275,10 @@ private:
 #pragma region Item
 
 public:
-	TArray<FName> GetThreeRandomItmes() const;
+	TArray<FName> GetThreeRandomItmes(int32 CurrentStage) const;
 
 private:
-	TArray<FName> GetRandomItems(int32 Count) const;
+	TArray<FName> GetRandomItems(int32 Count, int32 CurrentStage) const;
 
 #pragma endregion
 };

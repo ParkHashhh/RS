@@ -3,14 +3,14 @@
 
 #include "PartyHPBarWidget.h"
 #include "Components/ProgressBar.h"
-#include "RS/LogCategory.h"
-#include "RS/Player/PlayerCharacterBase.h"
-#include "RS/Zombie/ZombieBoss.h"
-#include "RS/Player/Attribute/PlayerAttributeSet.h"
+#include "RS/Core/LogCategory.h"
+#include "RS/Player/Character/PlayerCharacterBase.h"
+#include "RS/Zombie/Boss/ZombieBoss.h"
+#include "RS/Player/GAS/Attribute/PlayerAttributeSet.h"
 #include "RS/Zombie/GAS/ZombieBossAttributeSet.h"
-#include "RS/GameMode/RSGameState.h"
+#include "RS/GameFramework/GameState/RSGameState.h"
 #include "Components/TextBlock.h"
-#include "RS/GameMode/GameplaySubsystem.h"
+#include "RS/Player/Subsystem/GameplaySubsystem.h"
 #include "GameFramework/PlayerState.h"
 
 UPartyHPBarWidget::UPartyHPBarWidget(const FObjectInitializer& ObjectInitializer)
@@ -27,16 +27,16 @@ void UPartyHPBarWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	if (ULocalPlayer* LP = GetOwningLocalPlayer())
-	{
-		if (auto* GameplaySubsystem = LP->GetSubsystem<UGameplaySubsystem>())
-		{
-			if (GameplaySubsystem->IsGameplayReady())
-			{
-				SetPartyMemberInfo();
-			}
-		}
-	}
+	//if (ULocalPlayer* LP = GetOwningLocalPlayer())
+	//{
+	//	if (auto* GameplaySubsystem = LP->GetSubsystem<UGameplaySubsystem>())
+	//	{
+	//		if (GameplaySubsystem->IsGameplayReady())
+	//		{
+	//			SetPartyMemberInfo();
+	//		}
+	//	}
+	//}
 }
 
 void UPartyHPBarWidget::NativeDestruct()
@@ -90,7 +90,8 @@ void UPartyHPBarWidget::SetPartyMemberInfo()
 	FOnAttributeChangeData InitialData;
 
 	// Current HP
-	Attribute = UPlayerAttributeSet::GetCurrentHPAttribute();
+	//Attribute = UPlayerAttributeSet::GetCurrentHPAttribute();
+	Attribute = PartyMember->GetAttributeSet()->GetCurrentHPAttribute();
 	Handle = PartyMemberASC->GetGameplayAttributeValueChangeDelegate(Attribute)
 		.AddUObject(this, &ThisClass::OnCurrHpChanged);
 	AttributeDelegateBindings.Emplace(Attribute, Handle);
@@ -101,7 +102,8 @@ void UPartyHPBarWidget::SetPartyMemberInfo()
 	OnCurrHpChanged(InitialData);
 
 	// Max HP
-	Attribute = UPlayerAttributeSet::GetMaxHPAttribute();
+	//Attribute = UPlayerAttributeSet::GetCurrentHPAttribute();
+	Attribute = PartyMember->GetAttributeSet()->GetMaxHPAttribute();
 	Handle = PartyMemberASC->GetGameplayAttributeValueChangeDelegate(Attribute)
 		.AddUObject(this, &ThisClass::OnMaxHpChanged);
 	AttributeDelegateBindings.Emplace(Attribute, Handle);
@@ -146,7 +148,7 @@ void UPartyHPBarWidget::SetPartyMemberInfo()
 
 	FText FinalName_Text = FText::FromString(FinalName);
 	PartyMemberName->SetText(FinalName_Text);
-}	
+}
 
 
 

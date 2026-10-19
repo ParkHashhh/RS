@@ -39,7 +39,8 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, ReplicatedUsing=OnRep_AttackDistance, Category="Attribute", meta=(AllowPrivateAccess = true))
 	FGameplayAttributeData	AttackDistance;
-
+private:
+	bool bDeathProcessed = false;
 public:
 	ATTRIBUTE_ACCESSORS_BASIC(UBaseAttributeSet, AttackPower)
 	ATTRIBUTE_ACCESSORS_BASIC(UBaseAttributeSet, DefensePower)

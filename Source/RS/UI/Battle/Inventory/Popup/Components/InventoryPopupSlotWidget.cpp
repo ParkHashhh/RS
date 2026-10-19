@@ -6,10 +6,9 @@
 #include "InventoryPopupSlotObject.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
-#include "RS/LogCategory.h"
-#include "RS/Inventory/InventoryComponent.h"
+#include "RS/Core/LogCategory.h"
 #include "RS/Inventory/ItemInstance.h"
-#include "RS/Player/RSPlayerState.h"
+#include "RS/Data/Subsystem/DataSubsystem.h"
 #include "RS/UI/Colony/Result/Components/StageResultItemSlotObject.h"
 
 void UInventoryPopupSlotWidget::NativeOnListItemObjectSet(UObject* ListItemObject)
@@ -41,6 +40,7 @@ void UInventoryPopupSlotWidget::NativeOnListItemObjectSet(UObject* ListItemObjec
 	{
 		GetIconImage()->SetVisibility(ESlateVisibility::Collapsed);
 		ItemCountText->SetVisibility(ESlateVisibility::Collapsed);
+		SetBorderVisible(false);
 		// RS_LOG_DEBUG(LogRSInventory, Error, TEXT("%s: ItemInfo is nullptr"), *LOG_LINE_INFO);
 		return;
 	}
@@ -51,6 +51,8 @@ void UInventoryPopupSlotWidget::NativeOnListItemObjectSet(UObject* ListItemObjec
 	}
 
 	SetItemCountText(Item->GetItemCount());
+	SetBorderVisible(true);
+	SetGradeBorderColor(ItemInfo->Grade);
 
 	if (ItemInfo->IconSprite)
 	{
@@ -63,6 +65,12 @@ void UInventoryPopupSlotWidget::NativeOnListItemObjectSet(UObject* ListItemObjec
 		SetIconTexture(ItemInfo->IconTexture);
 		RS_LOG_DEBUG(LogRSInventory, Log, TEXT("%s: NativeOnListItemObjectSet, Item: %s, IconTexture: %s, ItemCount: %d"),
 				 *LOG_LINE_INFO, *ItemInfo->Name.ToString(), *ItemInfo->IconTexture->GetName(), Item->GetItemCount());
+	}
+	else
+	{
+		RS_LOG_DEBUG(LogRSInventory, Error,
+			TEXT("%s: NativeOnListItemObjectSet, Item: %s - IconSprite AND IconTexture are BOTH null on ItemInfo row"),
+			*LOG_LINE_INFO, *ItemInfo->Name.ToString());
 	}
 }
 
@@ -94,31 +102,24 @@ void UInventoryPopupSlotWidget::SetItemCountText(int32 Count) const
 
 void UInventoryPopupSlotWidget::SetResultItemSlot(const UStageResultItemSlotObject* ResultSlotObj)
 {
-	auto* PS = GetOwningPlayerState<ARSPlayerState>();
-	if (!PS)
-	{
-		return;
-	}
+	// 아이콘은 RowName만으로 결정되는 정적 데이터라 UItemInstance(리플리케이트되는 서브오브젝트)를
+	// 기다릴 필요가 없음 - 원격 클라에서 서브오브젝트 replication이 늦거나 유실돼도 즉시 그릴 수 있게
+	// DataTable에서 바로 조회한다.
+	const UGameInstance* GI = GetGameInstance();
+	const UDataSubsystem* DataSubsystem = GI ? GI->GetSubsystem<UDataSubsystem>() : nullptr;
+	const UDataTable* ItemTable = DataSubsystem ? DataSubsystem->GetItemInfoTable() : nullptr;
 
-	auto* InvenComp = PS->GetInventoryComponent();
-	if (!InvenComp)
-	{
-		return;
-	}
+	const FItemTableInfo* ItemInfo = ItemTable
+		? ItemTable->FindRow<FItemTableInfo>(ResultSlotObj->GetItemRowName(), TEXT("SetResultItemSlot"))
+		: nullptr;
 
-	const UItemInstance* Item = InvenComp->FindItem(ResultSlotObj->GetItemRowName());
-	if (!Item)
-	{
-		RS_LOG_DEBUG(LogRSInventory, Error, TEXT("%s: Item is nullptr"), *LOG_LINE_INFO);
-		return;
-	}
-
-	const FItemTableInfo* ItemInfo = Item->GetItemInfo();
 	if (!ItemInfo)
 	{
 		GetIconImage()->SetVisibility(ESlateVisibility::Collapsed);
 		ItemCountText->SetVisibility(ESlateVisibility::Collapsed);
-		// RS_LOG_DEBUG(LogRSInventory, Error, TEXT("%s: ItemInfo is nullptr"), *LOG_LINE_INFO);
+		SetBorderVisible(false);
+		RS_LOG_DEBUG(LogRSInventory, Error, TEXT("%s: SetResultItemSlot, ItemInfo is nullptr, Row: %s"),
+			*LOG_LINE_INFO, *ResultSlotObj->GetItemRowName().ToString());
 		return;
 	}
 	else
@@ -128,17 +129,25 @@ void UInventoryPopupSlotWidget::SetResultItemSlot(const UStageResultItemSlotObje
 	}
 
 	SetItemCountText(ResultSlotObj->GetItemCount());
+	SetBorderVisible(true);
+	SetGradeBorderColor(ItemInfo->Grade);
 
 	if (ItemInfo->IconSprite)
 	{
 		SetIconSprite(ItemInfo->IconSprite);
-		RS_LOG_DEBUG(LogRSInventory, Log, TEXT("%s: NativeOnListItemObjectSet, Item: %s, IconSprite: %s, ItemCount: %d"),
-				 *LOG_LINE_INFO, *ItemInfo->Name.ToString(), *ItemInfo->IconSprite->GetName(), Item->GetItemCount());
+		RS_LOG_DEBUG(LogRSInventory, Log, TEXT("%s: SetResultItemSlot, Row: %s, IconSprite: %s, ItemCount: %d"),
+				 *LOG_LINE_INFO, *ItemInfo->Name.ToString(), *ItemInfo->IconSprite->GetName(), ResultSlotObj->GetItemCount());
 	}
 	else if (ItemInfo->IconTexture)
 	{
 		SetIconTexture(ItemInfo->IconTexture);
-		RS_LOG_DEBUG(LogRSInventory, Log, TEXT("%s: NativeOnListItemObjectSet, Item: %s, IconTexture: %s, ItemCount: %d"),
-				 *LOG_LINE_INFO, *ItemInfo->Name.ToString(), *ItemInfo->IconTexture->GetName(), Item->GetItemCount());
+		RS_LOG_DEBUG(LogRSInventory, Log, TEXT("%s: SetResultItemSlot, Row: %s, IconTexture: %s, ItemCount: %d"),
+				 *LOG_LINE_INFO, *ItemInfo->Name.ToString(), *ItemInfo->IconTexture->GetName(), ResultSlotObj->GetItemCount());
+	}
+	else
+	{
+		RS_LOG_DEBUG(LogRSInventory, Error,
+			TEXT("%s: SetResultItemSlot, Row: %s - IconSprite AND IconTexture are BOTH null on ItemInfo row"),
+			*LOG_LINE_INFO, *ItemInfo->Name.ToString());
 	}
 }

@@ -5,9 +5,9 @@
 
 #include "InteractableInterface.h"
 #include "Net/UnrealNetwork.h"
-#include "RS/LogCategory.h"
-#include "RS/Player/PlayerCharacterBase.h"
-#include "RS/Player/PlayerControllerBase.h"
+#include "RS/Core/LogCategory.h"
+#include "RS/Player/Character/PlayerCharacterBase.h"
+#include "RS/Player/Controller/PlayerControllerBase.h"
 
 UInteractableComponent::UInteractableComponent()
 {
@@ -22,6 +22,8 @@ void UInteractableComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty
 
 	DOREPLIFETIME(UInteractableComponent, Interactor);
 	DOREPLIFETIME(UInteractableComponent, Holder);
+	DOREPLIFETIME(UInteractableComponent, Duration);
+	DOREPLIFETIME(UInteractableComponent, ElapsedTime);
 }
 
 void UInteractableComponent::SetFocus(bool bInFocus)
@@ -50,6 +52,9 @@ bool UInteractableComponent::StartInteraction(APlayerCharacterBase* InInteractor
 	}
 
 	Interactor = InInteractor;
+
+	RS_LOG_DEBUG(LogRSInteraction, Log, TEXT("%s: StartInteraction, Owner: %s, Interactor: %s"),
+		*LOG_LINE_INFO, *GetNameSafe(GetOwner()), *GetNameSafe(InInteractor));
 
 	OnInteractionStateChanged.Broadcast(true);
 
@@ -95,6 +100,9 @@ void UInteractableComponent::CompleteInteraction()
 	}
 
 	GetWorld()->GetTimerManager().ClearTimer(InteractionTimerHandle);
+
+	RS_LOG_DEBUG(LogRSInteraction, Log, TEXT("%s: CompleteInteraction, Owner: %s, Interactor: %s"),
+		*LOG_LINE_INFO, *GetNameSafe(GetOwner()), *GetNameSafe(Interactor.Get()));
 
 	auto* Interactable = Cast<IInteractableInterface>(GetOwner());
 	if (Interactable && Interactor.IsValid())
@@ -197,6 +205,11 @@ void UInteractableComponent::OnRep_Interactor()
 
 void UInteractableComponent::OnRep_Holder()
 {
+}
+
+void UInteractableComponent::OnRep_ElapsedTime()
+{
+	OnInteractionProgressChanged.Broadcast(ElapsedTime, Duration);
 }
 
 void UInteractableComponent::TickInteractionProgress()

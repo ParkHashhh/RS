@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/IUserObjectListEntry.h"
-#include "RS/UI/CharacterBoundUserWidget.h"
+#include "RS/UI/Core/CharacterBoundUserWidget.h"
 #include "StatEntryWidget.generated.h"
 
 class UImage;

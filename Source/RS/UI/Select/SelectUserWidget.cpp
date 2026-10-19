@@ -2,8 +2,8 @@
 
 
 #include "SelectUserWidget.h"
-#include "RS/LogCategory.h"
-#include "RS/Player/Actor/SelectPawn.h"
+#include "RS/Core/LogCategory.h"
+#include "RS/Player/Character/SelectPawn.h"
 
 USelectUserWidget::USelectUserWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {

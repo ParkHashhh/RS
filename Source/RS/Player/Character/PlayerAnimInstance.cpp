@@ -5,8 +5,8 @@
 
 #include "KismetAnimationLibrary.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "RS/LogCategory.h"
-#include "RS/Player/PlayerCharacterBase.h"
+#include "RS/Core/LogCategory.h"
+#include "RS/Player/Character/PlayerCharacterBase.h"
 
 void UPlayerAnimInstance::NativeBeginPlay()
 {
@@ -93,7 +93,7 @@ void UPlayerAnimInstance::MontageEnd(UAnimMontage* Montage, bool bInterrupted)
 
 void UPlayerAnimInstance::AnimNotify_AttackEnd()
 {
-	
+
 }
 
 void UPlayerAnimInstance::AnimNotify_AttackRay()
@@ -109,7 +109,7 @@ void UPlayerAnimInstance::AnimNotify_AttackRay()
 void UPlayerAnimInstance::AnimNotify_ReloadFinish()
 {
 
-	
+
 
 }
 
@@ -125,6 +125,12 @@ void UPlayerAnimInstance::AnimNotify_StartGrenade()
 
 void UPlayerAnimInstance::AnimNotify_EndGrenade()
 {
+	TObjectPtr<APlayerCharacterBase> PlayerChar = Cast<APlayerCharacterBase>(TryGetPawnOwner());
+
+	if (IsValid(PlayerChar))
+	{
+		PlayerChar->VisibleWeapon();
+	}
 }
 
 void UPlayerAnimInstance::AnimNotify_MakeGrenade()
@@ -149,7 +155,12 @@ void UPlayerAnimInstance::AnimNotify_StartHeal()
 
 void UPlayerAnimInstance::AnimNotify_EndHeal()
 {
+	TObjectPtr<APlayerCharacterBase> PlayerChar = Cast<APlayerCharacterBase>(TryGetPawnOwner());
 
+	if (IsValid(PlayerChar))
+	{
+		PlayerChar->VisibleWeapon();
+	}
 }
 
 void UPlayerAnimInstance::AnimNotify_MakeHeal()

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "RS/RSTypes.h"
+#include "RS/Core/RSTypes.h"
 #include "Animation/AnimInstance.h"
 #include "ZombieAnimInstance.generated.h"
 
@@ -192,4 +192,10 @@ public:
 
 	UFUNCTION()
 	void AnimNotify_SpawnStone();
+
+	UFUNCTION()
+	void AnimNotify_JumpStart();
+
+	UFUNCTION()
+	void AnimNotify_JumpEnd();
 };

@@ -6,7 +6,7 @@
 #include "StatEntryObject.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
-#include "RS/LogCategory.h"
+#include "RS/Core/LogCategory.h"
 
 void UStatEntryWidget::NativeOnListItemObjectSet(UObject* ListItemObject)
 {

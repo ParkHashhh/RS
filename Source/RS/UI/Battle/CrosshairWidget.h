@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "RS/UI/CharacterBoundUserWidget.h"
+#include "RS/UI/Core/CharacterBoundUserWidget.h"
 #include "CrosshairWidget.generated.h"
 
 struct FOnAttributeChangeData;

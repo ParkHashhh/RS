@@ -7,7 +7,7 @@
 #include "ItemInstance.h"
 #include "Components/ActorComponent.h"
 #include "Net/Serialization/FastArraySerializer.h"
-#include "RS/Utils/ASCProvider.h"
+#include "RS/Core/Interfaces/ASCProvider.h"
 #include "InventoryComponent.generated.h"
 
 struct FInventoryList;
@@ -140,6 +140,11 @@ public:
 #pragma region Inventory
 
 public:
+	const TArray<FInventoryEntry>& GetEntries() const
+	{
+		return InventoryList.Entries;
+	}
+
 	UItemInstance* CreateItemInstance(const FDataTableRowHandle& RowHandle, int32 Count);
 
 	bool CanAddItem(const FDataTableRowHandle& RowHandle, int32 Count) const;
@@ -166,11 +171,28 @@ public:
 	void HandleEntryChanged(const FInventoryEntry& Entry);
 	void HandleEntryRemoved(const FInventoryEntry& Entry);
 
-	const TArray<FInventoryEntry>& GetEntries() const
+private:
+	void RetryHandleEntryAddedByIndex(int32 EntryIndex, int32 RetryCount);
+
+	// Entry.Item(서브오브젝트 참조)이 리플리케이션에서 영구 유실되는 경우가 있어서,
+	// 순수 데이터(RowName/Count)는 RPC로 별도로 보내서 UI가 이거라도 그릴 수 있게 함
+	UFUNCTION(Client, Reliable)
+	void Client_NotifyItemAdded(int32 EntryIndex, FName RowName, int32 Count);
+
+	TMap<int32, FItemStorageInfo> FallbackItemDataByIndex;
+
+public:
+	bool GetFallbackItemData(int32 EntryIndex, FItemStorageInfo& OutInfo) const
 	{
-		return InventoryList.Entries;
+		if (const FItemStorageInfo* Found = FallbackItemDataByIndex.Find(EntryIndex))
+		{
+			OutInfo = *Found;
+			return true;
+		}
+		return false;
 	}
 
+public:
 	const FInventoryEntry* GetEntry(int32 SlotIndex) const
 	{
 		return InventoryList.Entries.IsValidIndex(SlotIndex) ? &InventoryList.Entries[SlotIndex] : nullptr;

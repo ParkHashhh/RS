@@ -4,13 +4,14 @@
 #include "HealPack.h"
 #include "Components/BoxComponent.h"
 #include "NiagaraComponent.h"
-#include "NiagaraFunctionLibrary.h"       
+#include "NiagaraFunctionLibrary.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "RS/Zombie/ZombieBase.h"
-#include "RS/Player/PlayerCharacterBase.h"
+#include "RS/Player/Character/PlayerCharacterBase.h"
+#include "RS/Player/GAS/Attribute/PlayerAttributeSet.h"
 #include "Kismet/KismetSystemLibrary.h"
-#include "Kismet/GameplayStatics.h"       
-#include "RS/LogCategory.h"
+#include "Kismet/GameplayStatics.h"
+#include "RS/Core/LogCategory.h"
 
 AHealPack::AHealPack()
 {
@@ -26,7 +27,7 @@ AHealPack::AHealPack()
 	ProjectileMovement->UpdatedComponent = RootComponent;
 	ProjectileMovement->InitialSpeed = 1500.f;
 	ProjectileMovement->MaxSpeed = 1500.f;
-	ProjectileMovement->bShouldBounce = true;	
+	ProjectileMovement->bShouldBounce = true;
 	ProjectileMovement->Bounciness = 0.2f;
 	ProjectileMovement->Friction = 0.1f;
 	ProjectileMovement->ProjectileGravityScale = 1.0f;
@@ -41,7 +42,7 @@ void AHealPack::BeginPlay()
 	{
 		ProjectileMovement->Velocity = LaunchDir * ProjectileMovement->InitialSpeed;
 	}
-	
+
 }
 
 void AHealPack::Tick(float DeltaTime)
@@ -82,9 +83,11 @@ void AHealPack::PerformHealing()
 	{
 
 		APlayerCharacterBase* Player = Cast<APlayerCharacterBase>(GetOwner());
-		if (IsValid(Player))
+		APlayerCharacterBase* TargetPlayer = Cast<APlayerCharacterBase>(Actor);
+		if (IsValid(Player) && IsValid(TargetPlayer) && TargetPlayer->GetAttributeSet())
 		{
-			Player->Server_ApplyHP(Actor, FHitResult(), 10.f);
+			const float HealPerTick = TargetPlayer->GetAttributeSet()->GetMaxHP() * HealPercentPerTick;
+			Player->Server_ApplyHP(Actor, FHitResult(), HealPerTick);
 		}
 	}
 	HealingTicks++;
@@ -105,7 +108,7 @@ void AHealPack::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimiti
 {
 	const float CheckFloor = 0.8f;
 	if (Hit.ImpactNormal.Z < CheckFloor)
-	{	
+	{
 		return;
 	}
 	if (bExploded)

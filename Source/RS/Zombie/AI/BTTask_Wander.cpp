@@ -7,7 +7,7 @@
 #include "RS/Zombie/ZombieBase.h"
 #include "Navigation/PathFollowingComponent.h"
 #include "Components/CapsuleComponent.h"
-#include "RS/LogCategory.h"
+#include "RS/Core/LogCategory.h"
 
 
 UBTTask_Wander::UBTTask_Wander()
@@ -53,7 +53,7 @@ EBTNodeResult::Type UBTTask_Wander::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 		Zombie->ChangeAnim(EZombieAnimType::Idle);
 		return EBTNodeResult::Failed;
 	}
-	
+
 	return EBTNodeResult::InProgress;
 }
 

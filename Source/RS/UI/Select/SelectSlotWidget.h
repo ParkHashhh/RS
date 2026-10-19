@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "../RSUserWidget.h"
+#include "RS/UI/Core/RSUserWidget.h"
 #include "Components/TextBlock.h"
 #include "OnlineSessionSettings.h"
 #include "SelectSlotWidget.generated.h"
@@ -21,11 +21,7 @@ public:
 protected:
 
 	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UButton> StartButton;
-
-
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UButton> MultiStartButton;
+	TObjectPtr<UButton> PlayButton;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UButton> TextureLeftButton;
@@ -71,10 +67,13 @@ public:
 	void SkillRightButtonClick();
 
 	UFUNCTION()
-	void StartButtonClick();
+	void PlayButtonClick();
 
-	UFUNCTION()
+private:
+	void StartButtonClick();
 	void MultiStartButtonClick();
+
+public:
 
 	UFUNCTION()
 	void TestJoinLocalHost();

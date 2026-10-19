@@ -13,7 +13,7 @@
 #include "NavigationSystem.h"
 #include "RS/GAS/BaseAttributeSet.h"
 #include "BrainComponent.h"
-#include "RS/LogCategory.h"
+#include "RS/Core/LogCategory.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "RS/Data/Subsystem/DataSubsystem.h"
@@ -21,9 +21,9 @@
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Navigation/PathFollowingComponent.h"
-#include "RS/Player/PlayerCharacterBase.h"
-#include "RS/GameMode/MainGameMode.h"
-#include "RS/Zombie/ZombieManager.h"
+#include "RS/Player/Character/PlayerCharacterBase.h"
+#include "RS/GameFramework/GameMode/MainGameMode.h"
+#include "RS/Zombie/Manager/ZombieManager.h"
 
 // Sets default values
 AZombieBase::AZombieBase()
@@ -155,7 +155,10 @@ void AZombieBase::SetIsJumpEnd(bool IsEnd)
 
 	if (HasAuthority() && bIsJumpEnd)
 	{
-		AnimInstance->FinishJump();
+		if (IsValid(AnimInstance))
+		{
+			AnimInstance->FinishJump();
+		}
 	}
 }
 
@@ -327,7 +330,7 @@ void AZombieBase::UseAnimMontage(EZombieAnimType Type, EZombieAnimType BeforeTyp
 		{
 			AnimInstance->SetAnim(EZombieAnimType::Run);
 		}
-		
+
 	}
 }
 
@@ -361,7 +364,7 @@ void AZombieBase::CalcNextPointLocation()
 	}
 	else
 	{
-		NextPointLocation = GetActorLocation();	
+		NextPointLocation = GetActorLocation();
 	}
 }
 
@@ -418,10 +421,11 @@ void AZombieBase::CallBackHP(AActor* InstigatorActor)
 		if (Ctrl && BB)
 		{
 			APlayerCharacterBase* CastedTarget = Cast<APlayerCharacterBase>(InstigatorActor);
+			bool IsUsingNL = BB->GetValueAsBool(TEXT("IsUsingNavLink"));
 			//이때도 타겟이 죽은 타겟이 아니여야 한다.
-			if (BB->GetValueAsObject(TEXT("Target")) == nullptr && !CastedTarget->IsDead())
+			if (BB->GetValueAsObject(TEXT("Target")) == nullptr && !CastedTarget->IsDead() && !IsUsingNL)
 			{
-				Ctrl->GetBlackboardComponent()->SetValueAsObject(TEXT("Target"), InstigatorActor);
+				BB->SetValueAsObject(TEXT("Target"), InstigatorActor);
 			}
 		}
 	}
@@ -482,10 +486,7 @@ void AZombieBase::ChangeSpeed_Run()
 float AZombieBase::CalcDistanceToTarget(AActor* Target)
 {
 	FVector TargetLoc = Target->GetActorLocation();
-	FVector ZombieLoc;
-
-	//타겟과 가장 가까운 좀비의 셰이프 위의 좌표를 구한다.
-	Body->GetClosestPointOnCollision(TargetLoc, ZombieLoc);
+	FVector ZombieLoc = GetActorLocation();
 
 	//두 좌표의 Z값을 일치시킨다 (계산에 영향을 주지 않도록 한다)
 	TargetLoc.Z = ZombieLoc.Z;
@@ -628,6 +629,16 @@ void AZombieBase::PlayZombieRoarSound()
 	}
 }
 
+void AZombieBase::Multicast_ChangeBodyCollision_JumpStart_Implementation()
+{
+	Body->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+}
+
+void AZombieBase::Multicast_ChangeBodyCollision_JumpEnd_Implementation()
+{
+	Body->SetCollisionProfileName(TEXT("Zombie"));
+}
+
 void AZombieBase::OnRep_ChangeAnimType()
 {
 	//서버는 이미 ChangeAnim에서 처리했다.
@@ -678,7 +689,7 @@ void AZombieBase::OnRep_ChangeAnimSet()
 	{
 		return;
 	}
-	
+
 	AnimInstance = AnimInst;
 
 	AnimInstance->SetAnimPresetIndexBackup(AnimIndex);
@@ -698,7 +709,10 @@ void AZombieBase::OnRep_ChangeJumpMontageSection()
 	//값이 true로 변했을 때에만 몽타주 섹션 변경을 수행한다.
 	if (bIsJumpEnd)
 	{
-		AnimInstance->FinishJump();
+		if (IsValid(AnimInstance))
+		{
+			AnimInstance->FinishJump();
+		}
 	}
 }
 

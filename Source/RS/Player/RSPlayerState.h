@@ -4,8 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerState.h"
-#include "RS/RSUtils.h"
-#include "RS/Utils/ASCProvider.h"
+#include "RS/Core/RSUtils.h"
+#include "RS/Core/Interfaces/ASCProvider.h"
 #include "RSPlayerState.generated.h"
 
 class UInventoryComponent;
@@ -123,7 +123,10 @@ private:
 
 #pragma region StageResult
 private:
+	UPROPERTY(Replicated)
 	int32 KillCount;
+
+	UPROPERTY(Replicated)
 	float PlayTime;
 
 public:

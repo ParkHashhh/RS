@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "RS/Data/Subsystem/DataSubsystem.h"
 #include "UObject/Object.h"
-#include "RS/GameMode/RSGameState.h"
+#include "RS/GameFramework/GameState/RSGameState.h"
 #include "StageObjectiveEntryObject.generated.h"
 
 struct FStageObjective;

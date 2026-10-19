@@ -3,7 +3,7 @@
 
 #include "HostOnlyChest.h"
 
-#include "RS/Player/PlayerCharacterBase.h"
+#include "RS/Player/Character/PlayerCharacterBase.h"
 
 
 // Sets default values

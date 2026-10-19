@@ -9,8 +9,10 @@
 #include "Components/TextBlock.h"
 #include "RS/UI/Battle/Inventory/Popup/Components/StatEntryObject.h"
 #include "PaperSprite.h"
-#include "RS/LogCategory.h"
-#include "RS/Player/PlayerControllerBase.h"
+#include "RS/Core/LogCategory.h"
+#include "RS/Core/RSUtils.h"
+#include "RS/Data/Subsystem/DataSubsystem.h"
+#include "RS/Player/Controller/PlayerControllerBase.h"
 
 URewardEntryWidget::URewardEntryWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -31,6 +33,15 @@ void URewardEntryWidget::NativeOnListItemObjectSet(UObject* ListItemObject)
 	IconImage->SetBrushFromAtlasInterface(EntryObj->ItemIcon);
 	NameTextBlock->SetText(EntryObj->ItemName);
 
+	// 마우스 호버 이벤트에서만 세팅되던 걸 최초 표시 시점에도 넣어줌 - 안 그러면 한 번도 안 건드린 카드는 프레임이 비어있음
+	FrameImage->SetBrushFromTexture(NormalFrameTexture);
+
+	if (const UGameInstance* GI = GetGameInstance())
+	{
+		FrameImage->SetColorAndOpacity(RSUtils::GetGradeColor(EntryObj->Grade, GI->GetSubsystem<UDataSubsystem>()));
+		IconBorderImage->SetColorAndOpacity(RSUtils::GetGradeColor(EntryObj->Grade, GI->GetSubsystem<UDataSubsystem>()));
+	}
+
 	StatListView->ClearListItems();
 
 	StatListView->SetListItems(EntryObj->StatEntryObjects);
@@ -42,7 +53,7 @@ FReply URewardEntryWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, 
 
 	if (auto* PC = GetOwningPlayer<APlayerControllerBase>())
 	{
-		RS_LOG_DEBUG(LogRSInteraction, Log, TEXT("%s: Try get reward %s"), *LOG_LINE_INFO, *ItemRowName.ToString());
+		RS_LOG_DEBUG(LogRSInteraction, Warning, TEXT("%s: Try get reward %s"), *LOG_LINE_INFO, *ItemRowName.ToString());
 		PC->Server_RequestReward(ItemRowName);
 	}
 

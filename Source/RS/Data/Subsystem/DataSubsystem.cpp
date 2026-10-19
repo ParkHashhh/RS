@@ -7,8 +7,8 @@
 #include "RS/Data/RSDataSettings.h"
 #include "Engine/AssetManager.h"
 #include "Engine/DataTable.h"
-#include "RS/LogCategory.h"
-#include "RS/RSTypes.h"
+#include "RS/Core/LogCategory.h"
+#include "RS/Core/RSTypes.h"
 #include "RS/Data/DataAsset/ItemInfoTableAsset.h"
 #include "RS/Data/DataAsset/MiscInfoTableAsset.h"
 #include "RS/Data/DataAsset/PlayerDefaultInfoTableAsset.h"
@@ -25,13 +25,11 @@ void UDataSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
+	// 테이블들을 동시에 비동기로 로드하면 언버전드 프로퍼티 스키마 계산이 겹치면서
+	// 클래스 레퍼런스 프로퍼티(MasterItemEffectClass) 쪽에서 간헐적으로 깨지는 현상이 있어
+	// 순차 체인으로 하나씩 로드한다.
+	RS_LOG_DEBUG(LogRSData, Log, TEXT("%s: Starting sequential table load chain"), *LOG_LINE_INFO);
 	LoadPlayerDefaultInfoTable();
-	LoadItemInfoTable();
-	LoadMiscInfoTable();
-	LoadStatDisplayInfoTable();
-	LoadZombieDefaultInfoTable();
-	LoadStageObjectiveInfoTable();
-	LoadStageInfoTable();
 }
 
 const FItemTableInfo* UDataSubsystem::GetItemTableInfo(FName Name) const
@@ -276,6 +274,7 @@ void UDataSubsystem::OnItemInfoTableLoaded()
 	if (!IsValid(DataAsset))
 	{
 		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to get DataAsset for ItemInfoTableAsset"), *LOG_LINE_INFO);
+		LoadMiscInfoTable();
 		return;
 	}
 
@@ -284,6 +283,7 @@ void UDataSubsystem::OnItemInfoTableLoaded()
 	{
 		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to load DataTable from DataAsset %s"), *LOG_LINE_INFO,
 		             *DataAsset->GetName());
+		LoadMiscInfoTable();
 		return;
 	}
 
@@ -307,6 +307,8 @@ void UDataSubsystem::OnItemInfoTableLoaded()
 	}
 
 	OnItemInfoLoadedDelegate.Broadcast();
+
+	LoadMiscInfoTable();
 }
 
 void UDataSubsystem::LoadMiscInfoTable()
@@ -338,6 +340,7 @@ void UDataSubsystem::OnMiscInfoTableLoaded()
 	if (!IsValid(DataAsset))
 	{
 		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to get DataAsset for MiscInfoTableAsset"), *LOG_LINE_INFO);
+		LoadStatDisplayInfoTable();
 		return;
 	}
 
@@ -346,6 +349,7 @@ void UDataSubsystem::OnMiscInfoTableLoaded()
 	{
 		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to load DataTable from DataAsset %s"), *LOG_LINE_INFO,
 		             *DataAsset->GetName());
+		LoadStatDisplayInfoTable();
 		return;
 	}
 
@@ -353,6 +357,8 @@ void UDataSubsystem::OnMiscInfoTableLoaded()
 	             *MiscInfoTable->GetName());
 
 	OnMiscInfoLoadedDelegate.Broadcast();
+
+	LoadStatDisplayInfoTable();
 }
 
 void UDataSubsystem::LoadPlayerDefaultInfoTable()
@@ -385,6 +391,7 @@ void UDataSubsystem::OnPlayerDefaultInfoTableLoaded()
 	{
 		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to get DataAsset for PlayerDefaultInfoTableAsset"),
 		             *LOG_LINE_INFO);
+		LoadItemInfoTable();
 		return;
 	}
 
@@ -393,6 +400,7 @@ void UDataSubsystem::OnPlayerDefaultInfoTableLoaded()
 	{
 		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to load DataTable from DataAsset %s"), *LOG_LINE_INFO,
 		             *DataAsset->GetName());
+		LoadItemInfoTable();
 		return;
 	}
 
@@ -400,6 +408,8 @@ void UDataSubsystem::OnPlayerDefaultInfoTableLoaded()
 	             *PlayerDefaultInfoTable->GetName());
 
 	OnPlayerDefaultInfoLoadedDelegate.Broadcast();
+
+	LoadItemInfoTable();
 }
 
 void UDataSubsystem::LoadStatDisplayInfoTable()
@@ -432,6 +442,7 @@ void UDataSubsystem::OnStatDisplayInfoTableLoaded()
 	{
 		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to get DataAsset for StatDisplayInfoTableAsset"),
 		             *LOG_LINE_INFO);
+		LoadZombieDefaultInfoTable();
 		return;
 	}
 
@@ -440,6 +451,7 @@ void UDataSubsystem::OnStatDisplayInfoTableLoaded()
 	{
 		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to load DataTable from DataAsset %s"), *LOG_LINE_INFO,
 		             *DataAsset->GetName());
+		LoadZombieDefaultInfoTable();
 		return;
 	}
 
@@ -448,39 +460,43 @@ void UDataSubsystem::OnStatDisplayInfoTableLoaded()
 
 
 	OnStatDisplayInfoLoadedDelegate.Broadcast();
+
+	LoadZombieDefaultInfoTable();
 }
 
 void UDataSubsystem::ValidateItemInfoTable(const UDataTable* Table) const
 {
-	TArray<FItemTableInfo*> Rows;
-	Table->GetAllRows(TEXT("ValidateItemInfoTable"), Rows);
-
-	for (const FItemTableInfo* Row : Rows)
+	// MasterItemEffectClass는 모든 아이템이 공통으로 쓰는 단일 클래스라 URSDataSettings로 옮겨졌음.
+	// 행별 검증이 아니라 그 하나의 클래스만 한 번 검증하면 된다.
+	const URSDataSettings* Settings = GetDefault<URSDataSettings>();
+	const TSubclassOf<UGameplayEffect> EffectClass = Settings
+		                                                  ? Settings->MasterItemEffectClass.LoadSynchronous()
+		                                                  : nullptr;
+	const UGameplayEffect* GE = EffectClass ? EffectClass->GetDefaultObject<UGameplayEffect>() : nullptr;
+	if (!ensureMsgf(GE, TEXT("%s: Invalid MasterItemEffectClass in RSDataSettings"), *LOG_LINE_INFO))
 	{
-		TSubclassOf<UGameplayEffect> EffectClass = Row->MasterItemEffectClass;
-		const UGameplayEffect* GE = EffectClass->GetDefaultObject<UGameplayEffect>();
-		ensureMsgf(GE, TEXT("%s: Invalid GameplayEffect class: %s"), *LOG_LINE_INFO, *EffectClass->GetName());
+		return;
+	}
 
-		for (auto& Modifier : GE->Modifiers)
+	for (auto& Modifier : GE->Modifiers)
+	{
+		if (Modifier.ModifierMagnitude.GetMagnitudeCalculationType() !=
+			EGameplayEffectMagnitudeCalculation::SetByCaller)
 		{
-			if (Modifier.ModifierMagnitude.GetMagnitudeCalculationType() !=
-				EGameplayEffectMagnitudeCalculation::SetByCaller)
-			{
-				RS_LOG_DEBUG(LogRSProperties, Error, TEXT("%s: %s must use SetByCaller"), *LOG_LINE_INFO,
-				             *EffectClass->GetName());
+			RS_LOG_DEBUG(LogRSProperties, Error, TEXT("%s: %s must use SetByCaller"), *LOG_LINE_INFO,
+			             *EffectClass->GetName());
 
-				ensureMsgf(false, TEXT("%s: %s must use SetByCaller"), *LOG_LINE_INFO, *EffectClass->GetName());
-			}
-			else if (!Modifier.ModifierMagnitude.GetSetByCallerFloat().DataTag.IsValid())
-			{
-				RS_LOG_DEBUG(LogRSProperties, Error, TEXT("%s: %s must have a valid DataTag"), *LOG_LINE_INFO,
-				             *EffectClass->GetName());
-
-				ensureMsgf(false, TEXT("%s: %s must have a valid DataTag"), *LOG_LINE_INFO, *EffectClass->GetName());
-			}
-
-			// 기타 검사 로직 추가.
+			ensureMsgf(false, TEXT("%s: %s must use SetByCaller"), *LOG_LINE_INFO, *EffectClass->GetName());
 		}
+		else if (!Modifier.ModifierMagnitude.GetSetByCallerFloat().DataTag.IsValid())
+		{
+			RS_LOG_DEBUG(LogRSProperties, Error, TEXT("%s: %s must have a valid DataTag"), *LOG_LINE_INFO,
+			             *EffectClass->GetName());
+
+			ensureMsgf(false, TEXT("%s: %s must have a valid DataTag"), *LOG_LINE_INFO, *EffectClass->GetName());
+		}
+
+		// 기타 검사 로직 추가.
 	}
 }
 
@@ -514,6 +530,7 @@ void UDataSubsystem::OnZombieDefaultInfoTableLoaded()
 	{
 		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to get DataAsset for ZombieDefaultInfoTableAsset"),
 		             *LOG_LINE_INFO);
+		LoadStageObjectiveInfoTable();
 		return;
 	}
 
@@ -522,6 +539,7 @@ void UDataSubsystem::OnZombieDefaultInfoTableLoaded()
 	{
 		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to load DataTable from DataAsset %s"), *LOG_LINE_INFO,
 		             *DataAsset->GetName());
+		LoadStageObjectiveInfoTable();
 		return;
 	}
 
@@ -529,6 +547,8 @@ void UDataSubsystem::OnZombieDefaultInfoTableLoaded()
 	             *ZombieDefaultInfoTable->GetName());
 
 	OnZombieDefaultInfoLoadedDelegate.Broadcast();
+
+	LoadStageObjectiveInfoTable();
 }
 
 void UDataSubsystem::LoadStageObjectiveInfoTable()
@@ -561,6 +581,7 @@ void UDataSubsystem::OnStageObjectiveInfoTableLoaded()
 	{
 		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to get DataAsset for StageObjectiveInfoTableAsset"),
 		             *LOG_LINE_INFO);
+		LoadStageInfoTable();
 		return;
 	}
 
@@ -569,6 +590,7 @@ void UDataSubsystem::OnStageObjectiveInfoTableLoaded()
 	{
 		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to load DataTable from DataAsset %s"), *LOG_LINE_INFO,
 		             *DataAsset->GetName());
+		LoadStageInfoTable();
 		return;
 	}
 
@@ -576,6 +598,8 @@ void UDataSubsystem::OnStageObjectiveInfoTableLoaded()
 	             *StageObjectiveInfoTable->GetName());
 
 	OnStageObjectiveInfoLoadedDelegate.Broadcast();
+
+	LoadStageInfoTable();
 }
 
 void UDataSubsystem::LoadStageInfoTable()
@@ -607,6 +631,8 @@ void UDataSubsystem::OnStageTableInfoLoaded()
 	if (!IsValid(DataAsset))
 	{
 		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to get DataAsset for StageInfoTableAsset"), *LOG_LINE_INFO);
+		RS_LOG_DEBUG(LogRSData, Warning, TEXT("%s: Sequential table load chain finished (StageInfoTable failed)"),
+		             *LOG_LINE_INFO);
 		return;
 	}
 
@@ -615,6 +641,8 @@ void UDataSubsystem::OnStageTableInfoLoaded()
 	{
 		RS_LOG_DEBUG(LogRSData, Error, TEXT("%s: Failed to load DataTable from DataAsset %s"), *LOG_LINE_INFO,
 		             *DataAsset->GetName());
+		RS_LOG_DEBUG(LogRSData, Warning, TEXT("%s: Sequential table load chain finished (StageInfoTable failed)"),
+		             *LOG_LINE_INFO);
 		return;
 	}
 
@@ -622,14 +650,16 @@ void UDataSubsystem::OnStageTableInfoLoaded()
 	             *StageInfoTable->GetName());
 
 	OnStageInfoLoadedDelegate.Broadcast();
+
+	RS_LOG_DEBUG(LogRSData, Log, TEXT("%s: Sequential table load chain finished (all 7 tables)"), *LOG_LINE_INFO);
 }
 
-TArray<FName> UDataSubsystem::GetThreeRandomItmes() const
+TArray<FName> UDataSubsystem::GetThreeRandomItmes(int32 CurrentStage) const
 {
-	return GetRandomItems(3);
+	return GetRandomItems(3, CurrentStage);
 }
 
-TArray<FName> UDataSubsystem::GetRandomItems(int32 Count) const
+TArray<FName> UDataSubsystem::GetRandomItems(int32 Count, int32 CurrentStage) const
 {
 	TArray<FName> Result;
 
@@ -645,22 +675,23 @@ TArray<FName> UDataSubsystem::GetRandomItems(int32 Count) const
 	};
 
 	TArray<FCandidate> Candidates;
+	float FilteredTotalWeight = 0.0f;
 
 	for (const auto& [Key, Value] : ItemInfoTable->GetRowMap())
 	{
 		const auto* Info = reinterpret_cast<FItemTableInfo*>(Value);
-		if (Info && Info->Weight > 0.0f)
+		if (Info && Info->Weight > 0.0f && Info->MinDropStage <= CurrentStage)
 		{
 			Candidates.Emplace(Key, Info);
+			FilteredTotalWeight += Info->Weight;
 		}
 	}
 
 	Count = FMath::Min(Count, Candidates.Num());
 
-	float TempTotalWeight = TotalWeight;
 	while (Result.Num() < Count && !Candidates.IsEmpty())
 	{
-		const float Dice = FMath::FRandRange(0.0f, TotalWeight);
+		const float Dice = FMath::FRandRange(0.0f, FilteredTotalWeight);
 
 		float CurrentWeight = 0.0f;
 		for (int32 i = 0; i < Candidates.Num(); ++i)
@@ -671,7 +702,7 @@ TArray<FName> UDataSubsystem::GetRandomItems(int32 Count) const
 			{
 				Result.Emplace(RowName);
 				Candidates.RemoveAtSwap(i);
-				TempTotalWeight -= Info->Weight;
+				FilteredTotalWeight -= Info->Weight;
 				break;
 			}
 		}

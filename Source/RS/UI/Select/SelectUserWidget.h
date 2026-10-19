@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "../RSUserWidget.h"
+#include "RS/UI/Core/RSUserWidget.h"
 #include "SelectSlotWidget.h"
 #include "SelectUserWidget.generated.h"
 

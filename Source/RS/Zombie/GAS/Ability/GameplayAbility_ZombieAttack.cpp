@@ -3,7 +3,7 @@
 
 #include "GameplayAbility_ZombieAttack.h"
 #include "AbilitySystemBlueprintLibrary.h"
-#include "RS/LogCategory.h"
+#include "RS/Core/LogCategory.h"
 #include "RS/GAS/BaseAttributeSet.h"
 #include "RS/Zombie/ZombieBase.h"
 

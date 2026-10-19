@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/IUserObjectListEntry.h"
-#include "RS/UI/IconWidgetBase.h"
+#include "RS/UI/Core/IconWidgetBase.h"
 #include "InventoryPopupSlotWidget.generated.h"
 
 class UStageResultItemSlotObject;

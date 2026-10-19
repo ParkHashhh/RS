@@ -3,8 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "RS/UI/RSUserWidget.h"
-#include "RS/RSTypes.h"
+#include "RS/UI/Core/RSUserWidget.h"
+#include "RS/Core/RSTypes.h"
 #include "PartyHPBarWidget.generated.h"
 
 class UTextBlock;
@@ -66,6 +66,8 @@ public:
 		PartyMember = Player;
 
 		ListOrder = Order;
+
+		//플레이어가 세팅되었다면 정보를 변경해준다.
+		SetPartyMemberInfo();
 	}
-	
 };

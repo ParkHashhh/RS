@@ -7,7 +7,7 @@
 #include "RS/Zombie/ZombieBase.h"
 #include "Navigation/PathFollowingComponent.h"
 #include "Components/CapsuleComponent.h"
-#include "RS/LogCategory.h"
+#include "RS/Core/LogCategory.h"
 
 
 UBTTask_SpawnMove::UBTTask_SpawnMove()

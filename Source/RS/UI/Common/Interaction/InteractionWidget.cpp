@@ -5,7 +5,7 @@
 
 #include "Components/Image.h"
 #include "PaperSprite.h"
-#include "RS/RSConstants.h"
+#include "RS/Core/RSConstants.h"
 
 UInteractionWidget::UInteractionWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {

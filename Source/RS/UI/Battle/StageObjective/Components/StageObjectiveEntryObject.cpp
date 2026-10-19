@@ -3,8 +3,8 @@
 
 #include "StageObjectiveEntryObject.h"
 
-#include "RS/LogCategory.h"
-#include "RS/RSTypes.h"
+#include "RS/Core/LogCategory.h"
+#include "RS/Core/RSTypes.h"
 
 void UStageObjectiveEntryObject::Initialize(const FStageObjective& Objective, const UDataSubsystem* DataSubsystem,
                                             int32 InIdx)

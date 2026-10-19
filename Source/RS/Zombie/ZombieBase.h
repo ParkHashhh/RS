@@ -3,12 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "RS/RSPawn.h"
-#include "../RSConstants.h"
-#include "RS/RSTypes.h"
+#include "RS/Zombie/RSPawn.h"
+#include "RS/Core/RSConstants.h"
+#include "RS/Core/RSTypes.h"
 #include "GenericTeamAgentInterface.h"
 #include "AbilitySystemInterface.h"
-#include "RS/Utils/KillableInterface.h"
+#include "RS/Gameplay/Interfaces/KillableInterface.h"
 #include "ZombieBase.generated.h"
 
 class UCapsuleComponent;
@@ -247,6 +247,7 @@ public:
 	virtual void SpawnZombieSkillParticle();
 	virtual void PlayZombieRoarSound();
 
+
 public:
 	UFUNCTION()
 	void OnRep_ChangeAnimType();
@@ -256,6 +257,13 @@ public:
 
 	UFUNCTION()
 	void OnRep_ChangeJumpMontageSection();
+
+	//컨트롤러에서 좀비 점프가 감지되면 호출될 콜리전 제어 함수
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_ChangeBodyCollision_JumpStart();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_ChangeBodyCollision_JumpEnd();
 
 protected:
 	UFUNCTION()

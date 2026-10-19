@@ -4,13 +4,13 @@
 #include "Grenade.h"
 #include "Components/SphereComponent.h"
 #include "NiagaraComponent.h"
-#include "NiagaraFunctionLibrary.h"       
+#include "NiagaraFunctionLibrary.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "RS/Zombie/ZombieBase.h"
-#include "RS/Player/PlayerCharacterBase.h"
+#include "RS/Player/Character/PlayerCharacterBase.h"
 #include "Kismet/KismetSystemLibrary.h"
-#include "Kismet/GameplayStatics.h"       
-#include "RS/LogCategory.h"
+#include "Kismet/GameplayStatics.h"
+#include "RS/Core/LogCategory.h"
 
 
 // Sets default values
@@ -38,7 +38,7 @@ AGrenade::AGrenade()
 	ProjectileMovement->bShouldBounce = true;
 	ProjectileMovement->Bounciness = 0.3f;
 	ProjectileMovement->ProjectileGravityScale = 1.0f;
-	bReplicates = true; 
+	bReplicates = true;
 	SetReplicateMovement(true);
 
 }
@@ -61,17 +61,13 @@ void AGrenade::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-void AGrenade::Explode()	
+void AGrenade::Explode()
 {
-	
-	if (IsValid(Niagara))
+	if (!HasAuthority())
 	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), Niagara, GetActorLocation());
+		return;
 	}
-	if (IsValid(Sound))
-	{
-		UGameplayStatics::SpawnSoundAtLocation(GetWorld(), Sound, GetActorLocation());
-	}
+
 	// 주변에 Apply Damage 필요
 	const float ExplosionRadius = 300.f;
 
@@ -88,11 +84,24 @@ void AGrenade::Explode()
 		APlayerCharacterBase* Player = Cast<APlayerCharacterBase>(GetOwner());
 		if (IsValid(Player))
 		{
-			Player->Server_ApplyDamage(Actor, FHitResult(), 100.f);
+			Player->Server_ApplyDamage(Actor, FHitResult(), 40.f);
 		}
 	}
 
+	Multicast_PlayExplosionEffects();
 	Destroy();
+}
+
+void AGrenade::Multicast_PlayExplosionEffects_Implementation()
+{
+	if (IsValid(Niagara))
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), Niagara, GetActorLocation());
+	}
+	if (IsValid(Sound))
+	{
+		UGameplayStatics::SpawnSoundAtLocation(GetWorld(), Sound, GetActorLocation());
+	}
 }
 
 void AGrenade::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)

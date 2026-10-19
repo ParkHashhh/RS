@@ -3,11 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "RS/UI/RSUserWidget.h"
+#include "RS/UI/Core/RSUserWidget.h"
 #include "EndPopUpWidget.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class RS_API UEndPopUpWidget : public URSUserWidget

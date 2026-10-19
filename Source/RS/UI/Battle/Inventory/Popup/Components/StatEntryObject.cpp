@@ -3,7 +3,7 @@
 
 #include "StatEntryObject.h"
 
-#include "RS/LogCategory.h"
+#include "RS/Core/LogCategory.h"
 
 void UStatEntryObject::Initialize(const FText& InStatName, const FText& InStatDescription, UPaperSprite* InIcon)
 {

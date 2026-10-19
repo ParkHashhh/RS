@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "RS/RSTypes.h"
+#include "RS/Core/RSTypes.h"
 #include "UObject/Object.h"
 #include "StageResultStatEntryObject.generated.h"
 

@@ -3,7 +3,7 @@
 
 #include "StageResultItemSlotObject.h"
 
-#include "RS/RSTypes.h"
+#include "RS/Core/RSTypes.h"
 
 void UStageResultItemSlotObject::Initialize(const FItemStorageInfo& InItem)
 {

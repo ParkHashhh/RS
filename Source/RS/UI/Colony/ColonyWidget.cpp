@@ -3,9 +3,9 @@
 
 #include "ColonyWidget.h"
 
-#include "RS/LogCategory.h"
-#include "RS/GameMode/RSGameInstance.h"
-#include "RS/Player/ColonyPlayerController.h"
+#include "RS/Core/LogCategory.h"
+#include "RS/GameFramework/RSGameInstance.h"
+#include "RS/Player/Controller/ColonyPlayerController.h"
 
 UColonyWidget::UColonyWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {

@@ -8,9 +8,9 @@
 #include "RS/Zombie/ZombieBase.h"
 #include "Components/CapsuleComponent.h"
 #include "RS/GAS/BaseAttributeSet.h"
-#include "RS/RSTypes.h"
+#include "RS/Core/RSTypes.h"
 #include "NavigationSystem.h"
-#include "RS/Player/PlayerCharacterBase.h"
+#include "RS/Player/Character/PlayerCharacterBase.h"
 
 UBTTask_TraceBoss::UBTTask_TraceBoss() :
 	Super()

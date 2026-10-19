@@ -6,7 +6,7 @@
 #include "GameFrameWork/ProjectileMovementComponent.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemBlueprintLibrary.h"
-#include "RS/Player/PlayerCharacterBase.h"
+#include "RS/Player/Character/PlayerCharacterBase.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Kismet/GameplayStatics.h"
@@ -16,6 +16,10 @@ AZombieProjectileBase::AZombieProjectileBase()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+
+	// 좀비 AI(서버 권한)에서만 스폰되는 액터라서 명시적으로 복제를 켜줘야 클라이언트에도 보임
+	bReplicates = true;
+	SetReplicateMovement(true);
 
 	Body = CreateDefaultSubobject<UBoxComponent>(TEXT("Body"));
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
@@ -64,13 +68,14 @@ void AZombieProjectileBase::ProjectileStop(const FHitResult& ImpactResult)
 	if (!HasAuthority())
 	{
 		SpawnGroundHitParticle(ImpactResult);
-		Destroy();
 		return;
 	}
 
 	AActor* HitActor = ImpactResult.GetActor();
 	if (!HitActor)
 	{
+		//예외상황에서의 무조건적인 삭제를 보장한다.
+		Destroy();
 		return;
 	}
 

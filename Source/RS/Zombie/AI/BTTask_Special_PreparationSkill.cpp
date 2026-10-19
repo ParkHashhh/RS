@@ -5,13 +5,13 @@
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "../ZombieBase.h"
-#include "RS/Zombie/ZombieSpecial.h"
+#include "RS/Zombie/Special/ZombieSpecial.h"
 #include "Components/CapsuleComponent.h"
 #include "../../GAS/BaseAttributeSet.h"
 #include "Kismet/KismetMathLibrary.h"
-#include "RS/LogCategory.h"
+#include "RS/Core/LogCategory.h"
 #include "RS/Zombie/Animation/ZombieAnimInstance.h"
-#include "RS/Player/PlayerCharacterBase.h"
+#include "RS/Player/Character/PlayerCharacterBase.h"
 
 
 UBTTask_Special_PreparationSkill::UBTTask_Special_PreparationSkill()

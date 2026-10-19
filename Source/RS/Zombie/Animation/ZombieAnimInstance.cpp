@@ -3,12 +3,12 @@
 
 #include "ZombieAnimInstance.h"
 #include "RS/Zombie/ZombieBase.h"
-#include "RS/Zombie/ZombieSpecial.h"
-#include "RS/Zombie/ZombieBoss.h"
+#include "RS/Zombie/Special/ZombieSpecial.h"
+#include "RS/Zombie/Boss/ZombieBoss.h"
 #include "RS/Zombie/AI/ZombieAIController.h"
 #include "AIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
-#include "RS/LogCategory.h"
+#include "RS/Core/LogCategory.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Navigation/PathFollowingComponent.h"
@@ -83,6 +83,11 @@ bool UZombieAnimInstance::ChechRoarAnimValid()
 void UZombieAnimInstance::FinishJump()
 {
 	//점프 몽타주가 재생중인지 확인한다.
+	if (AnimPresetArray.IsEmpty() || !AnimPresetArray.IsValidIndex(AnimIndex_Backup))
+	{
+		return;
+	}
+
 	TObjectPtr<UAnimMontage>* FindResult = AnimPresetArray[AnimIndex_Backup].CommonMontageMap.Find(TEXT("Jump"));
 	if (FindResult)
 	{
@@ -418,5 +423,31 @@ void UZombieAnimInstance::AnimNotify_SpawnStone()
 	if (IsValid(Zombie) && Zombie->HasAuthority())
 	{
 		Zombie->SpawnStone();
+	}
+}
+
+void UZombieAnimInstance::AnimNotify_JumpStart()
+{
+	TObjectPtr<AZombieBase> Zombie = Cast<AZombieBase>(TryGetPawnOwner());
+	if (IsValid(Zombie) && Zombie->HasAuthority())
+	{
+		AZombieAIController* Ctrl = Zombie->GetController<AZombieAIController>();
+		if (IsValid(Ctrl))
+		{
+			Ctrl->MoveStart_JS();
+		}
+	}
+}
+
+void UZombieAnimInstance::AnimNotify_JumpEnd()
+{
+	TObjectPtr<AZombieBase> Zombie = Cast<AZombieBase>(TryGetPawnOwner());
+	if (IsValid(Zombie) && Zombie->HasAuthority())
+	{
+		AZombieAIController* Ctrl = Zombie->GetController<AZombieAIController>();
+		if (IsValid(Ctrl))
+		{
+			Ctrl->MoveStart_JE();
+		}
 	}
 }

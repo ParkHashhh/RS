@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
+#include "RS/Core/RSTypes.h"
 #include "RewardEntryObject.generated.h"
 
 class UDataSubsystem;
@@ -27,6 +28,9 @@ public:
 
 	UPROPERTY(Transient)
 	FText ItemName;
+
+	UPROPERTY(Transient)
+	EGrade Grade{EGrade::Common};
 
 	UPROPERTY()
 	TArray<TObjectPtr<UStatEntryObject>> StatEntryObjects;

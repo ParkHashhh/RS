@@ -6,12 +6,14 @@
 #include "AbilitySystemComponent.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
+#include "TimerManager.h"
 #include "GameFramework/Actor.h"
 #include "Net/UnrealNetwork.h"
-#include "RS/LogCategory.h"
-#include "RS/RSTypes.h"
-#include "RS/Data/Subsystem/DataStorageSubsystem.h"
+#include "RS/Core/LogCategory.h"
+#include "RS/Core/RSTypes.h"
+#include "RS/GameFramework/Subsystem/DataStorageSubsystem.h"
 #include "RS/Data/Subsystem/DataSubsystem.h"
+#include "RS/Data/RSDataSettings.h"
 #include "RS/Player/RSPlayerState.h"
 
 void FInventoryEntry::PreReplicatedRemove(const FInventoryList& InArraySerializer)
@@ -214,22 +216,35 @@ UItemInstance* UInventoryComponent::AddItem(FName ItemRowName, int32 Count)
 {
 	check(GetOwner()->HasAuthority());
 
-	if (const UGameInstance* GI = GetOwner()->GetGameInstance())
+	const UGameInstance* GI = GetOwner()->GetGameInstance();
+	if (!GI)
 	{
-		if (const auto* DataSubsystem = GI->GetSubsystem<UDataSubsystem>())
-		{
-			if (const UDataTable* ItemTable = DataSubsystem->GetItemInfoTable())
-			{
-				FDataTableRowHandle RowHandle;
-				RowHandle.DataTable = ItemTable;
-				RowHandle.RowName = ItemRowName;
-
-				return AddItem(RowHandle, Count);
-			}
-		}
+		RS_LOG_DEBUG(LogRSInventory, Error, TEXT("%s: GameInstance is nullptr, Row: %s"),
+			*LOG_LINE_INFO, *ItemRowName.ToString());
+		return nullptr;
 	}
 
-	return nullptr;
+	const auto* DataSubsystem = GI->GetSubsystem<UDataSubsystem>();
+	if (!DataSubsystem)
+	{
+		RS_LOG_DEBUG(LogRSInventory, Error, TEXT("%s: DataSubsystem is nullptr, Row: %s"),
+			*LOG_LINE_INFO, *ItemRowName.ToString());
+		return nullptr;
+	}
+
+	const UDataTable* ItemTable = DataSubsystem->GetItemInfoTable();
+	if (!ItemTable)
+	{
+		RS_LOG_DEBUG(LogRSInventory, Error, TEXT("%s: ItemInfoTable is nullptr, Row: %s"),
+			*LOG_LINE_INFO, *ItemRowName.ToString());
+		return nullptr;
+	}
+
+	FDataTableRowHandle RowHandle;
+	RowHandle.DataTable = ItemTable;
+	RowHandle.RowName = ItemRowName;
+
+	return AddItem(RowHandle, Count);
 }
 
 UItemInstance* UInventoryComponent::AddItem(const FDataTableRowHandle& RowHandle, int32 Count)
@@ -256,6 +271,19 @@ UItemInstance* UInventoryComponent::AddItem(const FDataTableRowHandle& RowHandle
 
 		OnItemChanged(ExistingItem);
 
+		RS_LOG_DEBUG(LogRSInventory, Warning,
+			TEXT("%s: AddItem STACKED, Row: %s, AddedCount: %d, NewTotalCount: %d, GUID: %s"),
+			*LOG_LINE_INFO, *RowHandle.RowName.ToString(), Count, ExistingItem->GetItemCount(),
+			*ExistingItem->GetItemGUID().ToString());
+
+		// Entry.Item 서브오브젝트가 영영 replicate 안 되는 클라는 개수도 fallback RPC로만 받을 수 있음.
+		// 이 RPC를 새 아이템 생성 때만 보내면, 스택 증가분(2개째부터)이 fallback 데이터에 반영이 안 돼서
+		// 클라 UI에 계속 최초 개수(1)만 표시되다가 다음 레벨 전환(인벤토리 재구성) 때야 따라잡음.
+		if (const int32* EntryIndex = InventoryList.GuidIndexMap.Find(ExistingItem->GetItemGUID()))
+		{
+			Client_NotifyItemAdded(*EntryIndex, RowHandle.RowName, ExistingItem->GetItemCount());
+		}
+
 		// 이후 게임플레이 이펙트 + 브로드캐스트
 
 		return ExistingItem;
@@ -267,9 +295,21 @@ UItemInstance* UInventoryComponent::AddItem(const FDataTableRowHandle& RowHandle
 		return nullptr;
 	}
 
+	// 서브오브젝트를 먼저 리플리케이션 등록해야 함 - 배열 엔트리(참조)가 먼저 나가버리면
+	// 클라가 "가리키는 대상이 아직 없는" 레퍼런스를 받아서 Entry.Item이 영구적으로 null로 남을 수 있음
+	AddReplicatedSubObject(NewItem);
+	const int32 NewEntryIndex = InventoryList.Entries.Num();
 	InventoryList.AddEntry(NewItem);
-
 	OnItemAdded(NewItem);
+
+	// Entry.Item 서브오브젝트 참조가 리플리케이션에서 영구 유실될 수 있어서,
+	// RowName/Count는 순수 데이터로 별도 RPC를 통해 백업 경로로 보냄
+	Client_NotifyItemAdded(NewEntryIndex, RowHandle.RowName, Count);
+
+	RS_LOG_DEBUG(LogRSInventory, Warning,
+		TEXT("%s: AddItem NEW, Row: %s, Count: %d, GUID: %s, DataTable: %s"),
+		*LOG_LINE_INFO, *RowHandle.RowName.ToString(), Count, *NewItem->GetItemGUID().ToString(),
+		*GetNameSafe(RowHandle.DataTable));
 
 	// 이후 게임플레이 이펙트 + 브로드캐스트
 
@@ -312,6 +352,7 @@ bool UInventoryComponent::RemoveItem(const FDataTableRowHandle& RowHandle, int32
 	const bool bRemoved = InventoryList.RemoveEntry(Item->GetItemGUID());
 	if (bRemoved)
 	{
+		RemoveReplicatedSubObject(Item);
 		OnItemRemoved(Item);
 	}
 
@@ -402,17 +443,73 @@ void UInventoryComponent::HandleEntryAdded(const FInventoryEntry& Entry)
 {
 	InventoryList.RebuildIndexMap();
 
+	RS_LOG_DEBUG(LogRSInventory, Warning, TEXT("%s: HandleEntryAdded, HasAuthority: %d, Item: %s"),
+		*LOG_LINE_INFO, GetOwner()->HasAuthority(), *GetNameSafe(Entry.Item));
+
 	if (!Entry.Item)
 	{
+		// 배열 엔트리는 왔는데 그 안의 서브오브젝트 참조가 아직 안 풀린 경우.
+		// PostReplicatedAdd는 엔트리당 한 번만 불려서 여기서 그냥 포기하면 UI가 영원히 갱신 안 됨 - 재시도해야 함
+		const int32 Index = &Entry - InventoryList.Entries.GetData();
+		RetryHandleEntryAddedByIndex(Index, 0);
 		return;
 	}
 
 	OnItemAdded(Entry.Item);
 }
 
+void UInventoryComponent::RetryHandleEntryAddedByIndex(int32 EntryIndex, int32 RetryCount)
+{
+	constexpr int32 MaxRetryCount = 50;
+	if (!InventoryList.Entries.IsValidIndex(EntryIndex))
+	{
+		return;
+	}
+
+	UItemInstance* Item = InventoryList.Entries[EntryIndex].Item;
+	if (Item)
+	{
+		RS_LOG_DEBUG(LogRSInventory, Warning,
+			TEXT("%s: RetryHandleEntryAddedByIndex resolved after %d retries, Item: %s"),
+			*LOG_LINE_INFO, RetryCount, *GetNameSafe(Item));
+		OnItemAdded(Item);
+		return;
+	}
+
+	if (RetryCount >= MaxRetryCount)
+	{
+		RS_LOG_DEBUG(LogRSInventory, Error,
+			TEXT("%s: RetryHandleEntryAddedByIndex GAVE UP after %d retries, EntryIndex: %d - subobject never arrived"),
+			*LOG_LINE_INFO, RetryCount, EntryIndex);
+		return;
+	}
+
+	FTimerHandle Handle;
+	GetWorld()->GetTimerManager().SetTimer(Handle, FTimerDelegate::CreateWeakLambda(this,
+		[this, EntryIndex, RetryCount]()
+		{
+			RetryHandleEntryAddedByIndex(EntryIndex, RetryCount + 1);
+		}), 0.1f, false);
+}
+
+void UInventoryComponent::Client_NotifyItemAdded_Implementation(int32 EntryIndex, FName RowName, int32 Count)
+{
+	RS_LOG_DEBUG(LogRSInventory, Log, TEXT("%s: Client_NotifyItemAdded, EntryIndex: %d, Row: %s, Count: %d"),
+		*LOG_LINE_INFO, EntryIndex, *RowName.ToString(), Count);
+
+	FItemStorageInfo Info;
+	Info.RowName = RowName;
+	Info.Count = Count;
+	FallbackItemDataByIndex.Add(EntryIndex, Info);
+	OnInventoryChangedDelegate.Broadcast();
+}
+
 void UInventoryComponent::HandleEntryChanged(const FInventoryEntry& Entry)
 {
 	InventoryList.RebuildIndexMap();
+
+	RS_LOG_DEBUG(LogRSInventory, Warning, TEXT("%s: HandleEntryChanged, HasAuthority: %d, Item: %s"),
+		*LOG_LINE_INFO, GetOwner()->HasAuthority(), *GetNameSafe(Entry.Item));
 
 	if (!Entry.Item)
 	{
@@ -453,32 +550,57 @@ TArray<FItemStorageInfo> UInventoryComponent::GetNewAchivedItems() const
 	TArray<FItemStorageInfo> PrePreviousItems;
 	if (!DataStorageSubsystem->TryGetPrePreviousInventoryStorage(PS, PrePreviousItems))
 	{
+		RS_LOG_DEBUG(LogRSInventory, Error, TEXT("%s: TryGetPrePreviousInventoryStorage FAILED"), *LOG_LINE_INFO);
 		return Result;
 	}
 
+	RS_LOG_DEBUG(LogRSInventory, Warning, TEXT("%s: PrePreviousItems.Num(): %d, GetEntries().Num(): %d"),
+		*LOG_LINE_INFO, PrePreviousItems.Num(), GetEntries().Num());
+
+	int32 EntryIdx = 0;
 	for (const FInventoryEntry& Entry : GetEntries())
 	{
-		if (UItemInstance* Item = Entry.Item)
+		FName RowName;
+		int32 CurrentCount = 0;
+
+		if (const UItemInstance* Item = Entry.Item)
 		{
-			if (FItemStorageInfo* Found = PrePreviousItems.FindByPredicate(
-				[&Item](const FItemStorageInfo& Prev)
-				{
-					return !Prev.RowName.IsNone() && Item && Item->GetItemRowHandle().RowName == Prev.RowName;
-				}))
+			RowName = Item->GetItemRowHandle().RowName;
+			CurrentCount = Item->GetItemCount();
+		}
+		else
+		{
+			// Entry.Item 서브오브젝트 참조가 영구 유실된 경우, RPC로 받아둔 RowName/Count 백업 데이터로 대체
+			FItemStorageInfo FallbackInfo;
+			if (GetFallbackItemData(EntryIdx, FallbackInfo))
 			{
-				int32 AchiveCount = Item->GetItemCount() - Found->Count;
-				if (AchiveCount > 0)
-				{
-					Result.Emplace(Found->RowName, AchiveCount);
-				}
+				RowName = FallbackInfo.RowName;
+				CurrentCount = FallbackInfo.Count;
 			}
-			else
+		}
+
+		++EntryIdx;
+
+		if (RowName.IsNone() || CurrentCount <= 0)
+		{
+			continue;
+		}
+
+		if (FItemStorageInfo* Found = PrePreviousItems.FindByPredicate(
+			[&RowName](const FItemStorageInfo& Prev)
 			{
-				if (Item->GetItemCount() > 0)
-				{
-					Result.Emplace(Item->GetItemRowHandle().RowName, Item->GetItemCount());
-				}
+				return !Prev.RowName.IsNone() && Prev.RowName == RowName;
+			}))
+		{
+			int32 AchiveCount = CurrentCount - Found->Count;
+			if (AchiveCount > 0)
+			{
+				Result.Emplace(Found->RowName, AchiveCount);
 			}
+		}
+		else
+		{
+			Result.Emplace(RowName, CurrentCount);
 		}
 	}
 
@@ -497,6 +619,19 @@ void UInventoryComponent::ApplyGameplayEffect(UItemInstance* Item)
 	UAbilitySystemComponent* ASC = GetASC();
 	if (!ASC)
 	{
+		// 레벨 전환 직후처럼 폰/ASC가 아직 스폰 전일 수 있음(리모트 클라는 RestartPlayer가 RPC 왕복 후에 옴) - 다음 틱에 재시도
+		RS_LOG_DEBUG(LogRSInventory, Warning, TEXT("%s: ASC not ready yet, retry next tick, Item: %s"),
+			*LOG_LINE_INFO, *GetNameSafe(Item));
+
+		TWeakObjectPtr<UItemInstance> WeakItem(Item);
+		GetWorld()->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this,
+			[this, WeakItem]()
+			{
+				if (WeakItem.IsValid())
+				{
+					ApplyGameplayEffect(WeakItem.Get());
+				}
+			}));
 		return;
 	}
 
@@ -507,7 +642,11 @@ void UInventoryComponent::ApplyGameplayEffect(UItemInstance* Item)
 		return;
 	}
 
-	if (!ItemInfo->MasterItemEffectClass)
+	const URSDataSettings* Settings = GetDefault<URSDataSettings>();
+	const TSubclassOf<UGameplayEffect> MasterItemEffectClass = Settings
+		                                                            ? Settings->MasterItemEffectClass.LoadSynchronous()
+		                                                            : nullptr;
+	if (!MasterItemEffectClass)
 	{
 		return;
 	}
@@ -515,7 +654,7 @@ void UInventoryComponent::ApplyGameplayEffect(UItemInstance* Item)
 	FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
 	EffectContext.AddSourceObject(Item);
 
-	FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(ItemInfo->MasterItemEffectClass, 1.0f, EffectContext);
+	FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(MasterItemEffectClass, 1.0f, EffectContext);
 	if (!SpecHandle.IsValid())
 	{
 		return;

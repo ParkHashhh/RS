@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "RS/UI/RSUserWidget.h"
+#include "RS/UI/Core/RSUserWidget.h"
 #include "InventoryPopupWidget.generated.h"
 
 class UGameplayEffect;
@@ -32,6 +32,9 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UInventoryComponent> InventoryComponent;
+
+	int32 InitRetryCount = 0;
+	int32 RefreshRetryCount = 0;
 
 #pragma region ItemSlot
 
@@ -77,6 +80,7 @@ private:
 	void AddStat(const FGameplayTag& StatTag, const FText& StatName, const FText& StatDescription);
 
 	void OnGameplayReadyChanged(bool bGameplayReady);
+	void RetryInit();
 
 	float GetAttributeValueWithTag(const FGameplayTag& TargetTag) const;
 };

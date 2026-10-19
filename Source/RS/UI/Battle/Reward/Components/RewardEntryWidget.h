@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/IUserObjectListEntry.h"
-#include "RS/UI/RSUserWidget.h"
+#include "RS/UI/Core/RSUserWidget.h"
 #include "RewardEntryWidget.generated.h"
 
 class URewardPopupWidget;
@@ -39,6 +39,9 @@ class RS_API URewardEntryWidget : public URSUserWidget, public IUserObjectListEn
 
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UImage> IconImage;
+
+	UPROPERTY(meta=(BindWidget))
+	TObjectPtr<UImage> IconBorderImage;
 
 	UPROPERTY(meta=(BindWidget))
 	TObjectPtr<UTextBlock> NameTextBlock;

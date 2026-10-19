@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "RS/UI/RSUserWidget.h"
+#include "RS/UI/Core/RSUserWidget.h"
 #include "InventoryWidget.generated.h"
 
 class UInventorySlotViewModel;

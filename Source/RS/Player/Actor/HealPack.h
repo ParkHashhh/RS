@@ -45,7 +45,10 @@ protected:
 	FTimerHandle HealingTimerHandle;
 
 	int32 HealingTicks = 0;
-	const int32 MaxHealingTicks = 6;
+	const int32 MaxHealingTicks = 5;
+
+	// 틱마다 대상 MaxHP의 5%씩 회복 (5틱 = 총 25%)
+	const float HealPercentPerTick = 0.05f;
 
 
 	bool bExploded = false;

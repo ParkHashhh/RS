@@ -3,8 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "RS/RSTypes.h"
-#include "RS/UI/RSUserWidget.h"
+#include "RS/Core/RSTypes.h"
+#include "RS/UI/Core/RSUserWidget.h"
 #include "StageResultWidget.generated.h"
 
 class UStageResultItemSlotObject;
@@ -26,9 +26,6 @@ class RS_API UStageResultWidget : public URSUserWidget
 	GENERATED_BODY()
 
 private:
-	UPROPERTY(Transient)
-	TObjectPtr<UInventoryComponent> InventoryComponent;
-
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UStageResultStatEntryWidget> StatWidgetClass;
 
@@ -50,7 +47,7 @@ private:
 	UPROPERTY()
 	TArray<TObjectPtr<UStageResultItemSlotObject>> ItemSlotObjects;
 
-
+	bool bAlreadyInitialized = false;
 
 public:
 	void Init(UInventoryComponent* InInventoryComponent);
@@ -60,7 +57,7 @@ protected:
 	virtual void NativeOnInitialized() override;
 
 private:
-	
+
 	UFUNCTION()
 	void OnConfirmClicked();
 	void OnGameplayReadyChanged(bool bIsGameplayReady);

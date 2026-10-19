@@ -5,10 +5,10 @@
 
 #include "Components/ProgressBar.h"
 #include "Components/TextBlock.h"
-#include "RS/LogCategory.h"
-#include "RS/RSConstants.h"
-#include "RS/Player/PlayerCharacterBase.h"
-#include "RS/Player/Attribute/PlayerAttributeSet.h"
+#include "RS/Core/LogCategory.h"
+#include "RS/Core/RSConstants.h"
+#include "RS/Player/Character/PlayerCharacterBase.h"
+#include "RS/Player/GAS/Attribute/PlayerAttributeSet.h"
 
 void UAmmoWidget::NativeOnInitialized()
 {

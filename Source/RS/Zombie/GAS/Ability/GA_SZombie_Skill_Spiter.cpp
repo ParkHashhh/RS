@@ -5,8 +5,8 @@
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "RS/Zombie/GAS/ZombieStandardAttributeSet.h"
-#include "RS/LogCategory.h"
-#include "RS/Zombie/ZombieSpecial.h"
+#include "RS/Core/LogCategory.h"
+#include "RS/Zombie/Special/ZombieSpecial.h"
 #include "RS/Zombie/GAS/ZombieStandardAttributeSet.h"
 
 

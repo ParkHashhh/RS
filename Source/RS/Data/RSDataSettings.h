@@ -13,6 +13,7 @@ class UStatDisplayInfoTableAsset;
 class UZombieDefaultInfoTableAsset;
 class UStageObjectiveInfoTableAsset;
 class UStageInfoTableAsset;
+class UGameplayEffect;
 
 /**
  * 프로젝트 전체에서 사용되는 데이터 관련 설정입니다.
@@ -51,4 +52,10 @@ public:
 
 	UPROPERTY(Config, EditAnywhere, Category = "Data")
 	TSoftObjectPtr<UStageInfoTableAsset> StageInfoTableAsset;
+
+	// 모든 장착 아이템이 공통으로 사용하는 마스터 GE 클래스.
+	// 예전엔 itemtable.csv의 행마다 저장했는데, 전 행이 항상 동일한 값을 써서
+	// DataTable 언버전드 프로퍼티 스키마 계산에서 간헐적으로 깨지는 문제가 있어 여기로 옮김.
+	UPROPERTY(Config, EditAnywhere, Category = "Data")
+	TSoftClassPtr<UGameplayEffect> MasterItemEffectClass;
 };

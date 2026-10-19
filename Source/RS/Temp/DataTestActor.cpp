@@ -3,8 +3,8 @@
 
 #include "DataTestActor.h"
 
-#include "RS/LogCategory.h"
-#include "RS/RSTypes.h"
+#include "RS/Core/LogCategory.h"
+#include "RS/Core/RSTypes.h"
 #include "RS/Data/Subsystem/DataSubsystem.h"
 
 

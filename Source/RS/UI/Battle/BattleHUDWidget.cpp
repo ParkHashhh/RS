@@ -5,8 +5,8 @@
 
 #include "CrosshairWidget.h"
 #include "Inventory/Popup/InventoryPopupWidget.h"
-#include "RS/LogCategory.h"
-#include "RS/GameMode/GameplaySubsystem.h"
+#include "RS/Core/LogCategory.h"
+#include "RS/Player/Subsystem/GameplaySubsystem.h"
 #include "RS/Player/RSPlayerState.h"
 
 UBattleHUDWidget::UBattleHUDWidget(const FObjectInitializer& ObjectInitializer) :

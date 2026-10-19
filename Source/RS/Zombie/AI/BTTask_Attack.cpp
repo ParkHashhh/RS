@@ -8,9 +8,9 @@
 #include "Components/CapsuleComponent.h"
 #include "../../GAS/BaseAttributeSet.h"
 #include "Kismet/KismetMathLibrary.h"
-#include "RS/LogCategory.h"
+#include "RS/Core/LogCategory.h"
 #include "RS/Zombie/Animation/ZombieAnimInstance.h"
-#include "RS/Player/PlayerCharacterBase.h"
+#include "RS/Player/Character/PlayerCharacterBase.h"
 
 
 UBTTask_Attack::UBTTask_Attack()
@@ -28,13 +28,13 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 	{
 		return EBTNodeResult::Failed;
 	}
-	
+
 	UBlackboardComponent* BlackboardComp = Ctrl->GetBlackboardComponent();
 	if (!IsValid(BlackboardComp))
 	{
 		return EBTNodeResult::Failed;
 	}
-	
+
 	AActor* Target = Cast<AActor>(BlackboardComp->GetValueAsObject(TEXT("Target")));
 	if (!IsValid(Target))
 	{
@@ -130,7 +130,7 @@ void UBTTask_Attack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemo
 			FRotator TargetRot = UKismetMathLibrary::FindLookAtRotation(ZombieLoc, TargetLoc);
 
 			FRotator Rot = FMath::RInterpTo(CurrentRot, TargetRot, DeltaSeconds, Zombie->GetTurnSpeed());
-			
+
 			Zombie->SetActorRotation(Rot);
 
 			//좀비가 머리를 돌리는 동안 걷기 애니메이션을 출력한다
@@ -143,7 +143,7 @@ void UBTTask_Attack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemo
 			}
 			else
 			{
-				//회전이 끝났을 때 태스크를 종료시킨다	
+				//회전이 끝났을 때 태스크를 종료시킨다
 				Zombie->ChangeAnim(EZombieAnimType::CombatIdle);
 				Zombie->GetAnimInst()->SetIsTurn(false);
 				FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);

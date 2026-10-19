@@ -2,15 +2,16 @@
 
 
 #include "BossHPBarWidget.h"
+#include "TimerManager.h"
 #include "Components/ProgressBar.h"
-#include "RS/LogCategory.h"
-#include "RS/Player/PlayerCharacterBase.h"
-#include "RS/Zombie/ZombieBoss.h"
-#include "RS/Player/Attribute/PlayerAttributeSet.h"
+#include "RS/Core/LogCategory.h"
+#include "RS/Player/Character/PlayerCharacterBase.h"
+#include "RS/Zombie/Boss/ZombieBoss.h"
+#include "RS/Player/GAS/Attribute/PlayerAttributeSet.h"
 #include "RS/Zombie/GAS/ZombieBossAttributeSet.h"
-#include "RS/GameMode/RSGameState.h"
+#include "RS/GameFramework/GameState/RSGameState.h"
 #include "Components/TextBlock.h"
-#include "RS/GameMode/GameplaySubsystem.h"
+#include "RS/Player/Subsystem/GameplaySubsystem.h"
 
 UBossHPBarWidget::UBossHPBarWidget(const FObjectInitializer& ObjectInitializer)
 	: URSUserWidget(ObjectInitializer)
@@ -30,11 +31,22 @@ void UBossHPBarWidget::NativeConstruct()
 	{
 		if (auto* GameplaySubsystem = LP->GetSubsystem<UGameplaySubsystem>())
 		{
+			// 위젯이 GameplayReady보다 먼저 생성되는 경우가 많아서, 나중에 준비돼도 알림 받도록 바인딩해둠
+			GameplaySubsystem->OnGameplayReady.AddUObject(this, &ThisClass::OnGameplayReadyChanged);
+
 			if (GameplaySubsystem->IsGameplayReady())
 			{
 				SetBossInfo();
 			}
 		}
+	}
+}
+
+void UBossHPBarWidget::OnGameplayReadyChanged(bool bGameplayReady)
+{
+	if (bGameplayReady)
+	{
+		SetBossInfo();
 	}
 }
 
@@ -108,16 +120,20 @@ void UBossHPBarWidget::SetBossInfo()
 	}
 
 	AZombieBoss* Boss = GameState->GetCurrentBoss();
-	if (!Boss)
+	UAbilitySystemComponent* BossASC = Boss ? Boss->GetAbilitySystemComponent() : nullptr;
+	if (!Boss || !BossASC)
 	{
+		// CurrentBoss/ASC가 아직 리플리케이트 전일 수 있음 - 0.1초 뒤 재시도
+		constexpr int32 MaxSetBossInfoRetryCount = 50;
+		if (SetBossInfoRetryCount < MaxSetBossInfoRetryCount)
+		{
+			++SetBossInfoRetryCount;
+			FTimerHandle Handle;
+			GetWorld()->GetTimerManager().SetTimer(Handle, this, &ThisClass::SetBossInfo, 0.1f, false);
+		}
 		return;
 	}
-
-	UAbilitySystemComponent* BossASC = Boss->GetAbilitySystemComponent();
-	if (!BossASC)
-	{
-		return;
-	}
+	SetBossInfoRetryCount = 0;
 
 	FGameplayAttribute Attribute;
 	FDelegateHandle Handle;

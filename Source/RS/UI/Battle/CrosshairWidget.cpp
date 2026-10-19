@@ -3,7 +3,7 @@
 
 #include "CrosshairWidget.h"
 
-#include "RS/Player/PlayerCharacterBase.h"
+#include "RS/Player/Character/PlayerCharacterBase.h"
 
 UCrosshairWidget::UCrosshairWidget(const FObjectInitializer& ObjectInitializer) :
 	Super(ObjectInitializer)

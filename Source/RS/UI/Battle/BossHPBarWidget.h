@@ -3,8 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "RS/UI/RSUserWidget.h"
-#include "RS/RSTypes.h"
+#include "RS/UI/Core/RSUserWidget.h"
+#include "RS/Core/RSTypes.h"
 #include "BossHPBarWidget.generated.h"
 
 class UTextBlock;
@@ -29,6 +29,7 @@ private:
 
 	float CurrHP = 0.0f;
 	float MaxHP = 1.0f;
+	int32 SetBossInfoRetryCount = 0;
 
 protected:
 	TArray<FAttributeDelegateBinding> AttributeDelegateBindings;
@@ -46,6 +47,7 @@ public:
 private:
 	void OnCurrHpChanged(const FOnAttributeChangeData& Data);
 	void OnMaxHpChanged(const FOnAttributeChangeData& Data);
+	void OnGameplayReadyChanged(bool bGameplayReady);
 
 private:
 	void SetBossInfo();

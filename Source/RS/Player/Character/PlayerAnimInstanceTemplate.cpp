@@ -2,7 +2,7 @@
 
 
 #include "PlayerAnimInstanceTemplate.h"
-#include "RS/LogCategory.h"
+#include "RS/Core/LogCategory.h"
 
 
 void UPlayerAnimInstanceTemplate::NativeBeginPlay()

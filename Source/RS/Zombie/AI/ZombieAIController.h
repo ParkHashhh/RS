@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "../../RSConstants.h"
+#include "RS/Core/RSConstants.h"
 #include "AIController.h"
 #include "Perception/AIPerceptionTypes.h"
 #include "ZombieAIController.generated.h"
@@ -46,14 +46,21 @@ protected:
 	UPROPERTY()
 	FVector EndLoc = FVector::ZeroVector;
 
-	UPROPERTY();
+	UPROPERTY()
 	float PrevSpeed = 0.f;
 
-	UPROPERTY();
+	UPROPERTY()
+	FVector PrevLocation;
+
+	UPROPERTY()
 	EDetectPerceptionType TargetPerceptionType;
 
-	//속도 변경 시 점프의 시작인지 끝인지 확인하기 위한 변수
-	bool bIsJumpStart = false;
+	//상향 점프시 속도 중복 증가를 막기 위한 불리언 변수
+	bool bIsChangeUPJumpSpeed = false;
+
+	//종료 타이밍에 도약 시작에 들어가게 하지 않기 위한 불리언 변수 (타이밍 오류 해결)
+	UPROPERTY()
+	bool bIsJumpEndNow = false;
 
 protected:
 	virtual void BeginPlay() override;
@@ -77,4 +84,7 @@ public:
 	void ActivateBT();
 	void SetZeroSpeed();
 	void RollBackSpeed();
+	void MoveStart_JS();
+	void MoveStart_JE();
+	bool GetIsJumpEndNow();
 };

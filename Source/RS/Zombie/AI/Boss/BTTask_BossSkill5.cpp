@@ -8,9 +8,9 @@
 #include "Components/CapsuleComponent.h"
 #include "RS/GAS/BaseAttributeSet.h"
 #include "Kismet/KismetMathLibrary.h"
-#include "RS/LogCategory.h"
+#include "RS/Core/LogCategory.h"
 #include "RS/Zombie/Animation/ZombieAnimInstance.h"
-#include "RS/Player/PlayerCharacterBase.h"
+#include "RS/Player/Character/PlayerCharacterBase.h"
 
 UBTTask_BossSkill5::UBTTask_BossSkill5()
 {
@@ -141,7 +141,7 @@ void UBTTask_BossSkill5::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* Node
 		}
 		else
 		{
-			//회전이 끝났을 때 태스크를 종료시킨다	
+			//회전이 끝났을 때 태스크를 종료시킨다
 			Zombie->ChangeAnim(EZombieAnimType::CombatIdle);
 			Zombie->GetAnimInst()->SetIsTurn(false);
 			FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "RS/UI/SlotWidget.h"
+#include "RS/UI/Core/SlotWidget.h"
 #include "SkillSlotWidget.generated.h"
 
 class UBorder;

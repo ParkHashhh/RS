@@ -8,11 +8,11 @@
 #include "NavigationSystem.h"
 #include "RS/Zombie/AI/ZombieAIController.h"
 #include "BehaviorTree/BlackboardComponent.h"
-#include "RS/GameMode/MainGameMode.h"
-#include "RS/Zombie/ZombieManager.h"
+#include "RS/GameFramework/GameMode/MainGameMode.h"
+#include "RS/Zombie/Manager/ZombieManager.h"
 #include "Components/BoxComponent.h"
-#include "RS/LogCategory.h"
-#include "RS/Player/PlayerCharacterBase.h"
+#include "RS/Core/LogCategory.h"
+#include "RS/Player/Character/PlayerCharacterBase.h"
 
 // Sets default values
 AZombieSpawnPoint::AZombieSpawnPoint()

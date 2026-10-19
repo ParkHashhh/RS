@@ -3,12 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "RS/RSTypes.h"
+#include "RS/Core/RSTypes.h"
 #include "GameFramework/SaveGame.h"
 #include "RSSaveGame.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class RS_API URSSaveGame : public USaveGame

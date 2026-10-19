@@ -2,16 +2,16 @@
 
 
 #include "SelectSlotWidget.h"
-#include "RS/Player/Actor/SelectPawn.h"
-#include "RS/RSUtils.h"
-#include "RS/GameMode/RSGameInstance.h"
-#include "RS/GameMode/SessionSubsystem.h"
-#include "RS/Player/SelectPlayerController.h"
+#include "RS/Player/Character/SelectPawn.h"
+#include "RS/Core/RSUtils.h"
+#include "RS/GameFramework/RSGameInstance.h"
+#include "RS/Network/SessionSubsystem.h"
+#include "RS/Player/Controller/SelectPlayerController.h"
 #include "RS/Player/RSPlayerState.h"
-#include "RS/LogCategory.h"
+#include "RS/Core/LogCategory.h"
 #include "Kismet/GameplayStatics.h"
-#include "RS/Data/Subsystem/DataStorageSubsystem.h"
-#include "RS/GameMode/SessionSubsystem.h"
+#include "RS/GameFramework/Subsystem/DataStorageSubsystem.h"
+#include "RS/Network/SessionSubsystem.h"
 
 USelectSlotWidget::USelectSlotWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -29,8 +29,7 @@ void USelectSlotWidget::NativeOnInitialized()
 	SkillLeftButton->OnClicked.AddDynamic(this, &USelectSlotWidget::SkillLeftButtonClick);
 	SkillRightButton->OnClicked.AddDynamic(this, &USelectSlotWidget::SkillRightButtonClick);
 
-	StartButton->OnClicked.AddDynamic(this, &USelectSlotWidget::StartButtonClick);
-	MultiStartButton->OnClicked.AddDynamic(this, &USelectSlotWidget::MultiStartButtonClick);
+	PlayButton->OnClicked.AddDynamic(this, &USelectSlotWidget::PlayButtonClick);
 
 }
 
@@ -112,6 +111,25 @@ void USelectSlotWidget::SkillRightButtonClick()
 	{
 		CurrentSelectPawn->NextSkill();
 		SkillText->SetText(FText::FromName((CurrentSelectPawn->GetCurrentSkillName())));
+	}
+}
+
+void USelectSlotWidget::PlayButtonClick()
+{
+	// 시작 레벨에서 고른 모드(싱글/멀티)에 따라 기존 두 버튼 로직 중 하나로 분기
+	const auto* GI = GetGameInstance<URSGameInstance>();
+	const bool bSinglePlayer = GI && GI->IsSinglePlayerMode();
+
+	RS_LOG_DEBUG(LogRSSession, Warning, TEXT("%s| PlayButtonClick, IsSinglePlayerMode: %d -> %s"),
+		*LOG_LINE_INFO, bSinglePlayer, bSinglePlayer ? TEXT("StartButtonClick") : TEXT("MultiStartButtonClick"));
+
+	if (bSinglePlayer)
+	{
+		StartButtonClick();
+	}
+	else
+	{
+		MultiStartButtonClick();
 	}
 }
 

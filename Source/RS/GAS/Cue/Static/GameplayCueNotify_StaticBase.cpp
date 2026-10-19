@@ -2,13 +2,13 @@
 
 
 #include "GameplayCueNotify_StaticBase.h"
-#include "Kismet/GameplayStatics.h"       
-#include "NiagaraFunctionLibrary.h"       
-#include "Sound/SoundBase.h"              
-#include "Particles/ParticleSystem.h"     
+#include "Kismet/GameplayStatics.h"
+#include "NiagaraFunctionLibrary.h"
+#include "Sound/SoundBase.h"
+#include "Particles/ParticleSystem.h"
 #include "Materials/MaterialInterface.h"
 #include "PhysicalMaterials/PhysicalMaterial.h"
-#include "RS/LogCategory.h"
+#include "RS/Core/LogCategory.h"
 
 UGameplayCueNotify_StaticBase::UGameplayCueNotify_StaticBase()
 {

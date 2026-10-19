@@ -6,8 +6,8 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "RS/Zombie/GAS/ZombieStandardAttributeSet.h"
 #include "RS/Zombie/GAS/ZombieBossAttributeSet.h"
-#include "RS/LogCategory.h"
-#include "RS/Zombie/ZombieSpecial.h"
+#include "RS/Core/LogCategory.h"
+#include "RS/Zombie/Special/ZombieSpecial.h"
 #include "GameplayTagContainer.h"
 
 UGA_ZombieBoss_EarlyCooldown::UGA_ZombieBoss_EarlyCooldown()
@@ -72,7 +72,7 @@ void UGA_ZombieBoss_EarlyCooldown::ApplyCooldown(const FGameplayAbilitySpecHandl
 	{
 		CDSpec.Data->DynamicGrantedTags.AddTag(SkillCooldownTag);
 	}
-	
+
 	//나 자신에게 쿨타임 이펙트를 적용한다.
 	ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, CDSpec);
 }

@@ -9,11 +9,11 @@
 #include "../ZombieBase.h"
 #include "BehaviorTree/BlackboardData.h"
 #include "BehaviorTree/BlackboardComponent.h"
-#include "RS/LogCategory.h"
+#include "RS/Core/LogCategory.h"
 #include "Navigation/PathFollowingComponent.h"
 #include "RS/Zombie/ZombieBase.h"
 #include "GameFramework/FloatingPawnMovement.h"
-#include "RS/Player/PlayerCharacterBase.h"
+#include "RS/Player/Character/PlayerCharacterBase.h"
 #include "Navigation/CrowdFollowingComponent.h"
 
 AZombieAIController::AZombieAIController(const FObjectInitializer& ObjectInitializer)
@@ -75,11 +75,16 @@ void AZombieAIController::Tick(float DeltaTime)
 		return;
 	}
 
+	if (bIsJumpEndNow && !PFComp->IsCurrentSegmentNavigationLink())
+	{
+		bIsJumpEndNow = false;
+	}
+
 	bool bIsUsingNavLink = BB->GetValueAsBool(TEXT("IsUsingNavLink"));
 
 	//불리언이 false인데 내비링크 사용중이 true가 되면 내비링크 사용을 시작한 것이다.
 	//내비링크 이용을 시작하면 불리언 변수를 활성화하고 도착 지점을 백업한다.
-	if (PFComp && !bIsUsingNavLink && PFComp->IsCurrentSegmentNavigationLink())
+	if (PFComp && !bIsUsingNavLink && PFComp->IsCurrentSegmentNavigationLink() && !bIsJumpEndNow)
 	{
 		//내비링크 사용중 변수를 on 한다.
 		GetBlackboardComponent()->SetValueAsBool(TEXT("IsUsingNavLink"), true);
@@ -92,9 +97,10 @@ void AZombieAIController::Tick(float DeltaTime)
 		int32 EndIndex = PFComp->GetNextPathIndex();
 		EndLoc = PathPointArray[EndIndex].Location;
 
-		//도약 시작임을 표시한다.
-		bIsJumpStart = true;
 		PrevSpeed = FPM->MaxSpeed;
+		PrevLocation = Zombie->GetActorLocation();
+
+		Zombie->Multicast_ChangeBodyCollision_JumpStart();
 
 		//도약 모션을 위한 일시 정지
 		SetZeroSpeed();
@@ -105,65 +111,81 @@ void AZombieAIController::Tick(float DeltaTime)
 		return;
 	}
 
-	//불리언이 true인데 내비링크 사용중이 false라고 뜬다면 추가 검사가 필요하다.
 	if (PFComp && bIsUsingNavLink)
 	{
-		if (!PFComp->IsCurrentSegmentNavigationLink())
+		if (PFComp->IsCurrentSegmentNavigationLink())
 		{
-			//좀비와 도착점의 거리에 따라 처리해야 할 내용이 달라진다.
-			//1. 좀비가 도착점에 도착하지 않은 경우 : 고장난것이다.
-			float Distance = FVector::Dist2D(Zombie->GetActorLocation(), EndLoc);
+			//현재 내비링크를 사용중이라고 반환했으므로 끼임 여부만 확인한다.
+			//이전 좌표와 현재 좌표를 이용해 이동 거리를 구한다.
+			float MoveScale = FVector::Dist(Zombie->GetActorLocation(), PrevLocation);
 
-			if (Distance > 10.f)
+			//이동 거리가 극히 작은 경우 끼인 걸로 판단한다.
+			if (MoveScale < 1.f)
 			{
 				StuckTime += DeltaTime;
 
 				if (StuckTime >= 0.5f)
 				{
-					StuckTime = 0.f;
-
-					//좀비를 내비링크 도착 지점으로 보낸다.
+					//좀비를 내비링크 도착 지점으로 순간이동시킨다.
 					float UpLocScale = Zombie->GetHalfHeight();
 					FVector EscapeLoc = EndLoc + FVector(0.0, 0.0, UpLocScale);
 					Zombie->SetActorLocation(EscapeLoc);
-					BB->SetValueAsBool(TEXT("IsUsingNavLink"), false);
-
-					//도약 끝임을 표시한다.
-					bIsJumpStart = false;
 
 					//착지 모션을 위한 일시 정지
 					SetZeroSpeed();
 
 					//착지 섹션으로 몽타주를 변경한다.
 					Zombie->SetIsJumpEnd(true);
+
+					bIsJumpEndNow = true;
+
+					StuckTime = 0.f;
+					BB->SetValueAsBool(TEXT("IsUsingNavLink"), false);
+					bIsChangeUPJumpSpeed = false;
 				}
 			}
-			//거리가 충분히 가까운 경우 : 도착한것이다.
+			//이동 거리가 충분한 경우에는 정상적으로 점프 이동 중으로 판단한다.
 			else
 			{
-				//도약 끝임을 표시한다.
-				bIsJumpStart = false;
-
-				//착지 모션을 위한 일시 정지
-				SetZeroSpeed();
-
-				//착지 섹션으로 몽타주를 변경한다.
-				Zombie->SetIsJumpEnd(true);
-
-				//사용한 변수들을 초기화한다.
 				StuckTime = 0.f;
-				EndLoc = FVector::ZeroVector;
-				BB->SetValueAsBool(TEXT("IsUsingNavLink"), false);
 			}
 		}
+		//내비링크 사용중이 아니라고 반환했으므로 무조건 착지한 것이다.
+		else
+		{
+			//착지 모션을 위한 일시 정지
+			SetZeroSpeed();
+
+			//착지 섹션으로 몽타주를 변경한다.
+			Zombie->SetIsJumpEnd(true);
+
+			bIsJumpEndNow = true;
+
+			//사용한 변수들을 초기화한다.
+			StuckTime = 0.f;
+			EndLoc = FVector::ZeroVector;
+			BB->SetValueAsBool(TEXT("IsUsingNavLink"), false);
+			bIsChangeUPJumpSpeed = false;
+		}
+
+		PrevLocation = Zombie->GetActorLocation();
 	}
 
-	//올라가거나 내려갈 때 속도 보정을 해준다.
-	if (PFComp->IsCurrentSegmentNavigationLink())
+	//위로 점프할 경우 : 일정 수치를 더해 점프 속도를 올린다.
+	//아래로 점프할 경우 : 시간이 지날수록 속도가 증가하도록 해야 한다.
+	if (bIsUsingNavLink && PFComp->IsCurrentSegmentNavigationLink())
 	{
 		if (FPM->Velocity.Z < 0.f)
 		{
 			FPM->MaxSpeed += DeltaTime * 600.f;
+		}
+		else
+		{
+			if (!bIsChangeUPJumpSpeed)
+			{
+				FPM->MaxSpeed += 300.f;
+				bIsChangeUPJumpSpeed = true;
+			}
 		}
 	}
 }
@@ -201,6 +223,12 @@ void AZombieAIController::OnTarget(AActor* Actor, FAIStimulus Stimulus)
 	AZombieBase* Zombie = Cast<AZombieBase>(GetPawn());
 	if (!IsValid(Zombie))
 		return;
+
+	bool IsUsingNavLink = GetBlackboardComponent()->GetValueAsBool(TEXT("IsUsingNavLink"));
+	if (IsUsingNavLink)
+	{
+		return;
+	}
 
 	AActor* Target = Cast<AActor>(GetBlackboardComponent()->GetValueAsObject(TEXT("Target")));
 
@@ -332,12 +360,30 @@ void AZombieAIController::RollBackSpeed()
 		return;
 	}
 
-	if (bIsJumpStart)
+	FPM->MaxSpeed = PrevSpeed;
+}
+
+void AZombieAIController::MoveStart_JS()
+{
+	RollBackSpeed();
+}
+
+void AZombieAIController::MoveStart_JE()
+{
+	RollBackSpeed();
+
+	//점프가 끝나면 바디 콜리전을 원상복구 시킨다.
+	AZombieBase* Zombie = GetPawn<AZombieBase>();
+	if (!Zombie)
 	{
-		FPM->MaxSpeed = PrevSpeed + 300;
+		return;
 	}
-	else
-	{
-		FPM->MaxSpeed = PrevSpeed;
-	}
+	Zombie->Multicast_ChangeBodyCollision_JumpEnd();
+
+	Zombie->SetIsJumpEnd(false);
+}
+
+bool AZombieAIController::GetIsJumpEndNow()
+{
+	return bIsJumpEndNow;
 }

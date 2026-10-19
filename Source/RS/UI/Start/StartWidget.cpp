@@ -3,12 +3,12 @@
 
 #include "StartWidget.h"
 #include "Kismet/KismetSystemLibrary.h"
-#include "RS/RSUtils.h"
-#include "RS/GameMode/RSGameInstance.h"
+#include "RS/Core/RSUtils.h"
+#include "RS/GameFramework/RSGameInstance.h"
 #include "RS/UI/Subsystem/UISubsystem.h"
 #include "Kismet/GameplayStatics.h"
-#include "RS/Player/StartPlayerController.h"
-#include "RS/LogCategory.h"
+#include "RS/Player/Controller/StartPlayerController.h"
+#include "RS/Core/LogCategory.h"
 
 UStartWidget::UStartWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -57,6 +57,12 @@ void UStartWidget::MultiStartClick()
 	{
 		return;
 	}
+
+	if (auto* PC = Cast<AStartPlayerController>(GetOwningPlayer()))
+	{
+		PC->StartMultiPlayer();
+	}
+
 	GI->LevelLoading(TEXT("Select"), TEXT("/Game/Levels/Select"), TEXT(""));
 }
 

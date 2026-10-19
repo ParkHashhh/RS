@@ -4,7 +4,7 @@
 #include "BaseAttributeSet.h"
 #include "GameplayEffectExtension.h"
 #include "GameplayEffect.h"
-#include "RS/LogCategory.h"
+#include "RS/Core/LogCategory.h"
 #include "RS/Zombie/ZombieBase.h"
 
 void UBaseAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
@@ -36,12 +36,17 @@ void UBaseAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 
 		if (GetCurrentHP() <= 0.0f)
 		{
-			if (const auto* Killable = Cast<IKillableInterface>(AvatarActor))
+			if (!bDeathProcessed)
 			{
-				AActor* OrigInstigator = Context.GetOriginalInstigator();
-				const APawn* Killer = OrigInstigator? Cast<APawn>(OrigInstigator) : nullptr;
+				bDeathProcessed = true;
 
-				Killable->OnDead(GetWorld(), Killer);
+				if (const auto* Killable = Cast<IKillableInterface>(AvatarActor))
+				{
+					AActor* OrigInstigator = Context.GetOriginalInstigator();
+					const APawn* Killer = OrigInstigator ? Cast<APawn>(OrigInstigator) : nullptr;
+
+					Killable->OnDead(GetWorld(), Killer);
+				}
 			}
 		}
 	}

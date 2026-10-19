@@ -36,9 +36,12 @@ private:
 	TWeakObjectPtr<APlayerCharacterBase> Holder = nullptr;
 
 	FTimerHandle InteractionTimerHandle;
-	float Duration = 0.0f;
-	float ElapsedTime = 0.0f;
 
+	UPROPERTY(Replicated, Transient)
+	float Duration = 0.0f;
+
+	UPROPERTY(ReplicatedUsing = OnRep_ElapsedTime, Transient)
+	float ElapsedTime = 0.0f;
 public:
 	UInteractableComponent();
 
@@ -80,6 +83,7 @@ private:
 
 	UFUNCTION()
 	void OnRep_Holder();
-
+	UFUNCTION()
+	void OnRep_ElapsedTime();
 	void TickInteractionProgress();
 };

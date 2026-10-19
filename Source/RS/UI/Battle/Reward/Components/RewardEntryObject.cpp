@@ -3,7 +3,7 @@
 
 #include "RewardEntryObject.h"
 
-#include "RS/RSTypes.h"
+#include "RS/Core/RSTypes.h"
 #include "RS/Data/Subsystem/DataSubsystem.h"
 #include "RS/UI/Battle/Inventory/Popup/Components/StatEntryObject.h"
 
@@ -18,6 +18,7 @@ void URewardEntryObject::Initialize(FName InItemRowName, const UDataSubsystem* D
 	ItemRowName = InItemRowName;
 	ItemIcon = ItemInfo->IconSprite;
 	ItemName = ItemInfo->Name;
+	Grade = ItemInfo->Grade;
 
 	StatEntryObjects.Reset(ItemInfo->ItemOptions.Num());
 	for (const FItemOption& ItemOption : ItemInfo->ItemOptions)

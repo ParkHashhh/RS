@@ -1,12 +1,12 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "SettingWidget.h"
-#include "../RSGameUserSettings.h"
+#include "RS/Core/RSGameUserSettings.h"
 #include "Components/ComboBoxString.h"
 #include "Components/Slider.h"
 #include "Components/Button.h"
 #include "Kismet/GameplayStatics.h"
-#include "RS/Player/PlayerCharacterBase.h"
+#include "RS/Player/Character/PlayerCharacterBase.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Components/CheckBox.h"
 #include "RS/UI/Subsystem/UISubsystem.h"

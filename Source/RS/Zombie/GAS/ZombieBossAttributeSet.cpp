@@ -3,10 +3,10 @@
 
 #include "ZombieBossAttributeSet.h"
 #include "RS/Zombie/ZombieBase.h"
-#include "RS/Zombie/ZombieBoss.h"
-#include "RS/LogCategory.h"
+#include "RS/Zombie/Boss/ZombieBoss.h"
+#include "RS/Core/LogCategory.h"
 #include "GameplayEffectExtension.h"
-#include "RS/Utils/KillableInterface.h"
+#include "RS/Gameplay/Interfaces/KillableInterface.h"
 
 UZombieBossAttributeSet::UZombieBossAttributeSet()
 {

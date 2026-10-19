@@ -2,11 +2,11 @@
 
 #include "MapSelectWidget.h"
 #include "MapSelectCardWidget.h"
-#include "RS/GameMode/RSGameInstance.h"
-#include "../../Player/ColonyPlayerController.h"
+#include "RS/GameFramework/RSGameInstance.h"
+#include "RS/Player/Controller/ColonyPlayerController.h"
 #include "Components/PanelWidget.h"
 #include "Components/TextBlock.h"
-#include "RS/Data/Subsystem/DataStorageSubsystem.h"
+#include "RS/GameFramework/GameState/RSGameState.h"
 
 UMapSelectWidget::UMapSelectWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -40,12 +40,12 @@ void UMapSelectWidget::NativeConstruct()
 
 	if (DifficultyStageText)
 	{
-		if (const UGameInstance* GI = GetGameInstance())
+		// UDataStorageSubsystem::CurrentDifficultyStage는 머신별 로컬(GameInstanceSubsystem) 값이라
+		// 원격 클라에는 절대 전달되지 않음 - 리플리케이트되는 GameState 프로퍼티를 읽어야 호스트/클라
+		// 둘 다 보스를 잡은 뒤 정확한 Level을 본다.
+		if (const auto* GS = GetWorld() ? GetWorld()->GetGameState<ARSGameState>() : nullptr)
 		{
-			if (const auto* StorageSubsystem = GI->GetSubsystem<UDataStorageSubsystem>())
-			{
-				DifficultyStageText->SetText(FText::AsNumber(StorageSubsystem->GetCurrentDifficultyStage()));
-			}
+			DifficultyStageText->SetText(FText::AsNumber(GS->GetDifficultyStage()));
 		}
 	}
 }
@@ -74,7 +74,7 @@ void UMapSelectWidget::HandleConfirmClicked()
 
 	if (AColonyPlayerController* PC = Cast<AColonyPlayerController>(GetOwningPlayer()))
 	{
-		
+
 		PC->Server_RequestPortal(CurrentSelectedCard->GetLevelName(), CurrentSelectedCard->GetLevelPackagePath());
 		PC->RemoveMapSelectWidget();
 	}

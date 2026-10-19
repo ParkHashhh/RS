@@ -3,12 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "RS/UI/RSUserWidget.h"
+#include "RS/UI/Core/RSUserWidget.h"
 #include "PartyHPBarListWidget.generated.h"
 
 class UPartyHPBarWidget;
 /**
- * 
+ *
  */
 UCLASS()
 class RS_API UPartyHPBarListWidget : public URSUserWidget
@@ -33,6 +33,8 @@ private:
 
 	UPROPERTY()
 	int32 ActivateHPBarCount = 0;
+
+	FTimerHandle SetPartyListRetryHandle;
 
 protected:
 	virtual void NativeOnInitialized() override;
